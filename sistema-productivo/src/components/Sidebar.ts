@@ -1,4 +1,6 @@
-export function Sidebar(): string {
+export function Sidebar(activePage: string = 'dashboard'): string {
+  const isActive = (page: string) => page === activePage ? 'active' : '';
+  
   return `
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -20,7 +22,7 @@ export function Sidebar(): string {
       <nav class="sidebar-nav">
         <div class="nav-section">
           <div class="nav-section-title">Principal</div>
-          <a href="#dashboard" class="nav-item active">
+          <a href="#dashboard" class="nav-item ${isActive('dashboard')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
               <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
@@ -29,7 +31,7 @@ export function Sidebar(): string {
             </svg>
             Dashboard
           </a>
-          <a href="#tareas" class="nav-item">
+          <a href="#tareas" class="nav-item ${isActive('tareas')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M6 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
@@ -40,34 +42,34 @@ export function Sidebar(): string {
 
         <div class="nav-section">
           <div class="nav-section-title">Módulos IA</div>
-          <a href="#riesgo" class="nav-item">
+          <a href="#riesgo" class="nav-item ${isActive('riesgo')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
               <path d="M10 6v4M10 13v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
             Clasificación de Riesgo
           </a>
-          <a href="#duracion" class="nav-item">
+          <a href="#duracion" class="nav-item ${isActive('duracion')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
               <path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
             Predicción de Duración
           </a>
-          <a href="#recomendacion" class="nav-item">
+          <a href="#recomendacion" class="nav-item ${isActive('recomendacion')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M7 10h6M10 7v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
             </svg>
             Recomendación Persona-Tarea
           </a>
-          <a href="#desempeno" class="nav-item">
+          <a href="#desempeno" class="nav-item ${isActive('desempeno')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M16 14l-6-6-3 3-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             Desempeño del Colaborador
           </a>
-          <a href="#flujo" class="nav-item">
+          <a href="#flujo" class="nav-item ${isActive('flujo')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="5" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
               <circle cx="15" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
@@ -75,24 +77,33 @@ export function Sidebar(): string {
             </svg>
             Simulación de Flujo
           </a>
+          <a href="#visualizacion" class="nav-item ${isActive('visualizacion')}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+            Visualización Inteligente
+          </a>
         </div>
 
         <div class="nav-section">
           <div class="nav-section-title">Administración</div>
-          <a href="#usuarios" class="nav-item">
+          <a href="#usuarios" class="nav-item ${isActive('usuarios')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/>
               <path d="M5 17c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
             Usuarios
           </a>
-          <a href="#areas" class="nav-item">
+          <a href="#areas" class="nav-item ${isActive('areas')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M4 6h12M4 10h12M4 14h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
             Áreas
           </a>
-          <a href="#configuracion" class="nav-item">
+          <a href="#configuracion" class="nav-item ${isActive('configuracion')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
               <path d="M10 3v2M10 15v2M17 10h-2M5 10H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>

@@ -5,7 +5,7 @@ import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
 export function DashboardPage(): string {
   return `
     <div class="dashboard-layout">
-      ${Sidebar()}
+      ${Sidebar('dashboard')}
       ${AIAssistant()}
       
       <main class="dashboard-main">

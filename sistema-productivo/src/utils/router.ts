@@ -3,6 +3,10 @@ import { DashboardPage, initDashboard } from '../pages/Dashboard';
 import { TasksPage, initTasks } from '../pages/Tasks';
 import { RiskClassificationPage, initRiskClassification } from '../pages/RiskClassification';
 import { DurationPredictionPage, initDurationPrediction } from '../pages/DurationPrediction';
+import { PersonTaskRecommendationPage, initPersonTaskRecommendation } from '../pages/PersonTaskRecommendation';
+import { PerformancePage, initPerformance } from '../pages/Performance';
+import { ProcessSimulationPage, initProcessSimulation } from '../pages/ProcessSimulation';
+import { IntelligentVisualizationPage, initIntelligentVisualization } from '../pages/IntelligentVisualization';
 
 type Route = {
   path: string;
@@ -40,6 +44,30 @@ const routes: Route[] = [
     path: 'duracion',
     render: DurationPredictionPage,
     init: initDurationPrediction,
+    requiresAuth: true
+  },
+  {
+    path: 'recomendacion',
+    render: PersonTaskRecommendationPage,
+    init: initPersonTaskRecommendation,
+    requiresAuth: true
+  },
+  {
+    path: 'desempeno',
+    render: PerformancePage,
+    init: initPerformance,
+    requiresAuth: true
+  },
+  {
+    path: 'flujo',
+    render: ProcessSimulationPage,
+    init: initProcessSimulation,
+    requiresAuth: true
+  },
+  {
+    path: 'visualizacion',
+    render: IntelligentVisualizationPage,
+    init: initIntelligentVisualization,
     requiresAuth: true
   }
 ];
