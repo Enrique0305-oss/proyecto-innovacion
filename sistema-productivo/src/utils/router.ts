@@ -7,6 +7,9 @@ import { PersonTaskRecommendationPage, initPersonTaskRecommendation } from '../p
 import { PerformancePage, initPerformance } from '../pages/Performance';
 import { ProcessSimulationPage, initProcessSimulation } from '../pages/ProcessSimulation';
 import { IntelligentVisualizationPage, initIntelligentVisualization } from '../pages/IntelligentVisualization';
+import { UsersPage, initUsers } from '../pages/Users';
+import { AreasPage, initAreas } from '../pages/Areas';
+import { IAConfigurationPage, initIAConfiguration } from '../pages/IAConfiguration';
 
 type Route = {
   path: string;
@@ -68,6 +71,24 @@ const routes: Route[] = [
     path: 'visualizacion',
     render: IntelligentVisualizationPage,
     init: initIntelligentVisualization,
+    requiresAuth: true
+  },
+  {
+    path: 'usuarios',
+    render: UsersPage,
+    init: initUsers,
+    requiresAuth: true
+  },
+  {
+    path: 'areas',
+    render: AreasPage,
+    init: initAreas,
+    requiresAuth: true
+  },
+  {
+    path: 'configuracion-ia',
+    render: IAConfigurationPage,
+    init: initIAConfiguration,
     requiresAuth: true
   }
 ];

@@ -103,7 +103,7 @@ export function Sidebar(activePage: string = 'dashboard'): string {
             </svg>
             Áreas
           </a>
-          <a href="#configuracion" class="nav-item ${isActive('configuracion')}">
+          <a href="#configuracion-ia" class="nav-item ${isActive('configuracion-ia')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
               <path d="M10 3v2M10 15v2M17 10h-2M5 10H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
