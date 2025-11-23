@@ -95,20 +95,33 @@ export function initLogin() {
   const form = document.getElementById('loginForm') as HTMLFormElement;
   
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const email = (document.getElementById('email') as HTMLInputElement).value;
       const password = (document.getElementById('password') as HTMLInputElement).value;
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
       
-      // Simulación de login
-      if (email && password) {
-        // Guardar estado de autenticación
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userEmail', email);
+      // Deshabilitar botón
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Ingresando...';
+      
+      try {
+        // Importar API dinámicamente
+        const { api } = await import('../utils/api');
+        
+        // Intentar login
+        await api.login(email, password);
         
         // Redirigir al dashboard
         window.location.hash = '#dashboard';
+      } catch (error) {
+        // Mostrar error
+        alert(error instanceof Error ? error.message : 'Error al iniciar sesión');
+        
+        // Rehabilitar botón
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Ingresar';
       }
     });
   }

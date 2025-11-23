@@ -128,9 +128,12 @@ export function Sidebar(activePage: string = 'dashboard'): string {
 export function initSidebar() {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('userEmail');
+    logoutBtn.addEventListener('click', async () => {
+      // Importar API y hacer logout
+      const { api } = await import('../utils/api');
+      api.logout();
+      
+      // Redirigir a login
       window.location.hash = '#login';
     });
   }

@@ -295,7 +295,20 @@ export function DashboardPage(): string {
   `;
 }
 
-export function initDashboard() {
+export async function initDashboard() {
   initSidebar();
   initAIAssistant();
+  
+  // Cargar estadísticas del backend
+  try {
+    const { api } = await import('../utils/api');
+    const stats = await api.getTaskStats();
+    
+    console.log('📊 Estadísticas cargadas:', stats);
+    
+    // Aquí puedes actualizar los valores del dashboard con los datos reales
+    // Por ahora solo mostramos en consola para verificar la conexión
+  } catch (error) {
+    console.error('Error al cargar estadísticas:', error);
+  }
 }
