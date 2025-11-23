@@ -21,10 +21,17 @@ class Config:
     DB_PASSWORD = os.getenv('DB_PASSWORD', '1234')
     DB_HOST = os.getenv('DB_HOST', 'localhost')
     DB_PORT = os.getenv('DB_PORT', '3306')
-    DB_NAME = os.getenv('DB_NAME', 'sb')
+    DB_NAME = os.getenv('DB_NAME', 'sb_production')
     
-    # SQLAlchemy URI
-    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    # SQLAlchemy URI - Base de datos principal (sb_production)
+    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
+    
+    # Configuración de binds para múltiples bases de datos
+    # 'training' se usa para leer datos históricos de ML
+    SQLALCHEMY_BINDS = {
+        'training': f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/sb_training?charset=utf8mb4"
+    }
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = DEBUG
     
@@ -36,7 +43,7 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', '3600'))  # 1 hora por defecto
     
     # Rutas de modelos ML
-    MODELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
+    ML_MODELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ml', 'models')
     
     # Configuración de paginación
     TASKS_PER_PAGE = int(os.getenv('TASKS_PER_PAGE', '20'))

@@ -1,13 +1,14 @@
 """
 Rutas de Autenticación
-Endpoints para login, registro y gestión de usuarios
+Endpoints para login, registro y gestión de usuarios web
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime
 
 from app.extensions import db
-from app.models.user import User
+from app.models.web_user import WebUser
+from app.models.role import Role
 
 # Crear Blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -16,15 +17,14 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/register', methods=['POST'])
 def register():
     """
-    Registrar un nuevo usuario
+    Registrar un nuevo usuario web
     
     Body JSON:
-        - username: str (requerido)
         - email: str (requerido)
         - password: str (requerido)
-        - first_name: str (opcional)
-        - last_name: str (opcional)
-        - role: str (opcional, default: 'user')
+        - full_name: str (requerido)
+        - role_name: str (opcional, default: 'user')
+        - area: str (opcional)
     
     Returns:
         JSON con el usuario creado y token JWT
@@ -36,32 +36,36 @@ def register():
         if not data:
             return jsonify({'error': 'No se enviaron datos'}), 400
         
-        username = data.get('username')
         email = data.get('email')
         password = data.get('password')
+        full_name = data.get('full_name')
         
-        if not all([username, email, password]):
+        if not all([email, password, full_name]):
             return jsonify({
                 'error': 'Faltan campos requeridos',
-                'required': ['username', 'email', 'password']
+                'required': ['email', 'password', 'full_name']
             }), 400
         
         # Verificar si el usuario ya existe
-        if User.query.filter_by(username=username).first():
-            return jsonify({'error': 'El nombre de usuario ya existe'}), 409
-        
-        if User.query.filter_by(email=email).first():
+        if WebUser.query.filter_by(email=email).first():
             return jsonify({'error': 'El email ya está registrado'}), 409
         
+        # Obtener rol (default: user)
+        role_name = data.get('role_name', 'user')
+        role = Role.query.filter_by(name=role_name).first()
+        
+        if not role:
+            return jsonify({'error': f'Rol {role_name} no existe'}), 400
+        
         # Crear nuevo usuario
-        new_user = User(
-            username=username,
+        new_user = WebUser(
             email=email,
-            password=password,
-            first_name=data.get('first_name'),
-            last_name=data.get('last_name'),
-            role=data.get('role', 'user')
+            full_name=full_name,
+            role_id=role.id,
+            area=data.get('area'),
+            status='active'
         )
+        new_user.set_password(password)
         
         db.session.add(new_user)
         db.session.commit()
@@ -89,7 +93,7 @@ def login():
     Iniciar sesión
     
     Body JSON:
-        - username: str (requerido)
+        - email: str (requerido)
         - password: str (requerido)
     
     Returns:
@@ -101,27 +105,27 @@ def login():
         if not data:
             return jsonify({'error': 'No se enviaron datos'}), 400
         
-        username = data.get('username')
+        email = data.get('email')
         password = data.get('password')
         
-        if not all([username, password]):
+        if not all([email, password]):
             return jsonify({
                 'error': 'Faltan campos requeridos',
-                'required': ['username', 'password']
+                'required': ['email', 'password']
             }), 400
         
         # Buscar usuario
-        user = User.query.filter_by(username=username).first()
+        user = WebUser.query.filter_by(email=email).first()
         
         if not user:
-            return jsonify({'error': 'Usuario o contraseña incorrectos'}), 401
+            return jsonify({'error': 'Email o contraseña incorrectos'}), 401
         
         # Verificar contraseña
         if not user.check_password(password):
-            return jsonify({'error': 'Usuario o contraseña incorrectos'}), 401
+            return jsonify({'error': 'Email o contraseña incorrectos'}), 401
         
         # Verificar si está activo
-        if not user.is_active:
+        if user.status != 'active':
             return jsonify({'error': 'Usuario inactivo'}), 403
         
         # Actualizar último login
@@ -158,7 +162,7 @@ def get_current_user():
     """
     try:
         user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        user = WebUser.query.get(user_id)
         
         if not user:
             return jsonify({'error': 'Usuario no encontrado'}), 404
@@ -192,7 +196,7 @@ def change_password():
     """
     try:
         user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        user = WebUser.query.get(user_id)
         
         if not user:
             return jsonify({'error': 'Usuario no encontrado'}), 404
@@ -231,7 +235,7 @@ def change_password():
 @jwt_required()
 def list_users():
     """
-    Listar todos los usuarios (solo admin)
+    Listar todos los usuarios (requiere permiso users.view)
     
     Headers:
         Authorization: Bearer <token>
@@ -245,18 +249,18 @@ def list_users():
     """
     try:
         user_id = get_jwt_identity()
-        current_user = User.query.get(user_id)
+        current_user = WebUser.query.get(user_id)
         
-        # Verificar que sea admin
-        if current_user.role != 'admin':
-            return jsonify({'error': 'Acceso denegado - se requiere rol admin'}), 403
+        # Verificar permisos
+        if not current_user.can('users.view'):
+            return jsonify({'error': 'Acceso denegado - permisos insuficientes'}), 403
         
         # Paginación
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         
         # Consultar usuarios
-        pagination = User.query.paginate(
+        pagination = WebUser.query.paginate(
             page=page,
             per_page=per_page,
             error_out=False

@@ -1,20 +1,20 @@
 """
-Rutas de Tareas
-Endpoints para CRUD de tareas y gestión de asignaciones
+Rutas de Tareas Web
+Endpoints para CRUD de web_tasks
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
-from sqlalchemy import or_, and_
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from datetime import datetime
 
 from app.extensions import db
-from app.models.task import Task, Assignee, TaskDependency
-from app.models.person import Person
+from app.models.web_task import WebTask
+from app.models.web_user import WebUser
 
 # Crear Blueprint
-task_bp = Blueprint('tasks', __name__)
+tasks_bp = Blueprint('tasks', __name__)
 
 
-@task_bp.route('/', methods=['GET'])
+@tasks_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_tasks():
     """
@@ -26,7 +26,7 @@ def get_tasks():
         - status: str (filtro por estado)
         - area: str (filtro por área)
         - priority: str (filtro por prioridad)
-        - search: str (búsqueda por nombre)
+        - search: str (búsqueda por título)
     
     Returns:
         JSON con lista paginada de tareas
@@ -37,29 +37,27 @@ def get_tasks():
         per_page = request.args.get('per_page', 20, type=int)
         
         # Construir query
-        query = Task.query
+        query = WebTask.query
         
         # Filtros
         status = request.args.get('status')
         if status:
-            query = query.filter(Task.status == status)
+            query = query.filter(WebTask.status == status)
         
         area = request.args.get('area')
         if area:
-            query = query.filter(Task.area == area)
+            query = query.filter(WebTask.area == area)
         
         priority = request.args.get('priority')
         if priority:
-            query = query.filter(Task.priority == priority)
+            query = query.filter(WebTask.priority == priority)
         
         search = request.args.get('search')
         if search:
-            query = query.filter(
-                or_(
-                    Task.task_name.ilike(f'%{search}%'),
-                    Task.task_id.ilike(f'%{search}%')
-                )
-            )
+            query = query.filter(WebTask.title.ilike(f'%{search}%'))
+        
+        # Ordenar por fecha de creación descendente
+        query = query.order_by(WebTask.created_at.desc())
         
         # Ejecutar paginación
         pagination = query.paginate(
@@ -69,7 +67,7 @@ def get_tasks():
         )
         
         return jsonify({
-            'tasks': [task.to_dict(include_assignees=True) for task in pagination.items],
+            'tasks': [task.to_dict() for task in pagination.items],
             'total': pagination.total,
             'pages': pagination.pages,
             'current_page': page,
@@ -83,26 +81,26 @@ def get_tasks():
         }), 500
 
 
-@task_bp.route('/<task_id>', methods=['GET'])
+@tasks_bp.route('/<int:id>', methods=['GET'])
 @jwt_required()
-def get_task(task_id):
+def get_task(id):
     """
     Obtener una tarea específica por ID
     
     Path Params:
-        task_id: ID de la tarea
+        id: ID de la tarea
     
     Returns:
         JSON con los detalles de la tarea
     """
     try:
-        task = Task.query.get(task_id)
+        task = WebTask.query.get(id)
         
         if not task:
             return jsonify({'error': 'Tarea no encontrada'}), 404
         
         return jsonify({
-            'task': task.to_dict(include_assignees=True)
+            'task': task.to_dict()
         }), 200
         
     except Exception as e:
@@ -112,81 +110,66 @@ def get_task(task_id):
         }), 500
 
 
-@task_bp.route('/', methods=['POST'])
+@tasks_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_task():
     """
     Crear una nueva tarea
     
     Body JSON:
-        - task_id: str (requerido)
-        - task_name: str (requerido)
-        - project_id: str
+        - title: str (requerido)
+        - description: str
+        - priority: str (alta/media/baja)
         - area: str
-        - task_type: str
-        - start_date_est: str (YYYY-MM-DD)
-        - end_date_est: str (YYYY-MM-DD)
-        - status: str
-        - priority: str
-        - complexity_level: str
-        - assignees: list[str] (person_ids)
+        - complexity_score: int (1-10)
+        - estimated_hours: float
+        - deadline: str (ISO 8601)
+        - assigned_to: str (person_id)
     
     Returns:
         JSON con la tarea creada
     """
     try:
+        user_id = get_jwt_identity()
         data = request.get_json()
         
         if not data:
             return jsonify({'error': 'No se enviaron datos'}), 400
         
-        task_id = data.get('task_id')
-        task_name = data.get('task_name')
+        title = data.get('title')
         
-        if not all([task_id, task_name]):
+        if not title:
             return jsonify({
-                'error': 'Faltan campos requeridos',
-                'required': ['task_id', 'task_name']
+                'error': 'Campo requerido faltante',
+                'required': ['title']
             }), 400
         
-        # Verificar que no exista
-        if Task.query.get(task_id):
-            return jsonify({'error': 'La tarea ya existe'}), 409
-        
         # Crear tarea
-        new_task = Task(
-            task_id=task_id,
-            task_name=task_name,
-            project_id=data.get('project_id'),
+        new_task = WebTask(
+            title=title,
+            description=data.get('description'),
+            priority=data.get('priority', 'media'),
+            status='pendiente',
             area=data.get('area'),
-            task_type=data.get('task_type'),
-            status=data.get('status', 'Pending'),
-            priority=data.get('priority'),
-            complexity_level=data.get('complexity_level'),
-            completion=data.get('completion', '0')
+            assigned_to=data.get('assigned_to'),
+            complexity_score=data.get('complexity_score'),
+            estimated_hours=data.get('estimated_hours'),
+            created_by=user_id
         )
         
-        # Agregar fechas si vienen
-        from datetime import datetime
-        if data.get('start_date_est'):
-            new_task.start_date_est = datetime.strptime(data['start_date_est'], '%Y-%m-%d')
-        if data.get('end_date_est'):
-            new_task.end_date_est = datetime.strptime(data['end_date_est'], '%Y-%m-%d')
+        # Deadline
+        if data.get('deadline'):
+            try:
+                new_task.deadline = datetime.fromisoformat(data['deadline'].replace('Z', '+00:00'))
+            except:
+                pass
         
         db.session.add(new_task)
-        
-        # Asignar personas si vienen
-        assignees = data.get('assignees', [])
-        for person_id in assignees:
-            if Person.query.get(person_id):
-                assignee = Assignee(task_id=task_id, person_id=person_id)
-                db.session.add(assignee)
-        
         db.session.commit()
         
         return jsonify({
             'message': 'Tarea creada exitosamente',
-            'task': new_task.to_dict(include_assignees=True)
+            'task': new_task.to_dict()
         }), 201
         
     except Exception as e:
@@ -197,14 +180,14 @@ def create_task():
         }), 500
 
 
-@task_bp.route('/<task_id>', methods=['PUT'])
+@tasks_bp.route('/<int:id>', methods=['PUT'])
 @jwt_required()
-def update_task(task_id):
+def update_task(id):
     """
     Actualizar una tarea existente
     
     Path Params:
-        task_id: ID de la tarea
+        id: ID de la tarea
     
     Body JSON:
         Campos a actualizar (todos opcionales)
@@ -213,7 +196,7 @@ def update_task(task_id):
         JSON con la tarea actualizada
     """
     try:
-        task = Task.query.get(task_id)
+        task = WebTask.query.get(id)
         
         if not task:
             return jsonify({'error': 'Tarea no encontrada'}), 404
@@ -221,32 +204,43 @@ def update_task(task_id):
         data = request.get_json()
         
         # Actualizar campos
-        updatable_fields = [
-            'task_name', 'project_id', 'area', 'task_type', 'status',
-            'priority', 'complexity_level', 'completion', 'tools_used',
-            'dependencies', 'duration_est', 'duration_real'
-        ]
-        
-        for field in updatable_fields:
-            if field in data:
-                setattr(task, field, data[field])
-        
-        # Actualizar fechas
-        from datetime import datetime
-        if 'start_date_est' in data and data['start_date_est']:
-            task.start_date_est = datetime.strptime(data['start_date_est'], '%Y-%m-%d')
-        if 'end_date_est' in data and data['end_date_est']:
-            task.end_date_est = datetime.strptime(data['end_date_est'], '%Y-%m-%d')
-        if 'start_date_real' in data and data['start_date_real']:
-            task.start_date_real = datetime.strptime(data['start_date_real'], '%Y-%m-%d')
-        if 'end_date_real' in data and data['end_date_real']:
-            task.end_date_real = datetime.strptime(data['end_date_real'], '%Y-%m-%d')
+        if 'title' in data:
+            task.title = data['title']
+        if 'description' in data:
+            task.description = data['description']
+        if 'priority' in data:
+            task.priority = data['priority']
+        if 'status' in data:
+            task.status = data['status']
+            # Si se completa, registrar fecha
+            if data['status'] == 'completada' and not task.completed_at:
+                task.completed_at = datetime.utcnow()
+        if 'area' in data:
+            task.area = data['area']
+        if 'assigned_to' in data:
+            task.assigned_to = data['assigned_to']
+        if 'complexity_score' in data:
+            task.complexity_score = data['complexity_score']
+        if 'estimated_hours' in data:
+            task.estimated_hours = data['estimated_hours']
+        if 'actual_hours' in data:
+            task.actual_hours = data['actual_hours']
+        if 'deadline' in data and data['deadline']:
+            try:
+                task.deadline = datetime.fromisoformat(data['deadline'].replace('Z', '+00:00'))
+            except:
+                pass
+        if 'start_date' in data and data['start_date']:
+            try:
+                task.start_date = datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
+            except:
+                pass
         
         db.session.commit()
         
         return jsonify({
             'message': 'Tarea actualizada exitosamente',
-            'task': task.to_dict(include_assignees=True)
+            'task': task.to_dict()
         }), 200
         
     except Exception as e:
@@ -257,20 +251,20 @@ def update_task(task_id):
         }), 500
 
 
-@task_bp.route('/<task_id>', methods=['DELETE'])
+@tasks_bp.route('/<int:id>', methods=['DELETE'])
 @jwt_required()
-def delete_task(task_id):
+def delete_task(id):
     """
     Eliminar una tarea
     
     Path Params:
-        task_id: ID de la tarea
+        id: ID de la tarea
     
     Returns:
         JSON con mensaje de confirmación
     """
     try:
-        task = Task.query.get(task_id)
+        task = WebTask.query.get(id)
         
         if not task:
             return jsonify({'error': 'Tarea no encontrada'}), 404
@@ -290,101 +284,7 @@ def delete_task(task_id):
         }), 500
 
 
-@task_bp.route('/<task_id>/assignees', methods=['POST'])
-@jwt_required()
-def assign_person(task_id):
-    """
-    Asignar una persona a una tarea
-    
-    Path Params:
-        task_id: ID de la tarea
-    
-    Body JSON:
-        - person_id: str (requerido)
-    
-    Returns:
-        JSON con la asignación creada
-    """
-    try:
-        task = Task.query.get(task_id)
-        if not task:
-            return jsonify({'error': 'Tarea no encontrada'}), 404
-        
-        data = request.get_json()
-        person_id = data.get('person_id')
-        
-        if not person_id:
-            return jsonify({'error': 'person_id es requerido'}), 400
-        
-        person = Person.query.get(person_id)
-        if not person:
-            return jsonify({'error': 'Persona no encontrada'}), 404
-        
-        # Verificar si ya está asignado
-        existing = Assignee.query.filter_by(
-            task_id=task_id,
-            person_id=person_id
-        ).first()
-        
-        if existing:
-            return jsonify({'error': 'La persona ya está asignada a esta tarea'}), 409
-        
-        # Crear asignación
-        assignee = Assignee(task_id=task_id, person_id=person_id)
-        db.session.add(assignee)
-        db.session.commit()
-        
-        return jsonify({
-            'message': 'Persona asignada exitosamente',
-            'assignee': assignee.to_dict()
-        }), 201
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'error': 'Error al asignar persona',
-            'details': str(e)
-        }), 500
-
-
-@task_bp.route('/<task_id>/assignees/<person_id>', methods=['DELETE'])
-@jwt_required()
-def remove_assignee(task_id, person_id):
-    """
-    Remover una persona de una tarea
-    
-    Path Params:
-        task_id: ID de la tarea
-        person_id: ID de la persona
-    
-    Returns:
-        JSON con mensaje de confirmación
-    """
-    try:
-        assignee = Assignee.query.filter_by(
-            task_id=task_id,
-            person_id=person_id
-        ).first()
-        
-        if not assignee:
-            return jsonify({'error': 'Asignación no encontrada'}), 404
-        
-        db.session.delete(assignee)
-        db.session.commit()
-        
-        return jsonify({
-            'message': 'Asignación eliminada exitosamente'
-        }), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'error': 'Error al eliminar asignación',
-            'details': str(e)
-        }), 500
-
-
-@task_bp.route('/stats', methods=['GET'])
+@tasks_bp.route('/stats', methods=['GET'])
 @jwt_required()
 def get_stats():
     """
@@ -394,24 +294,33 @@ def get_stats():
         JSON con estadísticas
     """
     try:
-        total = Task.query.count()
-        completed = Task.query.filter(Task.status == 'Completed').count()
-        in_progress = Task.query.filter(Task.status == 'In - Progress').count()
-        pending = Task.query.filter(Task.status == 'Pending').count()
+        total = WebTask.query.count()
+        completed = WebTask.query.filter(WebTask.status == 'completada').count()
+        in_progress = WebTask.query.filter(WebTask.status == 'en_progreso').count()
+        pending = WebTask.query.filter(WebTask.status == 'pendiente').count()
+        delayed = WebTask.query.filter(WebTask.status == 'retrasada').count()
         
         # Contar por área
         areas = db.session.query(
-            Task.area,
-            db.func.count(Task.task_id)
-        ).group_by(Task.area).all()
+            WebTask.area,
+            db.func.count(WebTask.id)
+        ).group_by(WebTask.area).all()
+        
+        # Contar por prioridad
+        priorities = db.session.query(
+            WebTask.priority,
+            db.func.count(WebTask.id)
+        ).group_by(WebTask.priority).all()
         
         return jsonify({
             'total_tasks': total,
             'completed': completed,
             'in_progress': in_progress,
             'pending': pending,
+            'delayed': delayed,
             'completion_rate': round((completed / total * 100) if total > 0 else 0, 2),
-            'tasks_by_area': [{'area': a[0], 'count': a[1]} for a in areas]
+            'tasks_by_area': [{'area': a[0] or 'Sin área', 'count': a[1]} for a in areas],
+            'tasks_by_priority': [{'priority': p[0], 'count': p[1]} for p in priorities]
         }), 200
         
     except Exception as e:

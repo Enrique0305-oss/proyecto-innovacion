@@ -34,9 +34,10 @@ def create_app(config_class=None):
     
     # Crear carpeta de modelos ML si no existe
     import os
-    if not os.path.exists(app.config['MODELS_PATH']):
-        os.makedirs(app.config['MODELS_PATH'])
-        print(f"✅ Carpeta de modelos ML creada: {app.config['MODELS_PATH']}")
+    models_path = app.config.get('ML_MODELS_PATH', app.config.get('MODELS_PATH'))
+    if not os.path.exists(models_path):
+        os.makedirs(models_path, exist_ok=True)
+        print(f"✅ Carpeta de modelos ML creada: {models_path}")
     
     # Manejadores de errores globales
     register_error_handlers(app)

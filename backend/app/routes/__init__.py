@@ -10,7 +10,8 @@ def register_blueprints(app):
         app: Instancia de Flask
     """
     from app.routes.auth_routes import auth_bp
-    from app.routes.task_routes import task_bp
+    from app.routes.task_routes import tasks_bp
+    from app.routes.area_routes import areas_bp
     from app.routes.ml_routes import ml_bp
     
     # Prefijo base para todas las rutas de API
@@ -18,7 +19,8 @@ def register_blueprints(app):
     
     # Registrar blueprints
     app.register_blueprint(auth_bp, url_prefix=f'{api_prefix}/auth')
-    app.register_blueprint(task_bp, url_prefix=f'{api_prefix}/tasks')
+    app.register_blueprint(tasks_bp, url_prefix=f'{api_prefix}/tasks')
+    app.register_blueprint(areas_bp, url_prefix=f'{api_prefix}/areas')
     app.register_blueprint(ml_bp, url_prefix=f'{api_prefix}/ml')
     
     print("✅ Blueprints registrados correctamente")
