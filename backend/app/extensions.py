@@ -27,11 +27,19 @@ def init_extensions(app):
     # Flask-Migrate
     migrate.init_app(app, db)
     
-    # CORS
+    # CORS - Configuración completa y permisiva
     cors.init_app(
         app,
-        resources={r"/api/*": {"origins": app.config['CORS_ORIGINS']}},
-        supports_credentials=True
+        resources={
+            r"/*": {
+                "origins": "*",
+                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+                "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+                "expose_headers": ["Content-Type", "Authorization"],
+                "supports_credentials": False,
+                "max_age": 3600
+            }
+        }
     )
     
     # JWT

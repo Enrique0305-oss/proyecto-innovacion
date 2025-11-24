@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { api } from '../utils/api';
 
 export function UsersPage(): string {
   return `
@@ -53,22 +54,22 @@ export function UsersPage(): string {
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-label">Total Usuarios</div>
-              <div class="stat-value">5</div>
+              <div class="stat-value" id="totalUsers">0</div>
               <div class="stat-description">En el sistema</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Activos</div>
-              <div class="stat-value">4</div>
+              <div class="stat-value" id="activeUsers">0</div>
               <div class="stat-description">Usuarios activos</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Administradores</div>
-              <div class="stat-value">1</div>
+              <div class="stat-value" id="adminUsers">0</div>
               <div class="stat-description">Con permisos admin</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Supervisores</div>
-              <div class="stat-value">2</div>
+              <div class="stat-value" id="supervisorUsers">0</div>
               <div class="stat-description">Rol supervisor</div>
             </div>
           </div>
@@ -98,23 +99,10 @@ export function UsersPage(): string {
           <!-- Users Table -->
           <div class="users-section">
             <h3>Lista de Usuarios</h3>
-            <p class="section-subtitle">Total: 5 usuarios</p>
+            <p class="section-subtitle" id="usersCount">Cargando...</p>
 
-            <div class="users-table">
-              <div class="table-header">
-                <div class="th-cell">Usuario</div>
-                <div class="th-cell">Email</div>
-                <div class="th-cell">Rol</div>
-                <div class="th-cell">Área</div>
-                <div class="th-cell">Estado</div>
-                <div class="th-cell">Acciones</div>
-              </div>
-
-              ${generateUserRow('JP', 'Juan Pérez', 'juan.perez@processmart.com', 'Admin', 'TI', 'Activo', 'admin')}
-              ${generateUserRow('ML', 'María López', 'maria.lopez@processmart.com', 'Supervisor', 'Marketing', 'Activo', 'supervisor')}
-              ${generateUserRow('CR', 'Carlos Ruiz', 'carlos.ruiz@processmart.com', 'Colaborador', 'Operaciones', 'Activo', 'colaborador')}
-              ${generateUserRow('AG', 'Ana García', 'ana.garcia@processmart.com', 'Colaborador', 'TI', 'Activo', 'colaborador')}
-              ${generateUserRow('PS', 'Pedro Sánchez', 'pedro.sanchez@processmart.com', 'Supervisor', 'RRHH', 'Inactivo', 'supervisor')}
+            <div class="users-table" id="usersTableContainer">
+              <!-- Se cargará dinámicamente -->
             </div>
           </div>
         </div>
@@ -266,9 +254,126 @@ function generateUserRow(
   `;
 }
 
+// Función para cargar usuarios desde el API
+async function loadUsers() {
+  try {
+    const response = await api.getUsers();
+    const users = response.users || [];
+    
+    // Actualizar estadísticas
+    const totalUsers = users.length;
+    const activeUsers = users.filter((u: any) => u.status === 'active').length;
+    const adminUsers = users.filter((u: any) => u.role?.name === 'admin').length;
+    const supervisorUsers = users.filter((u: any) => u.role?.name === 'supervisor').length;
+    
+    const totalEl = document.getElementById('totalUsers');
+    const activeEl = document.getElementById('activeUsers');
+    const adminEl = document.getElementById('adminUsers');
+    const supervisorEl = document.getElementById('supervisorUsers');
+    const countEl = document.getElementById('usersCount');
+    
+    if (totalEl) totalEl.textContent = totalUsers.toString();
+    if (activeEl) activeEl.textContent = activeUsers.toString();
+    if (adminEl) adminEl.textContent = adminUsers.toString();
+    if (supervisorEl) supervisorEl.textContent = supervisorUsers.toString();
+    if (countEl) countEl.textContent = `Total: ${totalUsers} usuarios`;
+    
+    // Renderizar tabla
+    const container = document.getElementById('usersTableContainer');
+    if (!container) return;
+
+    if (users.length === 0) {
+      container.innerHTML = '<p style="text-align: center; padding: 40px;">No hay usuarios registrados</p>';
+      return;
+    }
+
+    const getInitials = (name: string) => {
+      const parts = name.split(' ');
+      return parts.length >= 2 
+        ? parts[0][0] + parts[1][0] 
+        : parts[0].substring(0, 2);
+    };
+
+    const getRoleColor = (roleName: string) => {
+      const colors: any = {
+        'admin': { bg: '#dc3545', text: 'white' },
+        'supervisor': { bg: '#007bff', text: 'white' },
+        'analyst': { bg: '#28a745', text: 'white' },
+        'user': { bg: '#28a745', text: 'white' }
+      };
+      return colors[roleName] || colors['user'];
+    };
+
+    container.innerHTML = `
+      <div class="table-header">
+        <div class="th-cell">Usuario</div>
+        <div class="th-cell">Email</div>
+        <div class="th-cell">Rol</div>
+        <div class="th-cell">Área</div>
+        <div class="th-cell">Estado</div>
+        <div class="th-cell">Acciones</div>
+      </div>
+      ${users.map((user: any) => {
+        const initials = getInitials(user.full_name || 'Usuario');
+        const roleName = user.role?.display_name || user.role?.name || 'Sin rol';
+        const roleColor = getRoleColor(user.role?.name || 'user');
+        const statusColor = user.status === 'active' 
+          ? { bg: '#28a745', text: 'white' }
+          : { bg: '#dc3545', text: 'white' };
+        const statusText = user.status === 'active' ? 'Activo' : 'Inactivo';
+
+        return `
+          <div class="table-row">
+            <div class="td-cell user-cell">
+              <div class="user-avatar">${initials}</div>
+              <span class="user-name">${user.full_name}</span>
+            </div>
+            <div class="td-cell">${user.email}</div>
+            <div class="td-cell">
+              <span class="role-badge" style="background: ${roleColor.bg}; color: ${roleColor.text};">
+                ${roleName}
+              </span>
+            </div>
+            <div class="td-cell">${user.area || '-'}</div>
+            <div class="td-cell">
+              <span class="status-badge" style="background: ${statusColor.bg}; color: ${statusColor.text};">
+                ${statusText}
+              </span>
+            </div>
+            <div class="td-cell actions-cell">
+              <button class="btn-icon" title="Editar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="btn-icon btn-delete" title="Eliminar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
+
+  } catch (error) {
+    console.error('Error al cargar usuarios:', error);
+    const container = document.getElementById('usersTableContainer');
+    if (container) {
+      container.innerHTML = '<p style="text-align: center; padding: 40px; color: red;">Error al cargar usuarios</p>';
+    }
+  }
+}
+
 export function initUsers(): void {
   // Initialize AI Assistant
   initAIAssistant();
+
+  // Cargar usuarios desde el API
+  loadUsers();
 
   // Modal controls
   const modal = document.getElementById('modalNewUser');
@@ -297,7 +402,7 @@ export function initUsers(): void {
 
   // Form submission
   const form = document.getElementById('formNewUser') as HTMLFormElement;
-  form?.addEventListener('submit', (e) => {
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const userName = (document.getElementById('userName') as HTMLInputElement).value;
@@ -313,17 +418,56 @@ export function initUsers(): void {
       return;
     }
 
-    console.log('Nuevo usuario:', {
-      name: userName,
-      email: userEmail,
-      role: userRole,
-      area: userArea,
-      active: userStatus
-    });
+    if (!userName || !userEmail || !userRole || !userArea || !userPassword) {
+      alert('Por favor complete todos los campos requeridos');
+      return;
+    }
 
-    alert(`Usuario ${userName} creado exitosamente`);
-    closeModal();
-    form.reset();
+    try {
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creando...';
+
+      // Mapear rol a role_id (1=admin, 2=supervisor, 3=colaborador)
+      const roleMap: { [key: string]: number } = {
+        'admin': 1,
+        'supervisor': 2,
+        'colaborador': 3
+      };
+
+      const response = await fetch('http://127.0.0.1:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          password: userPassword,
+          full_name: userName,
+          role_id: roleMap[userRole] || 3,
+          area: userArea,
+          status: userStatus ? 'active' : 'inactive'
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al crear usuario');
+      }
+
+      alert(`Usuario ${userName} creado exitosamente`);
+      closeModal();
+      form.reset();
+      window.location.reload();
+    } catch (error) {
+      console.error('Error al crear usuario:', error);
+      alert('Error al crear el usuario: ' + (error as Error).message);
+    } finally {
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Crear Usuario';
+    }
   });
 
   // Search functionality

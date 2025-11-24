@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { api } from '../utils/api';
 
 export function AreasPage(): string {
   return `
@@ -53,33 +54,29 @@ export function AreasPage(): string {
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-label">Total Áreas</div>
-              <div class="stat-value">5</div>
+              <div class="stat-value" id="totalAreas">--</div>
               <div class="stat-description">Departamentos activos</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Total Empleados</div>
-              <div class="stat-value">51</div>
-              <div class="stat-description">En todas las áreas</div>
+              <div class="stat-label">Áreas Activas</div>
+              <div class="stat-value" id="activeAreas">--</div>
+              <div class="stat-description">En operación</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Tareas Activas</div>
-              <div class="stat-value">107</div>
-              <div class="stat-description">En progreso</div>
+              <div class="stat-label">Áreas Inactivas</div>
+              <div class="stat-value" id="inactiveAreas">--</div>
+              <div class="stat-description">Suspendidas</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Eficiencia Promedio</div>
-              <div class="stat-value">83%</div>
-              <div class="stat-description">Global</div>
+              <div class="stat-label">Última Actualización</div>
+              <div class="stat-value" id="lastUpdate">--</div>
+              <div class="stat-description">Datos del sistema</div>
             </div>
           </div>
 
           <!-- Areas Grid -->
-          <div class="areas-grid">
-            ${generateAreaCard('TI', 'Tecnologías de la Información', 'Juan Pérez', 'JP', 12, 25, 88, 'Mejorando', 'success')}
-            ${generateAreaCard('Marketing', 'Marketing y Comunicaciones', 'María López', 'ML', 8, 18, 90, 'Mejorando', 'success')}
-            ${generateAreaCard('Operaciones', 'Operaciones y Procesos', 'Carlos Ruiz', 'CR', 15, 32, 72, 'Estable', 'warning')}
-            ${generateAreaCard('Ventas', 'Ventas y Comercial', 'Ana García', 'AG', 10, 20, 85, 'Mejorando', 'success')}
-            ${generateAreaCard('RRHH', 'Recursos Humanos', 'Pedro Sánchez', 'PS', 6, 12, 82, 'Estable', 'warning')}
+          <div class="areas-grid" id="areasContainer">
+            <p style="text-align: center; padding: 40px;">Cargando áreas...</p>
           </div>
         </div>
       </main>
@@ -244,9 +241,68 @@ function generateAreaCard(
   `;
 }
 
+async function loadAreas() {
+  try {
+    const response = await api.getAreas();
+    const areas = response.areas || [];
+    
+    // Actualizar estadísticas
+    const totalAreas = areas.length;
+    const activeAreas = areas.filter((a: any) => a.status === 'active').length;
+    const inactiveAreas = areas.filter((a: any) => a.status === 'inactive').length;
+    
+    const totalEl = document.getElementById('totalAreas');
+    const activeEl = document.getElementById('activeAreas');
+    const inactiveEl = document.getElementById('inactiveAreas');
+    const updateEl = document.getElementById('lastUpdate');
+    
+    if (totalEl) totalEl.textContent = totalAreas.toString();
+    if (activeEl) activeEl.textContent = activeAreas.toString();
+    if (inactiveEl) inactiveEl.textContent = inactiveAreas.toString();
+    if (updateEl) updateEl.textContent = new Date().toLocaleDateString();
+    
+    // Renderizar áreas
+    const container = document.getElementById('areasContainer');
+    if (!container) return;
+    
+    if (areas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; padding: 40px;">No hay áreas registradas</p>';
+      return;
+    }
+    
+    container.innerHTML = areas.map((area: any) => {
+      const initials = area.name.substring(0, 2).toUpperCase();
+      const trend = area.status === 'active' ? 'Activo' : 'Inactivo';
+      const trendType = area.status === 'active' ? 'success' : 'warning';
+      
+      return generateAreaCard(
+        area.name,
+        area.description || 'Sin descripción',
+        area.supervisor_name || 'Sin supervisor',
+        initials,
+        area.employee_count || 0,
+        area.task_count || 0,
+        area.efficiency_score || 0,
+        trend,
+        trendType
+      );
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error al cargar áreas:', error);
+    const container = document.getElementById('areasContainer');
+    if (container) {
+      container.innerHTML = '<p style="text-align: center; padding: 40px; color: red;">Error al cargar áreas</p>';
+    }
+  }
+}
+
 export function initAreas(): void {
   // Initialize AI Assistant
   initAIAssistant();
+  
+  // Cargar áreas desde el backend
+  loadAreas();
 
   // Modal controls
   const modal = document.getElementById('modalNewArea');
@@ -275,7 +331,7 @@ export function initAreas(): void {
 
   // Form submission
   const form = document.getElementById('formNewArea') as HTMLFormElement;
-  form?.addEventListener('submit', (e) => {
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const areaName = (document.getElementById('areaName') as HTMLInputElement).value;
@@ -283,16 +339,36 @@ export function initAreas(): void {
     const areaSupervisor = (document.getElementById('areaSupervisor') as HTMLSelectElement).value;
     const areaEfficiency = (document.getElementById('areaEfficiency') as HTMLInputElement).value;
 
-    console.log('Nueva área:', {
-      name: areaName,
-      description: areaDescription,
-      supervisor: areaSupervisor,
-      efficiency: areaEfficiency
-    });
+    if (!areaName || !areaSupervisor || !areaEfficiency) {
+      alert('Por favor complete todos los campos requeridos');
+      return;
+    }
 
-    alert(`Área "${areaName}" creada exitosamente`);
-    closeModal();
-    form.reset();
+    try {
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creando...';
+
+      await api.createArea({
+        name: areaName,
+        description: areaDescription,
+        supervisor_person_id: areaSupervisor,
+        efficiency_score: parseFloat(areaEfficiency),
+        employee_count: 0
+      });
+
+      alert(`Área "${areaName}" creada exitosamente`);
+      closeModal();
+      form.reset();
+      window.location.reload();
+    } catch (error) {
+      console.error('Error al crear área:', error);
+      alert('Error al crear el área: ' + (error as Error).message);
+    } finally {
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Crear Área';
+    }
   });
 
   // Mobile menu

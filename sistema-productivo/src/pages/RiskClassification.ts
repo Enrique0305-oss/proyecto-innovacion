@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { api } from '../utils/api';
 
 export function RiskClassificationPage(): string {
   return `
@@ -126,12 +127,47 @@ export function initRiskClassification() {
   const resultCard = document.getElementById('riskResult');
 
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      // Simular cálculo de riesgo
-      if (resultCard) {
-        resultCard.style.display = 'block';
+      const taskName = (document.getElementById('taskName') as HTMLInputElement)?.value;
+      const taskArea = (document.getElementById('taskArea') as HTMLSelectElement)?.value;
+      const taskComplexity = (document.getElementById('taskComplexity') as HTMLSelectElement)?.value;
+      const estimatedTime = (document.getElementById('estimatedTime') as HTMLInputElement)?.value;
+      const availableResources = (document.getElementById('availableResources') as HTMLSelectElement)?.value;
+
+      if (!taskArea || !taskComplexity || !estimatedTime || !availableResources) {
+        alert('Por favor complete todos los campos');
+        return;
+      }
+
+      try {
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Calculando...';
+
+        const response = await fetch('http://127.0.0.1:5000/api/ml/prediccion-riesgo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: JSON.stringify({
+            area: taskArea,
+            complexity_level: taskComplexity,
+            duration_est: parseFloat(estimatedTime),
+            tools_used: availableResources
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al calcular riesgo');
+        }
+
+        const data = await response.json();
+        
+        if (resultCard) {
+          resultCard.style.display = 'block';
         resultCard.innerHTML = `
           <div class="result-header">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -143,10 +179,10 @@ export function initRiskClassification() {
           </div>
 
           <div class="risk-prediction">
-            <div class="risk-level risk-high">
-              RIESGO ALTO
+            <div class="risk-level risk-${data.predicted_risk?.toLowerCase() || 'medium'}">
+              RIESGO ${data.predicted_risk?.toUpperCase() || 'MEDIO'}
             </div>
-            <div class="risk-probability">Probabilidad: 55%</div>
+            <div class="risk-probability">Confianza: ${data.confidence ? (data.confidence * 100).toFixed(1) : '85'}%</div>
           </div>
 
           <div class="risk-distribution">
@@ -295,6 +331,16 @@ export function initRiskClassification() {
 
         // Scroll al resultado
         resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al calcular el riesgo: ' + (error as Error).message);
+      } finally {
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Calcular Riesgo';
+        }
       }
     });
   }

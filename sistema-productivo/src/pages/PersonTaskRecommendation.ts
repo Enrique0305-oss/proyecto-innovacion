@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { api } from '../utils/api';
 
 export function PersonTaskRecommendationPage(): string {
   return `

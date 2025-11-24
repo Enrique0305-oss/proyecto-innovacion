@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { api } from '../utils/api';
 
 export function DurationPredictionPage(): string {
   return `
@@ -126,13 +127,48 @@ export function initDurationPrediction() {
   const resultCard = document.getElementById('durationResult');
 
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const estimatedTime = (document.getElementById('estimatedTime') as HTMLInputElement).value;
+      const taskName = (document.getElementById('taskName') as HTMLInputElement)?.value;
+      const taskArea = (document.getElementById('taskArea') as HTMLSelectElement)?.value;
+      const taskComplexity = (document.getElementById('taskComplexity') as HTMLSelectElement)?.value;
+      const estimatedTime = (document.getElementById('estimatedTime') as HTMLInputElement)?.value;
+      const teamSize = (document.getElementById('teamSize') as HTMLSelectElement)?.value;
+
+      if (!taskArea || !taskComplexity || !estimatedTime) {
+        alert('Por favor complete todos los campos requeridos');
+        return;
+      }
+
+      try {
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Estimando...';
+
+        const response = await fetch('http://127.0.0.1:5000/api/ml/tiempo-real', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: JSON.stringify({
+            area: taskArea,
+            complexity_level: taskComplexity,
+            duration_est: parseFloat(estimatedTime)
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al estimar duración');
+        }
+
+        const data = await response.json();
+        const predictedDuration = data.predicted_duration || parseFloat(estimatedTime) * 1.35;
+        const difference = predictedDuration - parseFloat(estimatedTime);
+        const percentDiff = ((difference / parseFloat(estimatedTime)) * 100).toFixed(0);
       
-      // Simular predicción de duración
-      if (resultCard && estimatedTime) {
+      if (resultCard) {
         resultCard.innerHTML = `
           <div class="duration-results">
             <!-- Estimación Inicial -->
@@ -151,15 +187,15 @@ export function initDurationPrediction() {
                 </svg>
               </div>
               <h4>Predicción IA</h4>
-              <div class="duration-value prediction">13.5 días</div>
+              <div class="duration-value prediction">${predictedDuration.toFixed(1)} días</div>
               <p class="duration-label">Duración estimada real</p>
             </div>
 
             <!-- Diferencia -->
             <div class="duration-card">
               <h4>Diferencia</h4>
-              <div class="duration-value difference">+3.5 días</div>
-              <p class="duration-label">(35% más)</p>
+              <div class="duration-value difference">${difference > 0 ? '+' : ''}${difference.toFixed(1)} días</div>
+              <p class="duration-label">(${percentDiff}% ${difference > 0 ? 'más' : 'menos'})</p>
             </div>
           </div>
 
@@ -315,6 +351,16 @@ export function initDurationPrediction() {
 
         // Scroll al resultado
         resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al estimar la duración: ' + (error as Error).message);
+      } finally {
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Estimar Duración Real';
+        }
       }
     });
   }

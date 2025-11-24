@@ -15,7 +15,6 @@ tasks_bp = Blueprint('tasks', __name__)
 
 
 @tasks_bp.route('/', methods=['GET'])
-@jwt_required()
 def get_tasks():
     """
     Obtener lista de tareas con filtros y paginación
@@ -111,7 +110,6 @@ def get_task(id):
 
 
 @tasks_bp.route('/', methods=['POST'])
-@jwt_required()
 def create_task():
     """
     Crear una nueva tarea
@@ -130,7 +128,6 @@ def create_task():
         JSON con la tarea creada
     """
     try:
-        user_id = get_jwt_identity()
         data = request.get_json()
         
         if not data:
@@ -154,7 +151,7 @@ def create_task():
             assigned_to=data.get('assigned_to'),
             complexity_score=data.get('complexity_score'),
             estimated_hours=data.get('estimated_hours'),
-            created_by=user_id
+            created_by=None  # Sin usuario por ahora
         )
         
         # Deadline
@@ -181,7 +178,6 @@ def create_task():
 
 
 @tasks_bp.route('/<int:id>', methods=['PUT'])
-@jwt_required()
 def update_task(id):
     """
     Actualizar una tarea existente
@@ -252,7 +248,6 @@ def update_task(id):
 
 
 @tasks_bp.route('/<int:id>', methods=['DELETE'])
-@jwt_required()
 def delete_task(id):
     """
     Eliminar una tarea
@@ -285,7 +280,6 @@ def delete_task(id):
 
 
 @tasks_bp.route('/stats', methods=['GET'])
-@jwt_required()
 def get_stats():
     """
     Obtener estadísticas generales de tareas

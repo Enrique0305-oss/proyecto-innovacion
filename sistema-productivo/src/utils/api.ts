@@ -36,6 +36,7 @@ class ApiService {
   async login(email: string, password: string): Promise<LoginResponse> {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -74,6 +75,7 @@ class ApiService {
     const url = params ? `${API_URL}/tasks?${params}` : `${API_URL}/tasks`;
     
     const response = await fetch(url, {
+      mode: 'cors',
       headers: this.getHeaders(),
     });
 
@@ -87,6 +89,7 @@ class ApiService {
   async createTask(task: any) {
     const response = await fetch(`${API_URL}/tasks`, {
       method: 'POST',
+      mode: 'cors',
       headers: this.getHeaders(),
       body: JSON.stringify(task),
     });
@@ -102,6 +105,7 @@ class ApiService {
   async updateTask(id: number, task: any) {
     const response = await fetch(`${API_URL}/tasks/${id}`, {
       method: 'PUT',
+      mode: 'cors',
       headers: this.getHeaders(),
       body: JSON.stringify(task),
     });
@@ -117,6 +121,7 @@ class ApiService {
   async deleteTask(id: number) {
     const response = await fetch(`${API_URL}/tasks/${id}`, {
       method: 'DELETE',
+      mode: 'cors',
       headers: this.getHeaders(),
     });
 
@@ -129,6 +134,7 @@ class ApiService {
 
   async getTaskStats() {
     const response = await fetch(`${API_URL}/tasks/stats`, {
+      mode: 'cors',
       headers: this.getHeaders(),
     });
 
@@ -144,6 +150,7 @@ class ApiService {
     const url = status ? `${API_URL}/areas?status=${status}` : `${API_URL}/areas`;
     
     const response = await fetch(url, {
+      mode: 'cors',
       headers: this.getHeaders(),
     });
 
@@ -157,6 +164,7 @@ class ApiService {
   async createArea(area: any) {
     const response = await fetch(`${API_URL}/areas`, {
       method: 'POST',
+      mode: 'cors',
       headers: this.getHeaders(),
       body: JSON.stringify(area),
     });
@@ -172,6 +180,7 @@ class ApiService {
   async updateArea(id: number, area: any) {
     const response = await fetch(`${API_URL}/areas/${id}`, {
       method: 'PUT',
+      mode: 'cors',
       headers: this.getHeaders(),
       body: JSON.stringify(area),
     });
@@ -187,12 +196,30 @@ class ApiService {
   async deleteArea(id: number) {
     const response = await fetch(`${API_URL}/areas/${id}`, {
       method: 'DELETE',
+      mode: 'cors',
       headers: this.getHeaders(),
     });
 
     if (!response.ok) {
       const error: ApiError = await response.json();
       throw new Error(error.error || 'Error al eliminar área');
+    }
+
+    return response.json();
+  }
+
+  // Users endpoints
+  async getUsers(filters?: any) {
+    const params = new URLSearchParams(filters).toString();
+    const url = params ? `${API_URL}/users?${params}` : `${API_URL}/users`;
+    
+    const response = await fetch(url, {
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al obtener usuarios');
     }
 
     return response.json();

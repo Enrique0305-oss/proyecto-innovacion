@@ -14,7 +14,6 @@ areas_bp = Blueprint('areas', __name__)
 
 
 @areas_bp.route('/', methods=['GET'])
-@jwt_required()
 def get_areas():
     """
     Obtener lista de áreas

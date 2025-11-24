@@ -19,6 +19,9 @@ def create_app(config_class=None):
     """
     app = Flask(__name__)
     
+    # Desactivar redirección automática de rutas con/sin slash
+    app.url_map.strict_slashes = False
+    
     # Cargar configuración
     if config_class:
         app.config.from_object(config_class)

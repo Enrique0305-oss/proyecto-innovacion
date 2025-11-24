@@ -31,34 +31,34 @@ export function DashboardPage(): string {
           <!-- Métricas principales -->
           <div class="metrics-grid">
             ${MetricCard({
-              title: 'Eficiencia General',
-              value: '85%',
-              change: '+5.2%',
-              subtitle: 'vs. mes anterior',
+              title: 'Tasa de Completación',
+              value: '<span id="completionRate">--%</span>',
+              change: '<span id="completionChange">--</span>',
+              subtitle: 'tareas completadas',
               icon: 'efficiency',
               changeType: 'positive'
             })}
             ${MetricCard({
-              title: 'Tiempo Promedio',
-              value: '4.2 días',
-              change: '-12%',
-              subtitle: 'vs. mes anterior',
+              title: 'Total de Tareas',
+              value: '<span id="totalTasks">--</span>',
+              change: '<span id="activeChange">-- activas</span>',
+              subtitle: 'en el sistema',
               icon: 'time',
               changeType: 'positive'
             })}
             ${MetricCard({
-              title: 'Cuellos de Botella',
-              value: '3 Detectados',
-              change: '+1',
+              title: 'Tareas Retrasadas',
+              value: '<span id="delayedTasks">--</span>',
+              change: '<span id="delayedChange">--</span>',
               subtitle: 'requieren atención',
               icon: 'warning',
               changeType: 'negative'
             })}
             ${MetricCard({
-              title: 'Predicciones Activas',
-              value: '24 Modelos',
-              change: '95% precisión',
-              subtitle: 'en ejecución',
+              title: 'En Progreso',
+              value: '<span id="inProgressTasks">--</span>',
+              change: '<span id="progressChange">--</span>',
+              subtitle: 'tareas activas',
               icon: 'prediction',
               changeType: 'positive'
             })}
@@ -69,46 +69,12 @@ export function DashboardPage(): string {
             <!-- Productividad por Área -->
             <div class="chart-card">
               <div class="chart-header">
-                <h3>Productividad por Área</h3>
-                <p class="chart-subtitle">Puntaje de eficiencia por departamento</p>
+                <h3>Tareas por Área</h3>
+                <p class="chart-subtitle">Distribución de tareas por departamento</p>
               </div>
               <div class="chart-content">
-                <div class="bar-chart">
-                  <div class="bar-item">
-                    <div class="bar-label">Ventas</div>
-                    <div class="bar-container">
-                      <div class="bar-fill" style="--target-width: 88%"></div>
-                    </div>
-                    <div class="bar-value">88</div>
-                  </div>
-                  <div class="bar-item">
-                    <div class="bar-label">Operaciones</div>
-                    <div class="bar-container">
-                      <div class="bar-fill" style="--target-width: 72%"></div>
-                    </div>
-                    <div class="bar-value">72</div>
-                  </div>
-                  <div class="bar-item">
-                    <div class="bar-label">Soporte</div>
-                    <div class="bar-container">
-                      <div class="bar-fill" style="--target-width: 78%"></div>
-                    </div>
-                    <div class="bar-value">78</div>
-                  </div>
-                  <div class="bar-item">
-                    <div class="bar-label">Marketing</div>
-                    <div class="bar-container">
-                      <div class="bar-fill" style="--target-width: 92%"></div>
-                    </div>
-                    <div class="bar-value">92</div>
-                  </div>
-                  <div class="bar-item">
-                    <div class="bar-label">TI</div>
-                    <div class="bar-container">
-                      <div class="bar-fill" style="--target-width: 85%"></div>
-                    </div>
-                    <div class="bar-value">85</div>
-                  </div>
+                <div class="bar-chart" id="areaChart">
+                  <p style="text-align: center; padding: 40px;">Cargando datos...</p>
                 </div>
               </div>
             </div>
@@ -120,33 +86,30 @@ export function DashboardPage(): string {
                 <p class="chart-subtitle">Distribución actual</p>
               </div>
               <div class="chart-content">
-                <div class="donut-chart">
-                  <svg width="200" height="200" viewBox="0 0 200 200">
-                    <circle cx="100" cy="100" r="60" fill="none" stroke="#005a9c" stroke-width="40" stroke-dasharray="283 377" transform="rotate(-90 100 100)"/>
-                    <circle cx="100" cy="100" r="60" fill="none" stroke="#00bcd4" stroke-width="40" stroke-dasharray="57 603" stroke-dashoffset="-283" transform="rotate(-90 100 100)"/>
-                    <circle cx="100" cy="100" r="60" fill="none" stroke="#ff5252" stroke-width="40" stroke-dasharray="28 632" stroke-dashoffset="-340" transform="rotate(-90 100 100)"/>
-                    <circle cx="100" cy="100" r="60" fill="none" stroke="#ffc107" stroke-width="40" stroke-dasharray="9 651" stroke-dashoffset="-368" transform="rotate(-90 100 100)"/>
+                <div class="donut-chart" id="statusDonutContainer">
+                  <svg width="200" height="200" viewBox="0 0 200 200" id="statusDonut">
+                    <!-- Se generará dinámicamente -->
                   </svg>
                   <div class="donut-center">
-                    <div class="donut-total">100%</div>
+                    <div class="donut-total" id="donutTotal">--</div>
                   </div>
                 </div>
-                <div class="donut-legend">
+                <div class="donut-legend" id="statusLegend">
                   <div class="legend-item">
-                    <span class="legend-color" style="background: #005a9c"></span>
-                    <span class="legend-label">Completadas</span>
+                    <span class="legend-color" style="background: #28a745"></span>
+                    <span class="legend-label">Completadas: <span id="completedCount">--</span></span>
                   </div>
                   <div class="legend-item">
-                    <span class="legend-color" style="background: #00bcd4"></span>
-                    <span class="legend-label">En Progreso</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background: #ff5252"></span>
-                    <span class="legend-label">Pendientes</span>
+                    <span class="legend-color" style="background: #007bff"></span>
+                    <span class="legend-label">En Progreso: <span id="inProgressCount">--</span></span>
                   </div>
                   <div class="legend-item">
                     <span class="legend-color" style="background: #ffc107"></span>
-                    <span class="legend-label">Bloqueadas</span>
+                    <span class="legend-label">Pendientes: <span id="pendingCount">--</span></span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-color" style="background: #dc3545"></span>
+                    <span class="legend-label">Retrasadas: <span id="delayedCount">--</span></span>
                   </div>
                 </div>
               </div>
@@ -227,66 +190,11 @@ export function DashboardPage(): string {
           <!-- Tareas Críticas -->
           <div class="chart-card">
             <div class="chart-header">
-              <h3>Tareas Críticas en Progreso</h3>
-              <p class="chart-subtitle">Requieren seguimiento prioritario</p>
+              <h3>Tareas Recientes</h3>
+              <p class="chart-subtitle">Últimas tareas del sistema</p>
             </div>
-            <div class="tasks-list">
-              <div class="task-item">
-                <div class="task-info">
-                  <div class="task-id">T-001</div>
-                  <div class="task-title">Implementación CRM</div>
-                  <div class="task-area">TI</div>
-                  <div class="task-priority high">Bajo</div>
-                </div>
-                <div class="task-progress">
-                  <div class="progress-bar">
-                    <div class="progress-fill" style="width: 75%"></div>
-                  </div>
-                  <div class="progress-value">75%</div>
-                </div>
-              </div>
-              <div class="task-item">
-                <div class="task-info">
-                  <div class="task-id">T-002</div>
-                  <div class="task-title">Campaña Q4</div>
-                  <div class="task-area">Marketing</div>
-                  <div class="task-priority medium">Medio</div>
-                </div>
-                <div class="task-progress">
-                  <div class="progress-bar">
-                    <div class="progress-fill" style="width: 45%"></div>
-                  </div>
-                  <div class="progress-value">45%</div>
-                </div>
-              </div>
-              <div class="task-item">
-                <div class="task-info">
-                  <div class="task-id">T-003</div>
-                  <div class="task-title">Auditoría Procesos</div>
-                  <div class="task-area">Operaciones</div>
-                  <div class="task-priority high">Alto</div>
-                </div>
-                <div class="task-progress">
-                  <div class="progress-bar">
-                    <div class="progress-fill" style="width: 30%"></div>
-                  </div>
-                  <div class="progress-value">30%</div>
-                </div>
-              </div>
-              <div class="task-item">
-                <div class="task-info">
-                  <div class="task-id">T-004</div>
-                  <div class="task-title">Capacitación Equipo</div>
-                  <div class="task-area">RRHH</div>
-                  <div class="task-priority low">Bajo</div>
-                </div>
-                <div class="task-progress">
-                  <div class="progress-bar">
-                    <div class="progress-fill" style="width: 90%"></div>
-                  </div>
-                  <div class="progress-value">90%</div>
-                </div>
-              </div>
+            <div class="tasks-list" id="recentTasksList">
+              <p style="text-align: center; padding: 40px;">Cargando tareas...</p>
             </div>
           </div>
         </div>
@@ -300,15 +208,177 @@ export async function initDashboard() {
   initAIAssistant();
   
   // Cargar estadísticas del backend
+  await loadDashboardData();
+}
+
+async function loadDashboardData() {
   try {
     const { api } = await import('../utils/api');
-    const stats = await api.getTaskStats();
     
+    // Obtener estadísticas
+    const stats = await api.getTaskStats();
     console.log('📊 Estadísticas cargadas:', stats);
     
-    // Aquí puedes actualizar los valores del dashboard con los datos reales
-    // Por ahora solo mostramos en consola para verificar la conexión
+    // Actualizar métricas principales
+    const completionRateEl = document.getElementById('completionRate');
+    const totalTasksEl = document.getElementById('totalTasks');
+    const delayedTasksEl = document.getElementById('delayedTasks');
+    const inProgressTasksEl = document.getElementById('inProgressTasks');
+    const activeChangeEl = document.getElementById('activeChange');
+    const delayedChangeEl = document.getElementById('delayedChange');
+    const progressChangeEl = document.getElementById('progressChange');
+    
+    if (completionRateEl) completionRateEl.textContent = `${stats.completion_rate}%`;
+    if (totalTasksEl) totalTasksEl.textContent = stats.total_tasks.toString();
+    if (delayedTasksEl) delayedTasksEl.textContent = stats.delayed.toString();
+    if (inProgressTasksEl) inProgressTasksEl.textContent = stats.in_progress.toString();
+    if (activeChangeEl) activeChangeEl.textContent = `${stats.in_progress + stats.pending} activas`;
+    if (delayedChangeEl) delayedChangeEl.textContent = stats.delayed > 0 ? 'Atención requerida' : 'Todo al día';
+    if (progressChangeEl) progressChangeEl.textContent = `${stats.pending} pendientes`;
+    
+    // Actualizar contadores en leyenda del donut
+    const completedCountEl = document.getElementById('completedCount');
+    const inProgressCountEl = document.getElementById('inProgressCount');
+    const pendingCountEl = document.getElementById('pendingCount');
+    const delayedCountEl = document.getElementById('delayedCount');
+    const donutTotalEl = document.getElementById('donutTotal');
+    
+    if (completedCountEl) completedCountEl.textContent = stats.completed.toString();
+    if (inProgressCountEl) inProgressCountEl.textContent = stats.in_progress.toString();
+    if (pendingCountEl) pendingCountEl.textContent = stats.pending.toString();
+    if (delayedCountEl) delayedCountEl.textContent = stats.delayed.toString();
+    if (donutTotalEl) donutTotalEl.textContent = `${stats.total_tasks}`;
+    
+    // Generar gráfico de dona
+    generateDonutChart(stats);
+    
+    // Renderizar gráfico de áreas
+    renderAreaChart(stats.tasks_by_area || []);
+    
+    // Obtener y mostrar tareas recientes
+    const tasksResponse = await api.getTasks({ per_page: 5 });
+    renderRecentTasks(tasksResponse.tasks || []);
+    
   } catch (error) {
-    console.error('Error al cargar estadísticas:', error);
+    console.error('Error al cargar datos del dashboard:', error);
   }
+}
+
+function generateDonutChart(stats: any) {
+  const svg = document.getElementById('statusDonut');
+  if (!svg) return;
+  
+  const total = stats.total_tasks;
+  if (total === 0) {
+    svg.innerHTML = '<text x="100" y="100" text-anchor="middle" font-size="14" fill="#6c757d">Sin datos</text>';
+    return;
+  }
+  
+  const circumference = 2 * Math.PI * 60; // radio = 60
+  const completed = stats.completed;
+  const inProgress = stats.in_progress;
+  const pending = stats.pending;
+  const delayed = stats.delayed;
+  
+  const completedDash = (completed / total) * circumference;
+  const inProgressDash = (inProgress / total) * circumference;
+  const pendingDash = (pending / total) * circumference;
+  const delayedDash = (delayed / total) * circumference;
+  
+  let offset = 0;
+  
+  svg.innerHTML = `
+    ${completed > 0 ? `<circle cx="100" cy="100" r="60" fill="none" stroke="#28a745" stroke-width="40" 
+      stroke-dasharray="${completedDash} ${circumference}" 
+      stroke-dashoffset="${offset}" 
+      transform="rotate(-90 100 100)"/>` : ''}
+    ${inProgress > 0 ? `<circle cx="100" cy="100" r="60" fill="none" stroke="#007bff" stroke-width="40" 
+      stroke-dasharray="${inProgressDash} ${circumference}" 
+      stroke-dashoffset="${offset -= completedDash}" 
+      transform="rotate(-90 100 100)"/>` : ''}
+    ${pending > 0 ? `<circle cx="100" cy="100" r="60" fill="none" stroke="#ffc107" stroke-width="40" 
+      stroke-dasharray="${pendingDash} ${circumference}" 
+      stroke-dashoffset="${offset -= inProgressDash}" 
+      transform="rotate(-90 100 100)"/>` : ''}
+    ${delayed > 0 ? `<circle cx="100" cy="100" r="60" fill="none" stroke="#dc3545" stroke-width="40" 
+      stroke-dasharray="${delayedDash} ${circumference}" 
+      stroke-dashoffset="${offset -= pendingDash}" 
+      transform="rotate(-90 100 100)"/>` : ''}
+  `;
+}
+
+function renderAreaChart(areas: any[]) {
+  const container = document.getElementById('areaChart');
+  if (!container) return;
+  
+  if (areas.length === 0) {
+    container.innerHTML = '<p style="text-align: center; padding: 40px;">No hay datos por área</p>';
+    return;
+  }
+  
+  // Encontrar el máximo para calcular porcentajes
+  const maxCount = Math.max(...areas.map(a => a.count));
+  
+  container.innerHTML = areas.map(area => {
+    const percentage = maxCount > 0 ? (area.count / maxCount * 100) : 0;
+    return `
+      <div class="bar-item">
+        <div class="bar-label">${area.area}</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="--target-width: ${percentage}%"></div>
+        </div>
+        <div class="bar-value">${area.count}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderRecentTasks(tasks: any[]) {
+  const container = document.getElementById('recentTasksList');
+  if (!container) return;
+  
+  if (tasks.length === 0) {
+    container.innerHTML = '<p style="text-align: center; padding: 40px;">No hay tareas registradas</p>';
+    return;
+  }
+  
+  const getPriorityClass = (priority: string) => {
+    const map: any = { 'alta': 'high', 'media': 'medium', 'baja': 'low' };
+    return map[priority] || 'low';
+  };
+  
+  const getPriorityText = (priority: string) => {
+    const map: any = { 'alta': 'Alto', 'media': 'Medio', 'baja': 'Bajo' };
+    return map[priority] || priority;
+  };
+  
+  const getProgress = (status: string) => {
+    const map: any = {
+      'pendiente': 0,
+      'en_progreso': 50,
+      'completada': 100,
+      'retrasada': 30
+    };
+    return map[status] || 0;
+  };
+  
+  container.innerHTML = tasks.map(task => {
+    const progress = getProgress(task.status);
+    return `
+      <div class="task-item">
+        <div class="task-info">
+          <div class="task-id">T-${String(task.id).padStart(3, '0')}</div>
+          <div class="task-title">${task.title}</div>
+          <div class="task-area">${task.area || 'Sin área'}</div>
+          <div class="task-priority ${getPriorityClass(task.priority)}">${getPriorityText(task.priority)}</div>
+        </div>
+        <div class="task-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+          </div>
+          <div class="progress-value">${progress}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
