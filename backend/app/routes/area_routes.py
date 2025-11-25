@@ -95,7 +95,7 @@ def create_area():
         JSON con el área creada
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         # Verificar permisos
@@ -161,7 +161,7 @@ def update_area(id):
         JSON con el área actualizada
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         # Verificar permisos
@@ -222,7 +222,7 @@ def delete_area(id):
         JSON con mensaje de confirmación
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         # Verificar permisos

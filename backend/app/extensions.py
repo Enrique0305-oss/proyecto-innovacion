@@ -2,6 +2,7 @@
 Extensiones de Flask
 Inicialización de SQLAlchemy, CORS, Migrate, JWT, etc.
 """
+from flask import jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -44,5 +45,34 @@ def init_extensions(app):
     
     # JWT
     jwt.init_app(app)
+    
+    # Manejadores de errores de JWT
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'error': 'Token expirado',
+            'message': 'El token de autenticación ha expirado'
+        }), 401
+    
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        return jsonify({
+            'error': 'Token inválido',
+            'message': 'La firma del token es inválida'
+        }), 401
+    
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        return jsonify({
+            'error': 'Token requerido',
+            'message': 'Se requiere un token de autenticación para acceder a este recurso'
+        }), 401
+    
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'error': 'Token revocado',
+            'message': 'El token ha sido revocado'
+        }), 401
     
     return app

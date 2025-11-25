@@ -70,8 +70,8 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        # Crear token JWT
-        access_token = create_access_token(identity=new_user.id)
+        # Crear token JWT (identity debe ser string)
+        access_token = create_access_token(identity=str(new_user.id))
         
         return jsonify({
             'message': 'Usuario registrado exitosamente',
@@ -132,8 +132,8 @@ def login():
         user.last_login = datetime.utcnow()
         db.session.commit()
         
-        # Crear token JWT
-        access_token = create_access_token(identity=user.id)
+        # Crear token JWT (identity debe ser string)
+        access_token = create_access_token(identity=str(user.id))
         
         return jsonify({
             'message': 'Login exitoso',
@@ -161,7 +161,7 @@ def get_current_user():
         JSON con la información del usuario
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         if not user:
@@ -195,7 +195,7 @@ def change_password():
         JSON con mensaje de éxito
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         if not user:
@@ -248,7 +248,7 @@ def list_users():
         JSON con lista paginada de usuarios
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         current_user = WebUser.query.get(user_id)
         
         # Verificar permisos

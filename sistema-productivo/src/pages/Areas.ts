@@ -113,11 +113,6 @@ export function AreasPage(): string {
               <label for="areaSupervisor">Asignar Supervisor</label>
               <select id="areaSupervisor" required>
                 <option value="">Seleccionar supervisor</option>
-                <option value="1">Juan Pérez</option>
-                <option value="2">María López</option>
-                <option value="3">Carlos Ruiz</option>
-                <option value="4">Ana García</option>
-                <option value="5">Pedro Sánchez</option>
               </select>
             </div>
 
@@ -241,6 +236,34 @@ function generateAreaCard(
   `;
 }
 
+async function loadSupervisors() {
+  try {
+    const response = await api.getPeople();
+    const people = response.persons || [];
+    
+    const supervisorSelect = document.getElementById('areaSupervisor') as HTMLSelectElement;
+    if (supervisorSelect) {
+      // Mantener la opción por defecto
+      supervisorSelect.innerHTML = '<option value="">Seleccionar supervisor</option>';
+      
+      // Agregar personas como opciones
+      people.forEach((person: any) => {
+        const option = document.createElement('option');
+        option.value = person.person_id;
+        option.textContent = `${person.person_id} - ${person.role || 'Sin rol'}`;
+        supervisorSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error al cargar supervisores:', error);
+    // Si falla, dejamos las opciones por defecto vacías
+    const supervisorSelect = document.getElementById('areaSupervisor') as HTMLSelectElement;
+    if (supervisorSelect) {
+      supervisorSelect.innerHTML = '<option value="">No se pudieron cargar supervisores</option>';
+    }
+  }
+}
+
 async function loadAreas() {
   try {
     const response = await api.getAreas();
@@ -324,7 +347,10 @@ export function initAreas(): void {
     document.body.style.overflow = '';
   };
 
-  btnNewArea?.addEventListener('click', openModal);
+  btnNewArea?.addEventListener('click', () => {
+    openModal();
+    loadSupervisors(); // Cargar supervisores al abrir el modal
+  });
   btnCloseModal?.addEventListener('click', closeModal);
   btnCancelModal?.addEventListener('click', closeModal);
   modalOverlay?.addEventListener('click', closeModal);

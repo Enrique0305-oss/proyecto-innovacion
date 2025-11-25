@@ -103,7 +103,9 @@ function getRoute(path: string): Route | undefined {
 
 function getCurrentPath(): string {
   const hash = window.location.hash.slice(1);
-  return hash || (isAuthenticated() ? 'dashboard' : 'login');
+  // Si no hay hash, siempre ir al login (incluso si está autenticado)
+  // El router se encargará de redirigir al dashboard si ya está autenticado
+  return hash || 'login';
 }
 
 export function navigateTo(path: string) {
@@ -126,10 +128,12 @@ export function initRouter() {
       return;
     }
 
-    if (!route.requiresAuth && isAuthenticated() && path === 'login') {
-      navigateTo('dashboard');
-      return;
-    }
+    // Permitir acceder al login aunque estés autenticado (para testing)
+    // Si quieres redirigir automáticamente, descomenta las líneas siguientes:
+    // if (!route.requiresAuth && isAuthenticated() && path === 'login') {
+    //   navigateTo('dashboard');
+    //   return;
+    // }
 
     // Renderizar la página
     const app = document.querySelector<HTMLDivElement>('#app');

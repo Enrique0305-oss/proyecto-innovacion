@@ -21,16 +21,13 @@ class Config:
     DB_PASSWORD = os.getenv('DB_PASSWORD', '1234')
     DB_HOST = os.getenv('DB_HOST', 'localhost')
     DB_PORT = os.getenv('DB_PORT', '3306')
-    DB_NAME = os.getenv('DB_NAME', 'sb_production')
+    DB_NAME = os.getenv('DB_NAME', 'sb')
     
-    # SQLAlchemy URI - Base de datos principal (sb_production)
+    # SQLAlchemy URI - Base de datos principal
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
     
-    # Configuración de binds para múltiples bases de datos
-    # 'training' se usa para leer datos históricos de ML
-    SQLALCHEMY_BINDS = {
-        'training': f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/sb_training?charset=utf8mb4"
-    }
+    # Sin binds por ahora - usamos solo una base de datos
+    SQLALCHEMY_BINDS = {}
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = DEBUG
@@ -39,7 +36,8 @@ class Config:
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*').split(',')
     
     # Configuración de JWT (si se implementa autenticación)
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
+    # Usar el mismo SECRET_KEY para JWT por consistencia
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', SECRET_KEY)
     JWT_ACCESS_TOKEN_EXPIRES = int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', '3600'))  # 1 hora por defecto
     
     # Rutas de modelos ML

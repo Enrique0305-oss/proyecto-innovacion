@@ -145,6 +145,23 @@ class ApiService {
     return response.json();
   }
 
+  // People endpoints
+  async getPeople(filters?: any) {
+    const params = filters ? new URLSearchParams(filters).toString() : '';
+    const url = params ? `${API_URL}/persons?${params}` : `${API_URL}/persons`;
+    
+    const response = await fetch(url, {
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al obtener personas');
+    }
+
+    return response.json();
+  }
+
   // Areas endpoints
   async getAreas(status?: string) {
     const url = status ? `${API_URL}/areas?status=${status}` : `${API_URL}/areas`;

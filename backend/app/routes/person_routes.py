@@ -17,17 +17,26 @@ persons_bp = Blueprint('persons', __name__)
 @jwt_required()
 def get_persons():
     """
-    Obtener lista de personas
+    Obtener lista de personas con paginación
     
     Query Params:
         - area: str (filtro por área)
         - position: str (filtro por cargo)
         - status: str (filtro por estado)
+        - page: int (número de página, default: 1)
+        - per_page: int (items por página, default: 50, max: 100)
     
     Returns:
-        JSON con lista de personas
+        JSON con lista de personas paginada
     """
     try:
+        # Parámetros de paginación
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        
+        # Limitar per_page máximo para evitar sobrecarga
+        per_page = min(per_page, 100)
+        
         query = Person.query
         
         # Filtros
@@ -46,14 +55,20 @@ def get_persons():
             elif status == 'inactive':
                 query = query.filter(Person.resigned == True)
         
-        # Ordenar por ID (nombre no existe)
+        # Ordenar por ID
         query = query.order_by(Person.person_id)
         
-        persons = query.all()
+        # Aplicar paginación
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
         return jsonify({
-            'persons': [person.to_dict() for person in persons],
-            'total': len(persons)
+            'persons': [person.to_dict() for person in pagination.items],
+            'total': pagination.total,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': pagination.pages,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
         }), 200
         
     except Exception as e:
@@ -113,7 +128,7 @@ def create_person():
         JSON con la persona creada
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         # Verificar permisos
@@ -184,7 +199,7 @@ def update_person(person_id):
         JSON con la persona actualizada
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         # Verificar permisos
@@ -246,7 +261,7 @@ def delete_person(person_id):
         JSON con mensaje de confirmación
     """
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())  # Convertir de string a int
         user = WebUser.query.get(user_id)
         
         # Verificar permisos

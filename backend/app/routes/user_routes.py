@@ -73,7 +73,7 @@ def get_user(id):
         JSON con los detalles del usuario
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = int(get_jwt_identity())  # Convertir de string a int
         current_user = WebUser.query.get(current_user_id)
         
         # Puede ver su propio perfil o tener permiso
@@ -112,7 +112,7 @@ def update_user(id):
         JSON con el usuario actualizado
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = int(get_jwt_identity())  # Convertir de string a int
         current_user = WebUser.query.get(current_user_id)
         
         # Puede actualizar su propio perfil o tener permiso
@@ -179,7 +179,7 @@ def delete_user(id):
         JSON con mensaje de confirmación
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = int(get_jwt_identity())  # Convertir de string a int
         current_user = WebUser.query.get(current_user_id)
         
         # Verificar permisos
