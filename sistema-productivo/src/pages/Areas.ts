@@ -2,6 +2,24 @@ import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
 import { api } from '../utils/api';
 
+// Función para obtener el rol del usuario actual
+function getUserRole(): string {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return 'colaborador';
+  
+  try {
+    const user = JSON.parse(userStr);
+    return user.role?.name || 'colaborador';
+  } catch {
+    return 'colaborador';
+  }
+}
+
+// Función para verificar si el usuario puede gestionar áreas
+function canManageAreas(): boolean {
+  return getUserRole() === 'super_admin';
+}
+
 export function AreasPage(): string {
   return `
     <div class="dashboard-layout">
@@ -41,6 +59,7 @@ export function AreasPage(): string {
               <h2 class="module-title">Gestión de Áreas</h2>
               <p class="module-description">Administración de áreas y departamentos</p>
             </div>
+            ${canManageAreas() ? `
             <button class="btn-primary" id="btnNewArea">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="10" y1="4" x2="10" y2="16"/>
@@ -48,6 +67,7 @@ export function AreasPage(): string {
               </svg>
               Nueva Área
             </button>
+            ` : ''}
           </div>
 
           <!-- Stats Cards -->
@@ -129,10 +149,140 @@ export function AreasPage(): string {
         </div>
       </div>
     </div>
+
+    <!-- Modal: Detalles del Área -->
+    <div class="modal-overlay" id="areaDetailsModal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3>Detalles del Área</h3>
+          <button class="modal-close" id="btnCloseDetailsModal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="area-details-grid">
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Nombre del Área</div>
+                <div class="detail-value" id="detailAreaName">--</div>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Descripción</div>
+                <div class="detail-value" id="detailAreaDescription">--</div>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Supervisor</div>
+                <div class="detail-value" id="detailAreaSupervisor">--</div>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Empleados</div>
+                <div class="detail-value" id="detailAreaEmployees">--</div>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Tareas Asignadas</div>
+                <div class="detail-value" id="detailAreaTasks">--</div>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Eficiencia</div>
+                <div class="detail-value" id="detailAreaEfficiency">--</div>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Estado</div>
+                <div class="detail-value" id="detailAreaStatus">--</div>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon" style="background: linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Fecha de Creación</div>
+                <div class="detail-value" id="detailAreaCreated">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
 function generateAreaCard(
+  id: number,
   name: string,
   description: string,
   supervisor: string,
@@ -153,7 +303,7 @@ function generateAreaCard(
   const efficiencyColor = efficiency >= 85 ? '#4caf50' : efficiency >= 75 ? '#ff9800' : '#f44336';
 
   return `
-    <div class="area-card">
+    <div class="area-card" data-area-id="${id}">
       <div class="area-card-header">
         <div class="area-icon">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -163,12 +313,30 @@ function generateAreaCard(
             <rect x="14" y="14" width="7" height="7" rx="1"/>
           </svg>
         </div>
-        <button class="btn-edit">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
+        <div class="area-actions">
+          ${canManageAreas() ? `
+          <button class="btn-icon btn-edit-area" 
+            data-id="${id}"
+            data-name="${name}"
+            data-description="${description}"
+            data-supervisor="${supervisor}"
+            title="Editar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="btn-icon btn-delete-area" 
+            data-id="${id}"
+            data-name="${name}"
+            title="Eliminar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+          ` : ''}
+        </div>
       </div>
 
       <h3 class="area-name">${name}</h3>
@@ -231,7 +399,7 @@ function generateAreaCard(
         </span>
       </div>
 
-      <button class="btn-details">Ver Detalles</button>
+      <button class="btn-details btn-view-details" data-name="${name}" data-employees="${employees}" data-tasks="${tasks}" data-efficiency="${efficiency}">Ver Detalles</button>
     </div>
   `;
 }
@@ -299,6 +467,7 @@ async function loadAreas() {
       const trendType = area.status === 'active' ? 'success' : 'warning';
       
       return generateAreaCard(
+        area.id,
         area.name,
         area.description || 'Sin descripción',
         area.supervisor_name || 'Sin supervisor',
@@ -310,6 +479,9 @@ async function loadAreas() {
         trendType
       );
     }).join('');
+
+    // Agregar event listeners después de renderizar
+    attachAreaActionListeners();
     
   } catch (error) {
     console.error('Error al cargar áreas:', error);
@@ -317,6 +489,154 @@ async function loadAreas() {
     if (container) {
       container.innerHTML = '<p style="text-align: center; padding: 40px; color: red;">Error al cargar áreas</p>';
     }
+  }
+}
+
+// Función para agregar event listeners a los botones de acción
+function attachAreaActionListeners() {
+  // Botones de ver detalles
+  const detailButtons = document.querySelectorAll('.btn-view-details');
+  detailButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLElement;
+      const name = btn.dataset.name!;
+      const employees = btn.dataset.employees!;
+      const tasks = btn.dataset.tasks!;
+      const efficiency = btn.dataset.efficiency!;
+      
+      openDetailsModal(name, employees, tasks, efficiency);
+    });
+  });
+
+  // Botones de editar
+  const editButtons = document.querySelectorAll('.btn-edit-area');
+  editButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLElement;
+      const id = parseInt(btn.dataset.id!);
+      const name = btn.dataset.name!;
+      const description = btn.dataset.description!;
+      const supervisor = btn.dataset.supervisor!;
+      
+      openEditAreaModal(id, name, description, supervisor);
+    });
+  });
+
+  // Botones de eliminar
+  const deleteButtons = document.querySelectorAll('.btn-delete-area');
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', async (e) => {
+      const btn = e.currentTarget as HTMLElement;
+      const id = parseInt(btn.dataset.id!);
+      const name = btn.dataset.name!;
+      
+      if (confirm(`¿Estás seguro de que deseas eliminar el área "${name}"?\n\nEsta acción desactivará el área.`)) {
+        await deleteArea(id);
+      }
+    });
+  });
+}
+
+// Función para abrir modal de detalles
+function openDetailsModal(name: string, employees: string, tasks: string, efficiency: string) {
+  // Determinar el estado basado en la eficiencia
+  const efficiencyNum = parseFloat(efficiency);
+  let statusBadge = '';
+  
+  if (efficiencyNum >= 85) {
+    statusBadge = '<span class="status-badge status-completed">Óptimo</span>';
+  } else if (efficiencyNum >= 75) {
+    statusBadge = '<span class="status-badge status-progress">Bueno</span>';
+  } else if (efficiencyNum >= 60) {
+    statusBadge = '<span class="status-badge status-pending">Regular</span>';
+  } else {
+    statusBadge = '<span class="status-badge status-blocked">Bajo</span>';
+  }
+
+  // Buscar información adicional del área en las tarjetas renderizadas
+  const areaCards = document.querySelectorAll('.area-card');
+  let description = 'Sin descripción';
+  let supervisorName = 'No asignado';
+  
+  areaCards.forEach(card => {
+    const cardName = card.querySelector('.area-name')?.textContent;
+    if (cardName === name) {
+      description = card.querySelector('.area-description')?.textContent || 'Sin descripción';
+      supervisorName = card.querySelector('.supervisor-name')?.textContent || 'No asignado';
+    }
+  });
+
+  // Obtener fecha actual formateada
+  const currentDate = new Date().toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  // Poblar el modal con los datos
+  const detailAreaName = document.getElementById('detailAreaName');
+  const detailAreaDescription = document.getElementById('detailAreaDescription');
+  const detailAreaSupervisor = document.getElementById('detailAreaSupervisor');
+  const detailAreaEmployees = document.getElementById('detailAreaEmployees');
+  const detailAreaTasks = document.getElementById('detailAreaTasks');
+  const detailAreaEfficiency = document.getElementById('detailAreaEfficiency');
+  const detailAreaStatus = document.getElementById('detailAreaStatus');
+  const detailAreaCreated = document.getElementById('detailAreaCreated');
+
+  if (detailAreaName) detailAreaName.textContent = name;
+  if (detailAreaDescription) detailAreaDescription.textContent = description;
+  if (detailAreaSupervisor) detailAreaSupervisor.textContent = supervisorName;
+  if (detailAreaEmployees) detailAreaEmployees.textContent = `${employees} persona(s)`;
+  if (detailAreaTasks) detailAreaTasks.textContent = `${tasks} tarea(s)`;
+  if (detailAreaEfficiency) {
+    const efficiencyColor = efficiencyNum >= 85 ? '#4caf50' : efficiencyNum >= 75 ? '#ff9800' : '#f44336';
+    detailAreaEfficiency.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.5em; font-weight: bold; color: ${efficiencyColor};">${efficiency}%</span>
+      </div>
+    `;
+  }
+  if (detailAreaStatus) detailAreaStatus.innerHTML = statusBadge;
+  if (detailAreaCreated) detailAreaCreated.textContent = currentDate;
+
+  // Mostrar el modal
+  const modal = document.getElementById('areaDetailsModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+// Función para abrir modal de edición
+function openEditAreaModal(id: number, name: string, description: string, _supervisor: string) {
+  const modal = document.getElementById('modalNewArea');
+  if (!modal) return;
+
+  // Cambiar título del modal
+  const modalTitle = modal.querySelector('.modal-header h3');
+  if (modalTitle) modalTitle.textContent = 'Editar Área';
+
+  // Rellenar formulario
+  (document.getElementById('areaName') as HTMLInputElement).value = name;
+  (document.getElementById('areaDescription') as HTMLTextAreaElement).value = description;
+  (document.getElementById('areaName') as HTMLInputElement).dataset.editing = 'true';
+  (document.getElementById('areaName') as HTMLInputElement).dataset.areaId = id.toString();
+
+  // Cambiar texto del botón
+  const submitBtn = modal.querySelector('button[type="submit"]') as HTMLButtonElement;
+  if (submitBtn) submitBtn.textContent = 'Actualizar Área';
+
+  modal.classList.add('active');
+}
+
+// Función para eliminar área
+async function deleteArea(areaId: number) {
+  try {
+    await api.deleteArea(areaId);
+    alert('Área eliminada exitosamente');
+    loadAreas();
+  } catch (error) {
+    console.error('Error al eliminar área:', error);
+    alert('Error al eliminar área: ' + (error as Error).message);
   }
 }
 
@@ -345,6 +665,24 @@ export function initAreas(): void {
     modal?.classList.remove('active');
     dashboardLayout?.classList.remove('blur-background');
     document.body.style.overflow = '';
+    
+    // Limpiar formulario y flags de edición
+    const form = document.getElementById('formNewArea') as HTMLFormElement;
+    form?.reset();
+    
+    const areaNameInput = document.getElementById('areaName') as HTMLInputElement;
+    if (areaNameInput) {
+      delete areaNameInput.dataset.editing;
+      delete areaNameInput.dataset.areaId;
+    }
+    
+    // Restaurar título del modal
+    const modalTitle = modal?.querySelector('.modal-header h3');
+    if (modalTitle) modalTitle.textContent = 'Crear Nueva Área';
+    
+    // Restaurar texto del botón
+    const submitBtn = modal?.querySelector('button[type="submit"]') as HTMLButtonElement;
+    if (submitBtn) submitBtn.textContent = 'Crear Área';
   };
 
   btnNewArea?.addEventListener('click', () => {
@@ -355,15 +693,36 @@ export function initAreas(): void {
   btnCancelModal?.addEventListener('click', closeModal);
   modalOverlay?.addEventListener('click', closeModal);
 
+  // Event listeners para el modal de detalles
+  const btnCloseDetailsModal = document.getElementById('btnCloseDetailsModal');
+  const areaDetailsModal = document.getElementById('areaDetailsModal');
+  
+  btnCloseDetailsModal?.addEventListener('click', () => {
+    if (areaDetailsModal) {
+      areaDetailsModal.style.display = 'none';
+    }
+  });
+
+  areaDetailsModal?.addEventListener('click', (e) => {
+    if (e.target === areaDetailsModal) {
+      areaDetailsModal.style.display = 'none';
+    }
+  });
+
   // Form submission
   const form = document.getElementById('formNewArea') as HTMLFormElement;
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const areaName = (document.getElementById('areaName') as HTMLInputElement).value;
+    const areaNameInput = document.getElementById('areaName') as HTMLInputElement;
+    const areaName = areaNameInput.value;
     const areaDescription = (document.getElementById('areaDescription') as HTMLTextAreaElement).value;
     const areaSupervisor = (document.getElementById('areaSupervisor') as HTMLSelectElement).value;
     const areaEfficiency = (document.getElementById('areaEfficiency') as HTMLInputElement).value;
+
+    // Verificar si estamos editando
+    const isEditing = areaNameInput.dataset.editing === 'true';
+    const areaId = areaNameInput.dataset.areaId;
 
     if (!areaName || !areaSupervisor || !areaEfficiency) {
       alert('Por favor complete todos los campos requeridos');
@@ -373,27 +732,45 @@ export function initAreas(): void {
     try {
       const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Creando...';
+      submitBtn.textContent = isEditing ? 'Actualizando...' : 'Creando...';
 
-      await api.createArea({
+      const areaData = {
         name: areaName,
         description: areaDescription,
         supervisor_person_id: areaSupervisor,
         efficiency_score: parseFloat(areaEfficiency),
         employee_count: 0
-      });
+      };
 
-      alert(`Área "${areaName}" creada exitosamente`);
+      if (isEditing && areaId) {
+        // Actualizar área existente
+        await api.updateArea(parseInt(areaId), areaData);
+        alert(`Área "${areaName}" actualizada exitosamente`);
+      } else {
+        // Crear nueva área
+        await api.createArea(areaData);
+        alert(`Área "${areaName}" creada exitosamente`);
+      }
+
       closeModal();
       form.reset();
-      window.location.reload();
+      
+      // Limpiar flags de edición
+      delete areaNameInput.dataset.editing;
+      delete areaNameInput.dataset.areaId;
+      
+      // Restaurar título del modal
+      const modalTitle = document.querySelector('#modalNewArea .modal-header h3');
+      if (modalTitle) modalTitle.textContent = 'Crear Nueva Área';
+      
+      loadAreas(); // Recargar áreas en vez de toda la página
     } catch (error) {
-      console.error('Error al crear área:', error);
-      alert('Error al crear el área: ' + (error as Error).message);
+      console.error('Error al guardar área:', error);
+      alert('Error al guardar el área: ' + (error as Error).message);
     } finally {
       const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Crear Área';
+      submitBtn.textContent = isEditing ? 'Actualizar Área' : 'Crear Área';
     }
   });
 

@@ -115,33 +115,58 @@ def login():
             }), 400
         
         # Buscar usuario
+        print(f"🔍 Buscando usuario: {email}")
         user = WebUser.query.filter_by(email=email).first()
         
         if not user:
+            print(f"❌ Usuario no encontrado: {email}")
             return jsonify({'error': 'Email o contraseña incorrectos'}), 401
         
+        print(f"✅ Usuario encontrado: {user.email}")
+        
         # Verificar contraseña
+        print(f"🔐 Verificando contraseña...")
         if not user.check_password(password):
+            print(f"❌ Contraseña incorrecta")
             return jsonify({'error': 'Email o contraseña incorrectos'}), 401
+        
+        print(f"✅ Contraseña correcta")
         
         # Verificar si está activo
         if user.status != 'active':
+            print(f"❌ Usuario inactivo")
             return jsonify({'error': 'Usuario inactivo'}), 403
+        
+        print(f"✅ Usuario activo")
         
         # Actualizar último login
         user.last_login = datetime.utcnow()
         db.session.commit()
         
+        print(f"✅ Last login actualizado")
+        
         # Crear token JWT (identity debe ser string)
         access_token = create_access_token(identity=str(user.id))
         
+        print(f"✅ Token JWT creado")
+        
+        # Convertir usuario a dict
+        print(f"📦 Convirtiendo usuario a dict...")
+        user_dict = user.to_dict()
+        
+        print(f"✅ Usuario convertido a dict")
+        
         return jsonify({
             'message': 'Login exitoso',
-            'user': user.to_dict(),
+            'user': user_dict,
             'access_token': access_token
         }), 200
         
     except Exception as e:
+        import traceback
+        print(f"💥 ERROR EN LOGIN:")
+        print(traceback.format_exc())
+        db.session.rollback()
         return jsonify({
             'error': 'Error al iniciar sesión',
             'details': str(e)

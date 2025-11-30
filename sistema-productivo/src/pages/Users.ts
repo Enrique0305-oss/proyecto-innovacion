@@ -2,6 +2,24 @@ import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
 import { api } from '../utils/api';
 
+// Función para obtener el rol del usuario actual
+function getUserRole(): string {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return 'colaborador';
+  
+  try {
+    const user = JSON.parse(userStr);
+    return user.role?.name || 'colaborador';
+  } catch {
+    return 'colaborador';
+  }
+}
+
+// Función para verificar si el usuario puede gestionar usuarios
+function canManageUsers(): boolean {
+  return getUserRole() === 'super_admin';
+}
+
 export function UsersPage(): string {
   return `
     <div class="dashboard-layout">
@@ -41,6 +59,7 @@ export function UsersPage(): string {
               <h2 class="module-title">Gestión de Usuarios</h2>
               <p class="module-description">Administración de usuarios y permisos del sistema</p>
             </div>
+            ${canManageUsers() ? `
             <button class="btn-primary" id="btnNewUser">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="10" y1="4" x2="10" y2="16"/>
@@ -48,6 +67,7 @@ export function UsersPage(): string {
               </svg>
               Nuevo Usuario
             </button>
+            ` : ''}
           </div>
 
           <!-- Stats Cards -->
@@ -150,12 +170,7 @@ export function UsersPage(): string {
               <div class="form-group">
                 <label for="userArea">Área</label>
                 <select id="userArea" required>
-                  <option value="">Seleccionar área</option>
-                  <option value="TI">TI</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Operaciones">Operaciones</option>
-                  <option value="Ventas">Ventas</option>
-                  <option value="RRHH">RRHH</option>
+                  <option value="">Cargando áreas...</option>
                 </select>
               </div>
             </div>
@@ -192,63 +207,72 @@ export function UsersPage(): string {
         </div>
       </div>
     </div>
-  `;
-}
 
-function generateUserRow(
-  initials: string,
-  name: string,
-  email: string,
-  role: string,
-  area: string,
-  status: string,
-  roleType: string
-): string {
-  const roleColors: { [key: string]: { bg: string; text: string } } = {
-    'admin': { bg: '#f44336', text: 'white' },
-    'supervisor': { bg: '#2196f3', text: 'white' },
-    'colaborador': { bg: '#4caf50', text: 'white' }
-  };
+    <!-- Modal: Editar Usuario -->
+    <div class="modal" id="modalEditUser">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Editar Usuario</h3>
+          <button class="modal-close" id="btnCloseEditModal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-subtitle">Modificar los datos del usuario</p>
+          
+          <form id="formEditUser">
+            <input type="hidden" id="editUserId">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editUserName">Nombre Completo</label>
+                <input type="text" id="editUserName" placeholder="Ej: Juan Pérez" required>
+              </div>
+              <div class="form-group">
+                <label for="editUserEmail">Email</label>
+                <input type="email" id="editUserEmail" placeholder="usuario@processmart.com" required>
+              </div>
+            </div>
 
-  const statusColors: { [key: string]: { bg: string; text: string } } = {
-    'Activo': { bg: '#d4edda', text: '#155724' },
-    'Inactivo': { bg: '#f8d7da', text: '#721c24' }
-  };
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editUserRole">Rol</label>
+                <select id="editUserRole" required>
+                  <option value="1">Administrador</option>
+                  <option value="2">Supervisor</option>
+                  <option value="3">Colaborador</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="editUserArea">Área</label>
+                <select id="editUserArea" required>
+                  <option value="">Cargando áreas...</option>
+                </select>
+              </div>
+            </div>
 
-  const roleColor = roleColors[roleType];
-  const statusColor = statusColors[status];
+            <div class="form-group">
+              <div class="toggle-group">
+                <label for="editUserStatus">Estado del Usuario</label>
+                <div class="toggle-container">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="editUserStatus">
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="toggle-label">Cuenta activa</span>
+                </div>
+              </div>
+            </div>
 
-  return `
-    <div class="table-row">
-      <div class="td-cell user-cell">
-        <div class="user-avatar">${initials}</div>
-        <span class="user-name">${name}</span>
-      </div>
-      <div class="td-cell">${email}</div>
-      <div class="td-cell">
-        <span class="role-badge" style="background: ${roleColor.bg}; color: ${roleColor.text};">
-          ${role}
-        </span>
-      </div>
-      <div class="td-cell">${area}</div>
-      <div class="td-cell">
-        <span class="status-badge" style="background: ${statusColor.bg}; color: ${statusColor.text};">
-          ${status}
-        </span>
-      </div>
-      <div class="td-cell actions-cell">
-        <button class="btn-icon" title="Editar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
-        <button class="btn-icon btn-delete" title="Eliminar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-          </svg>
-        </button>
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" id="btnCancelEditModal">Cancelar</button>
+              <button type="submit" class="btn-primary">Actualizar Usuario</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   `;
@@ -341,29 +365,161 @@ async function loadUsers() {
               </span>
             </div>
             <div class="td-cell actions-cell">
-              <button class="btn-icon" title="Editar">
+              ${canManageUsers() ? `
+              <button class="btn-icon btn-edit-user" 
+                data-id="${user.id}" 
+                data-name="${user.full_name}" 
+                data-email="${user.email}" 
+                data-role="${user.role_id}" 
+                data-area="${user.area || ''}" 
+                data-status="${user.status}"
+                title="Editar">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
-              <button class="btn-icon btn-delete" title="Eliminar">
+              <button class="btn-icon btn-delete btn-delete-user" 
+                data-id="${user.id}" 
+                data-name="${user.full_name}"
+                title="Eliminar">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                 </svg>
               </button>
+              ` : '<span style="color: var(--text-secondary); font-size: 0.875rem;">Solo lectura</span>'}
             </div>
           </div>
         `;
       }).join('')}
     `;
 
+    // Agregar event listeners a los botones de editar y eliminar
+    attachUserActionListeners();
+
   } catch (error) {
     console.error('Error al cargar usuarios:', error);
     const container = document.getElementById('usersTableContainer');
     if (container) {
       container.innerHTML = '<p style="text-align: center; padding: 40px; color: red;">Error al cargar usuarios</p>';
+    }
+  }
+}
+
+// Función para agregar event listeners a los botones de acción
+function attachUserActionListeners() {
+  // Botones de editar
+  const editButtons = document.querySelectorAll('.btn-edit-user');
+  editButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLElement;
+      const userId = btn.dataset.id;
+      const userName = btn.dataset.name;
+      const userEmail = btn.dataset.email;
+      const userRole = btn.dataset.role;
+      const userArea = btn.dataset.area;
+      const userStatus = btn.dataset.status;
+      
+      openEditModal(userId!, userName!, userEmail!, userRole!, userArea!, userStatus!);
+    });
+  });
+
+  // Botones de eliminar
+  const deleteButtons = document.querySelectorAll('.btn-delete-user');
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', async (e) => {
+      const btn = e.currentTarget as HTMLElement;
+      const userId = btn.dataset.id;
+      const userName = btn.dataset.name;
+      
+      if (confirm(`¿Estás seguro de que deseas desactivar al usuario ${userName}?`)) {
+        await deleteUser(parseInt(userId!));
+      }
+    });
+  });
+}
+
+// Función para abrir el modal de edición
+function openEditModal(id: string, name: string, email: string, role: string, area: string, status: string) {
+  const modal = document.getElementById('modalEditUser');
+  if (!modal) return;
+
+  (document.getElementById('editUserId') as HTMLInputElement).value = id;
+  (document.getElementById('editUserName') as HTMLInputElement).value = name;
+  (document.getElementById('editUserEmail') as HTMLInputElement).value = email;
+  (document.getElementById('editUserRole') as HTMLSelectElement).value = role;
+  (document.getElementById('editUserStatus') as HTMLInputElement).checked = status === 'active';
+
+  // Cargar áreas y luego seleccionar el área actual
+  loadAreasForSelect().then(() => {
+    (document.getElementById('editUserArea') as HTMLSelectElement).value = area;
+  });
+
+  modal.classList.add('active');
+}
+
+// Función para cerrar el modal de edición
+function closeEditModal() {
+  const modal = document.getElementById('modalEditUser');
+  modal?.classList.remove('active');
+}
+
+// Función para eliminar/desactivar usuario
+async function deleteUser(userId: number) {
+  try {
+    await api.deleteUser(userId);
+    alert('Usuario desactivado exitosamente');
+    loadUsers(); // Recargar la lista
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    alert('Error al desactivar usuario: ' + (error as Error).message);
+  }
+}
+
+// Función para cargar áreas dinámicamente
+async function loadAreasForSelect() {
+  try {
+    const response = await api.getAreas();
+    const areas = response.areas || [];
+    
+    // Filtrar solo áreas activas
+    const activeAreas = areas.filter((area: any) => area.status === 'active');
+    
+    // Actualizar select de crear usuario
+    const userAreaSelect = document.getElementById('userArea') as HTMLSelectElement;
+    if (userAreaSelect) {
+      userAreaSelect.innerHTML = '<option value="">Seleccionar área</option>';
+      activeAreas.forEach((area: any) => {
+        const option = document.createElement('option');
+        option.value = area.name;
+        option.textContent = area.name;
+        userAreaSelect.appendChild(option);
+      });
+    }
+    
+    // Actualizar select de editar usuario
+    const editUserAreaSelect = document.getElementById('editUserArea') as HTMLSelectElement;
+    if (editUserAreaSelect) {
+      editUserAreaSelect.innerHTML = '<option value="">Seleccionar área</option>';
+      activeAreas.forEach((area: any) => {
+        const option = document.createElement('option');
+        option.value = area.name;
+        option.textContent = area.name;
+        editUserAreaSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error al cargar áreas:', error);
+    // Si falla, poner mensaje de error
+    const userAreaSelect = document.getElementById('userArea') as HTMLSelectElement;
+    const editUserAreaSelect = document.getElementById('editUserArea') as HTMLSelectElement;
+    
+    if (userAreaSelect) {
+      userAreaSelect.innerHTML = '<option value="">Error al cargar áreas</option>';
+    }
+    if (editUserAreaSelect) {
+      editUserAreaSelect.innerHTML = '<option value="">Error al cargar áreas</option>';
     }
   }
 }
@@ -387,6 +543,7 @@ export function initUsers(): void {
     modal?.classList.add('active');
     dashboardLayout?.classList.add('blur-background');
     document.body.style.overflow = 'hidden';
+    loadAreasForSelect(); // Cargar áreas al abrir el modal
   };
 
   const closeModal = () => {
@@ -512,12 +669,65 @@ export function initUsers(): void {
     });
   }
 
+  // Modal de edición
+  const btnCloseEditModal = document.getElementById('btnCloseEditModal');
+  const btnCancelEditModal = document.getElementById('btnCancelEditModal');
+
+  btnCloseEditModal?.addEventListener('click', closeEditModal);
+  btnCancelEditModal?.addEventListener('click', closeEditModal);
+
+  // Formulario de edición
+  const formEditUser = document.getElementById('formEditUser') as HTMLFormElement;
+  formEditUser?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const userId = parseInt((document.getElementById('editUserId') as HTMLInputElement).value);
+    const userName = (document.getElementById('editUserName') as HTMLInputElement).value;
+    const userEmail = (document.getElementById('editUserEmail') as HTMLInputElement).value;
+    const userRole = parseInt((document.getElementById('editUserRole') as HTMLSelectElement).value);
+    const userArea = (document.getElementById('editUserArea') as HTMLSelectElement).value;
+    const userStatus = (document.getElementById('editUserStatus') as HTMLInputElement).checked;
+
+    if (!userName || !userEmail) {
+      alert('Por favor complete todos los campos requeridos');
+      return;
+    }
+
+    try {
+      const submitBtn = formEditUser.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Actualizando...';
+
+      await api.updateUser(userId, {
+        full_name: userName,
+        email: userEmail,
+        role_id: userRole,
+        area: userArea,
+        status: userStatus ? 'active' : 'inactive'
+      });
+
+      alert('Usuario actualizado exitosamente');
+      closeEditModal();
+      loadUsers();
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+      alert('Error al actualizar el usuario: ' + (error as Error).message);
+    } finally {
+      const submitBtn = formEditUser.querySelector('button[type="submit"]') as HTMLButtonElement;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Actualizar Usuario';
+      }
+    }
+  });
+
   // Logout
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('userEmail');
+      localStorage.removeItem('access_token');
       window.location.hash = '#login';
     });
   }

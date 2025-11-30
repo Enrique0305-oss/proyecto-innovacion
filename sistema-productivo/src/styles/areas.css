@@ -502,6 +502,115 @@
   }
 }
 
+/* Area Details Modal */
+#areaDetailsModal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+#areaDetailsModal .modal-content.modal-large {
+  max-width: 900px;
+}
+
+.area-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+}
+
+.detail-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  transition: all 0.2s;
+}
+
+.detail-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.detail-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.detail-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.detail-value {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+/* Status badges for modal */
+.status-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+}
+
+.status-completed {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #2e7d32;
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-progress {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: #e65100;
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-pending {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: #1565c0;
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-blocked {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: #c62828;
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
 @media (max-width: 768px) {
   .areas-header {
     flex-direction: column;
@@ -525,4 +634,9 @@
     width: 95%;
     max-height: 95vh;
   }
+
+  .area-details-grid {
+    grid-template-columns: 1fr;
+  }
 }
+

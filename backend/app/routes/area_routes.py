@@ -37,9 +37,33 @@ def get_areas():
         
         areas = query.all()
         
+        # Enriquecer con datos calculados
+        areas_data = []
+        for area in areas:
+            area_dict = area.to_dict()
+            
+            # Calcular número real de empleados (usuarios) en esta área
+            employee_count = WebUser.query.filter_by(area=area.name, status='active').count()
+            area_dict['employee_count'] = employee_count
+            
+            # Calcular número de tareas de esta área
+            from app.models.web_task import WebTask
+            task_count = WebTask.query.filter_by(area=area.name).count()
+            area_dict['task_count'] = task_count
+            
+            # Agregar nombre del supervisor (si existe)
+            if area.supervisor_person_id:
+                from app.models.person import Person
+                supervisor = Person.query.filter_by(person_id=area.supervisor_person_id).first()
+                area_dict['supervisor_name'] = supervisor.role if supervisor else 'Sin supervisor'
+            else:
+                area_dict['supervisor_name'] = 'Sin supervisor'
+            
+            areas_data.append(area_dict)
+        
         return jsonify({
-            'areas': [area.to_dict() for area in areas],
-            'total': len(areas)
+            'areas': areas_data,
+            'total': len(areas_data)
         }), 200
         
     except Exception as e:
@@ -83,6 +107,7 @@ def get_area(id):
 def create_area():
     """
     Crear una nueva área
+    Solo super_admin puede crear áreas
     
     Body JSON:
         - name: str (requerido, único)
@@ -95,12 +120,20 @@ def create_area():
         JSON con el área creada
     """
     try:
-        user_id = int(get_jwt_identity())  # Convertir de string a int
-        user = WebUser.query.get(user_id)
+        # Obtener usuario actual
+        current_user_email = get_jwt_identity()
+        current_user = WebUser.query.filter_by(email=current_user_email).first()
         
-        # Verificar permisos
-        if not user.can('settings.manage'):
-            return jsonify({'error': 'Acceso denegado - permisos insuficientes'}), 403
+        if not current_user:
+            return jsonify({'error': 'Usuario no autenticado'}), 401
+        
+        # Solo super_admin puede crear áreas
+        user_role = current_user.role.name if current_user.role else 'colaborador'
+        if user_role != 'super_admin':
+            return jsonify({
+                'error': 'Permiso denegado',
+                'message': 'Solo el Administrador TI puede gestionar áreas'
+            }), 403
         
         data = request.get_json()
         
@@ -150,6 +183,7 @@ def create_area():
 def update_area(id):
     """
     Actualizar un área existente
+    Solo super_admin puede actualizar áreas
     
     Path Params:
         id: ID del área
@@ -161,12 +195,20 @@ def update_area(id):
         JSON con el área actualizada
     """
     try:
-        user_id = int(get_jwt_identity())  # Convertir de string a int
-        user = WebUser.query.get(user_id)
+        # Obtener usuario actual
+        current_user_email = get_jwt_identity()
+        current_user = WebUser.query.filter_by(email=current_user_email).first()
         
-        # Verificar permisos
-        if not user.can('settings.manage'):
-            return jsonify({'error': 'Acceso denegado - permisos insuficientes'}), 403
+        if not current_user:
+            return jsonify({'error': 'Usuario no autenticado'}), 401
+        
+        # Solo super_admin puede actualizar áreas
+        user_role = current_user.role.name if current_user.role else 'colaborador'
+        if user_role != 'super_admin':
+            return jsonify({
+                'error': 'Permiso denegado',
+                'message': 'Solo el Administrador TI puede gestionar áreas'
+            }), 403
         
         area = Area.query.get(id)
         
@@ -214,6 +256,7 @@ def update_area(id):
 def delete_area(id):
     """
     Eliminar un área
+    Solo super_admin puede eliminar áreas
     
     Path Params:
         id: ID del área
@@ -222,12 +265,20 @@ def delete_area(id):
         JSON con mensaje de confirmación
     """
     try:
-        user_id = int(get_jwt_identity())  # Convertir de string a int
-        user = WebUser.query.get(user_id)
+        # Obtener usuario actual
+        current_user_email = get_jwt_identity()
+        current_user = WebUser.query.filter_by(email=current_user_email).first()
         
-        # Verificar permisos
-        if not user.can('settings.manage'):
-            return jsonify({'error': 'Acceso denegado - permisos insuficientes'}), 403
+        if not current_user:
+            return jsonify({'error': 'Usuario no autenticado'}), 401
+        
+        # Solo super_admin puede eliminar áreas
+        user_role = current_user.role.name if current_user.role else 'colaborador'
+        if user_role != 'super_admin':
+            return jsonify({
+                'error': 'Permiso denegado',
+                'message': 'Solo el Administrador TI puede gestionar áreas'
+            }), 403
         
         area = Area.query.get(id)
         

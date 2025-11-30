@@ -101,6 +101,7 @@ def get_user(id):
 def update_user(id):
     """
     Actualizar un usuario existente
+    Solo super_admin puede editar usuarios
     
     Path Params:
         id: ID del usuario
@@ -112,12 +113,20 @@ def update_user(id):
         JSON con el usuario actualizado
     """
     try:
-        current_user_id = int(get_jwt_identity())  # Convertir de string a int
-        current_user = WebUser.query.get(current_user_id)
+        # Obtener usuario actual
+        current_user_email = get_jwt_identity()
+        current_user = WebUser.query.filter_by(email=current_user_email).first()
         
-        # Puede actualizar su propio perfil o tener permiso
-        if current_user_id != id and not current_user.can('users.edit'):
-            return jsonify({'error': 'Acceso denegado'}), 403
+        if not current_user:
+            return jsonify({'error': 'Usuario no autenticado'}), 401
+        
+        # Solo super_admin puede editar usuarios
+        user_role = current_user.role.name if current_user.role else 'colaborador'
+        if user_role != 'super_admin':
+            return jsonify({
+                'error': 'Permiso denegado',
+                'message': 'Solo el Administrador TI puede gestionar usuarios'
+            }), 403
         
         user = WebUser.query.get(id)
         
@@ -171,6 +180,7 @@ def update_user(id):
 def delete_user(id):
     """
     Eliminar/desactivar un usuario
+    Solo super_admin puede eliminar usuarios
     
     Path Params:
         id: ID del usuario
@@ -179,15 +189,23 @@ def delete_user(id):
         JSON con mensaje de confirmación
     """
     try:
-        current_user_id = int(get_jwt_identity())  # Convertir de string a int
-        current_user = WebUser.query.get(current_user_id)
+        # Obtener usuario actual
+        current_user_email = get_jwt_identity()
+        current_user = WebUser.query.filter_by(email=current_user_email).first()
         
-        # Verificar permisos
-        if not current_user.can('users.delete'):
-            return jsonify({'error': 'Acceso denegado'}), 403
+        if not current_user:
+            return jsonify({'error': 'Usuario no autenticado'}), 401
+        
+        # Solo super_admin puede eliminar usuarios
+        user_role = current_user.role.name if current_user.role else 'colaborador'
+        if user_role != 'super_admin':
+            return jsonify({
+                'error': 'Permiso denegado',
+                'message': 'Solo el Administrador TI puede gestionar usuarios'
+            }), 403
         
         # No puede eliminarse a sí mismo
-        if current_user_id == id:
+        if current_user.id == id:
             return jsonify({'error': 'No puedes eliminar tu propio usuario'}), 400
         
         user = WebUser.query.get(id)

@@ -241,6 +241,37 @@ class ApiService {
 
     return response.json();
   }
+
+  async updateUser(id: number, userData: any) {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+      method: 'PUT',
+      mode: 'cors',
+      headers: this.getHeaders(),
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al actualizar usuario');
+    }
+
+    return response.json();
+  }
+
+  async deleteUser(id: number) {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+      method: 'DELETE',
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al eliminar usuario');
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiService();

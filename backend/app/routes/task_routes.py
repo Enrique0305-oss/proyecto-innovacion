@@ -178,6 +178,7 @@ def create_task():
 
 
 @tasks_bp.route('/<int:id>', methods=['PUT'])
+@jwt_required()
 def update_task(id):
     """
     Actualizar una tarea existente
@@ -187,11 +188,22 @@ def update_task(id):
     
     Body JSON:
         Campos a actualizar (todos opcionales)
+        
+    Permisos:
+        - admin/supervisor: pueden editar todos los campos
+        - colaborador: solo puede cambiar el estado
     
     Returns:
         JSON con la tarea actualizada
     """
     try:
+        # Obtener usuario actual
+        current_user_email = get_jwt_identity()
+        current_user = WebUser.query.filter_by(email=current_user_email).first()
+        
+        if not current_user:
+            return jsonify({'error': 'Usuario no autenticado'}), 401
+            
         task = WebTask.query.get(id)
         
         if not task:
@@ -199,7 +211,38 @@ def update_task(id):
         
         data = request.get_json()
         
-        # Actualizar campos
+        # Obtener rol del usuario
+        user_role = current_user.role.name if current_user.role else 'colaborador'
+        
+        # Si es colaborador, solo puede cambiar el estado
+        if user_role == 'colaborador':
+            # Verificar que solo esté intentando cambiar el estado
+            allowed_fields = {'status'}
+            if set(data.keys()) - allowed_fields:
+                return jsonify({
+                    'error': 'Permiso denegado',
+                    'message': 'Los colaboradores solo pueden cambiar el estado de las tareas'
+                }), 403
+            
+            # Validar transiciones de estado permitidas
+            current_status = task.status
+            new_status = data.get('status')
+            
+            valid_transitions = {
+                'pendiente': ['en_progreso', 'cancelada'],
+                'en_progreso': ['completada', 'cancelada'],
+                'completada': [],  # No se puede cambiar desde completada
+                'retrasada': ['en_progreso', 'cancelada'],
+                'cancelada': []  # No se puede cambiar desde cancelada
+            }
+            
+            if new_status and new_status not in valid_transitions.get(current_status, []):
+                return jsonify({
+                    'error': 'Transición de estado no válida',
+                    'message': f'No se puede cambiar de "{current_status}" a "{new_status}"'
+                }), 400
+        
+        # Actualizar campos (admin y supervisor pueden editar todo)
         if 'title' in data:
             task.title = data['title']
         if 'description' in data:

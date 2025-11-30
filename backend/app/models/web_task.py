@@ -31,6 +31,14 @@ class WebTask(db.Model):
     
     def to_dict(self):
         """Convierte el modelo a diccionario"""
+        # Buscar el nombre completo del usuario asignado
+        assigned_name = None
+        if self.assigned_to:
+            from app.models.web_user import WebUser
+            user = WebUser.query.filter_by(email=self.assigned_to).first()
+            if user:
+                assigned_name = user.full_name
+        
         return {
             'id': self.id,
             'title': self.title,
@@ -39,6 +47,7 @@ class WebTask(db.Model):
             'status': self.status,
             'area': self.area,
             'assigned_to': self.assigned_to,
+            'assigned_name': assigned_name,  # Nombre completo del usuario
             'complexity_score': self.complexity_score,
             'estimated_hours': float(self.estimated_hours) if self.estimated_hours else None,
             'actual_hours': float(self.actual_hours) if self.actual_hours else None,
