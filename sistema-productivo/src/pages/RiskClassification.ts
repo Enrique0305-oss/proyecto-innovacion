@@ -77,19 +77,42 @@ export function RiskClassificationPage(): string {
                 </div>
 
                 <div class="form-group">
+                  <label>Prioridad</label>
+                  <select id="taskPriority">
+                    <option value="">Seleccionar prioridad</option>
+                    <option value="Baja">Baja</option>
+                    <option value="Media">Media</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Crítica">Crítica</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Tipo de Tarea</label>
+                  <select id="taskType">
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Desarrollo">Desarrollo</option>
+                    <option value="Diseño">Diseño</option>
+                    <option value="Análisis">Análisis</option>
+                    <option value="Testing">Testing</option>
+                    <option value="Documentación">Documentación</option>
+                    <option value="Soporte">Soporte</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
                   <label>Tiempo Estimado (días)</label>
                   <input type="number" id="estimatedTime" placeholder="Ej: 10" min="1" />
                 </div>
 
                 <div class="form-group">
-                  <label>Recursos Disponibles</label>
-                  <select id="availableResources">
-                    <option value="">Nivel de recursos</option>
-                    <option value="Abundantes">Abundantes</option>
-                    <option value="Suficientes">Suficientes</option>
-                    <option value="Limitados">Limitados</option>
-                    <option value="Escasos">Escasos</option>
-                  </select>
+                  <label>Número de Asignados</label>
+                  <input type="number" id="assigneesCount" placeholder="Ej: 3" min="0" value="1" />
+                </div>
+
+                <div class="form-group">
+                  <label>Dependencias</label>
+                  <input type="number" id="dependencies" placeholder="Ej: 2" min="0" value="0" />
                 </div>
 
                 <button type="submit" class="btn-calculate">
@@ -133,11 +156,14 @@ export function initRiskClassification() {
       const taskName = (document.getElementById('taskName') as HTMLInputElement)?.value;
       const taskArea = (document.getElementById('taskArea') as HTMLSelectElement)?.value;
       const taskComplexity = (document.getElementById('taskComplexity') as HTMLSelectElement)?.value;
+      const taskPriority = (document.getElementById('taskPriority') as HTMLSelectElement)?.value;
+      const taskType = (document.getElementById('taskType') as HTMLSelectElement)?.value;
       const estimatedTime = (document.getElementById('estimatedTime') as HTMLInputElement)?.value;
-      const availableResources = (document.getElementById('availableResources') as HTMLSelectElement)?.value;
+      const assigneesCount = (document.getElementById('assigneesCount') as HTMLInputElement)?.value;
+      const dependencies = (document.getElementById('dependencies') as HTMLInputElement)?.value;
 
-      if (!taskArea || !taskComplexity || !estimatedTime || !availableResources) {
-        alert('Por favor complete todos los campos');
+      if (!taskArea || !taskComplexity || !taskPriority || !taskType || !estimatedTime) {
+        alert('Por favor complete todos los campos requeridos');
         return;
       }
 
@@ -155,8 +181,11 @@ export function initRiskClassification() {
           body: JSON.stringify({
             area: taskArea,
             complexity_level: taskComplexity,
-            duration_est: parseFloat(estimatedTime),
-            tools_used: availableResources
+            priority: taskPriority,
+            task_type: taskType,
+            duration_est: parseInt(estimatedTime),
+            assignees_count: parseInt(assigneesCount) || 1,
+            dependencies: parseInt(dependencies) || 0
           })
         });
 
@@ -165,6 +194,26 @@ export function initRiskClassification() {
         }
 
         const data = await response.json();
+        
+        console.log('Respuesta del modelo:', data); // Debug
+        
+        // MODELO BINARIO: Solo 2 clases (BAJO_RIESGO y ALTO_RIESGO)
+        const probabilities = data.probabilities || {};
+        
+        const probBajo = probabilities['BAJO_RIESGO'] || 0;
+        const probAlto = probabilities['ALTO_RIESGO'] || 0;
+        
+        // Mapear risk_level del backend a formato del frontend
+        const riskLevelMap: any = {
+          'bajo_riesgo': 'low',
+          'alto_riesgo': 'high'
+        };
+        
+        const riskLevel = data.risk_level?.toLowerCase() || 'bajo_riesgo';
+        const riskClass = riskLevelMap[riskLevel] || 'low';
+        
+        // La confianza es la probabilidad de la clase predicha
+        const riskProbability = riskLevel.includes('alto') ? probAlto : probBajo;
         
         if (resultCard) {
           resultCard.style.display = 'block';
@@ -179,179 +228,86 @@ export function initRiskClassification() {
           </div>
 
           <div class="risk-prediction">
-            <div class="risk-level risk-${data.predicted_risk?.toLowerCase() || 'medium'}">
-              RIESGO ${data.predicted_risk?.toUpperCase() || 'MEDIO'}
+            <div class="risk-level risk-${riskClass}">
+              RIESGO ${data.risk_level?.toUpperCase() || 'MEDIO'}
             </div>
-            <div class="risk-probability">Confianza: ${data.confidence ? (data.confidence * 100).toFixed(1) : '85'}%</div>
+            <div class="risk-probability">Confianza: ${(riskProbability * 100).toFixed(1)}%</div>
           </div>
 
           <div class="risk-distribution">
             <div class="risk-bar-item">
-              <span class="risk-bar-label">10%</span>
+              <span class="risk-bar-label">${(probBajo * 100).toFixed(1)}%</span>
               <div class="risk-bar">
-                <div class="risk-bar-fill risk-low" style="width: 10%"></div>
+                <div class="risk-bar-fill risk-low" style="width: ${(probBajo * 100).toFixed(0)}%"></div>
               </div>
-              <span class="risk-badge-small risk-low">Bajo</span>
+              <span class="risk-badge-small risk-low">Bajo Riesgo</span>
             </div>
             <div class="risk-bar-item">
-              <span class="risk-bar-label">25%</span>
+              <span class="risk-bar-label">${(probAlto * 100).toFixed(1)}%</span>
               <div class="risk-bar">
-                <div class="risk-bar-fill risk-medium" style="width: 25%"></div>
+                <div class="risk-bar-fill risk-high" style="width: ${(probAlto * 100).toFixed(0)}%"></div>
               </div>
-              <span class="risk-badge-small risk-medium">Medio</span>
+              <span class="risk-badge-small risk-high">Alto Riesgo</span>
+            </div>
+          </div>
             </div>
             <div class="risk-bar-item">
-              <span class="risk-bar-label">55%</span>
+              <span class="risk-bar-label">${(probAlto * 100).toFixed(1)}%</span>
               <div class="risk-bar">
-                <div class="risk-bar-fill risk-high" style="width: 55%"></div>
+                <div class="risk-bar-fill risk-high" style="width: ${(probAlto * 100).toFixed(0)}%"></div>
               </div>
-              <span class="risk-badge-small risk-high">Alto</span>
-            </div>
-            <div class="risk-bar-item">
-              <span class="risk-bar-label">10%</span>
-              <div class="risk-bar">
-                <div class="risk-bar-fill risk-critical" style="width: 10%"></div>
-              </div>
-              <span class="risk-badge-small risk-critical">Crítico</span>
+              <span class="risk-badge-small risk-high">Alto Riesgo</span>
             </div>
           </div>
 
           <div class="shap-section">
-            <h4>Importancia de Variables (SHAP)</h4>
-            <p class="shap-subtitle">Factores que más influyen en la predicción</p>
+            <h4>Factores de Riesgo Identificados</h4>
+            <p class="shap-subtitle">Razones por las que el modelo asignó este nivel de riesgo</p>
             
-            <div class="shap-item">
-              <div class="shap-label">
-                <span>Complejidad</span>
-                <span class="shap-value">85%</span>
+            ${(data.risk_factors || []).map((factor: string) => `
+              <div class="shap-item">
+                <div class="shap-label">
+                  <span>${factor}</span>
+                </div>
               </div>
-              <div class="shap-bar">
-                <div class="shap-fill" style="width: 85%"></div>
-              </div>
-              <p class="shap-description">Tarea altamente compleja</p>
+            `).join('')}
             </div>
 
-            <div class="shap-item">
-              <div class="shap-label">
-                <span>Recursos disponibles</span>
-                <span class="shap-value">60%</span>
-              </div>
-              <div class="shap-bar">
-                <div class="shap-fill" style="width: 60%"></div>
-              </div>
-              <p class="shap-description">Recursos limitados</p>
-            </div>
-
-            <div class="shap-item">
-              <div class="shap-label">
-                <span>Histórico del área</span>
-                <span class="shap-value">45%</span>
-              </div>
-              <div class="shap-bar">
-                <div class="shap-fill" style="width: 45%"></div>
-              </div>
-              <p class="shap-description">Área con historial de retrasos</p>
-            </div>
-
-            <div class="shap-item">
-              <div class="shap-label">
-                <span>Tiempo estimado</span>
-                <span class="shap-value">70%</span>
-              </div>
-              <div class="shap-bar">
-                <div class="shap-fill" style="width: 70%"></div>
-              </div>
-              <p class="shap-description">Plazo ajustado</p>
-            </div>
-
-            <div class="shap-item">
-              <div class="shap-label">
-                <span>Dependencias</span>
-                <span class="shap-value">40%</span>
-              </div>
-              <div class="shap-bar">
-                <div class="shap-fill" style="width: 40%"></div>
-              </div>
-              <p class="shap-description">Múltiples dependencias</p>
-            </div>
-          </div>
-
-          <div class="comparison-section">
-            <h4>Comparación con Tareas Similares</h4>
-            <p class="comparison-subtitle">Benchmark de riesgo</p>
-            
-            <svg class="comparison-chart" width="100%" height="200" viewBox="0 0 600 200">
-              <rect x="100" y="40" width="120" height="140" fill="#00bcd4" rx="4"/>
-              <text x="160" y="195" text-anchor="middle" font-size="14" fill="#6c757d">Tarea Actual</text>
-              <text x="160" y="30" text-anchor="middle" font-size="16" font-weight="600" fill="#005a9c">55</text>
-              
-              <rect x="260" y="80" width="120" height="100" fill="#0072c6" rx="4"/>
-              <text x="320" y="195" text-anchor="middle" font-size="14" fill="#6c757d">Promedio Área</text>
-              <text x="320" y="70" text-anchor="middle" font-size="16" font-weight="600" fill="#005a9c">38</text>
-              
-              <rect x="420" y="60" width="120" height="120" fill="#005a9c" rx="4"/>
-              <text x="480" y="195" text-anchor="middle" font-size="14" fill="#6c757d">Tareas Similares</text>
-              <text x="480" y="50" text-anchor="middle" font-size="16" font-weight="600" fill="#005a9c">42</text>
-            </svg>
           </div>
 
           <div class="interpretation-section">
-            <h4>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-                <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="#00bcd4"/>
-              </svg>
-              Interpretación Automática
-            </h4>
+            <h4>⭐ Interpretación Automática</h4>
             
-            <div class="interpretation-item success">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="8" fill="#28a745"/>
-                <path d="M6 10l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <p>La tarea presenta un nivel de riesgo alto debido principalmente a su complejidad y recursos limitados.</p>
-            </div>
-
-            <div class="interpretation-item warning">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 2l8 14H2l8-14z" fill="#ffc107"/>
-                <path d="M10 8v3M10 13v1" stroke="white" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              <p>Se recomienda asignar recursos adicionales y establecer puntos de control frecuentes.</p>
-            </div>
-
-            <div class="interpretation-item danger">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="8" fill="#dc3545"/>
-                <path d="M7 7l6 6M7 13l6-6" stroke="white" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              <p>El historial del área muestra tendencia a retrasos. Considerar reasignación o soporte cruzado.</p>
-            </div>
+            ${(data.recommendations || []).map((rec: string, idx: number) => {
+              const colors = ['#4caf50', '#ff9800', '#f44336'];
+              const icons = ['✓', '⚠', '✗'];
+              const color = colors[Math.min(idx, 2)];
+              const icon = icons[Math.min(idx, 2)];
+              
+              return `
+                <div class="interpretation-item" style="border-left-color: ${color}">
+                  <span style="color: ${color}">${icon}</span>
+                  <p>${rec}</p>
+                </div>
+              `;
+            }).join('')}
           </div>
         `;
-
-        // Scroll al resultado
-        resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-      } catch (error) {
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Calcular Riesgo';
+        
+      } catch (error: any) {
         console.error('Error:', error);
-        alert('Error al calcular el riesgo: ' + (error as Error).message);
-      } finally {
+        alert('Error: ' + error.message);
+        
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = 'Calcular Riesgo';
         }
       }
-    });
-  }
-
-  // Logout
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('userEmail');
-      window.location.hash = '#login';
     });
   }
 }

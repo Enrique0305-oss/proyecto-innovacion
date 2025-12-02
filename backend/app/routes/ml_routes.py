@@ -69,10 +69,17 @@ def prediction_risk():
         # Llamar al modelo de predicción
         result = predict_risk(data)
         
+        print(f"📊 Resultado del modelo:")
+        print(f"   risk_level: {result.get('risk_level')}")
+        print(f"   probability: {result.get('probability')}")
+        print(f"   probabilities: {result.get('probabilities')}")
+        print(f"   factors: {result.get('factors')}")
+        
         return jsonify({
             'task_id': data.get('task_id'),
             'risk_level': result['risk_level'],
             'risk_probability': result['probability'],
+            'probabilities': result.get('probabilities', {}),
             'risk_factors': result.get('factors', []),
             'recommendations': result.get('recommendations', [])
         }), 200

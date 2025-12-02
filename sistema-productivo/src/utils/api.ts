@@ -272,6 +272,135 @@ class ApiService {
 
     return response.json();
   }
+
+  // ============================================================================
+  // ML Endpoints - Machine Learning
+  // ============================================================================
+
+  /**
+   * Predecir riesgo de una tarea usando modelo CatBoost
+   */
+  async predictRisk(taskData: {
+    complexity_level: string;
+    priority: string;
+    area: string;
+    task_type: string;
+    duration_est: number;
+    assignees_count: number;
+    dependencies: number;
+  }) {
+    const response = await fetch(`${API_URL}/ml/prediccion-riesgo`, {
+      method: 'POST',
+      mode: 'cors',
+      headers: this.getHeaders(),
+      body: JSON.stringify(taskData),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al predecir riesgo');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Obtener información del modelo actual
+   */
+  async getModelInfo() {
+    const response = await fetch(`${API_URL}/ml/model/info`, {
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al obtener info del modelo');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Reentrenar modelo (solo super_admin)
+   */
+  async retrainModel(config?: {
+    use_optuna?: boolean;
+    n_trials?: number;
+  }) {
+    const response = await fetch(`${API_URL}/ml/model/train`, {
+      method: 'POST',
+      mode: 'cors',
+      headers: this.getHeaders(),
+      body: JSON.stringify(config || {}),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al reentrenar modelo');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Obtener métricas del modelo
+   */
+  async getModelMetrics() {
+    const response = await fetch(`${API_URL}/ml/model/metrics`, {
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al obtener métricas');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Obtener URL de imagen de métrica
+   */
+  getMetricImageUrl(type: 'confusion_matrix' | 'feature_importance'): string {
+    const token = localStorage.getItem('access_token');
+    return `${API_URL}/ml/model/metrics/image/${type}?token=${token}`;
+  }
+
+  /**
+   * Obtener configuración del modelo
+   */
+  async getModelConfig() {
+    const response = await fetch(`${API_URL}/ml/model/config`, {
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al obtener configuración');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Vista previa de datos de entrenamiento (solo super_admin)
+   */
+  async getTrainingDataPreview(limit: number = 10) {
+    const response = await fetch(`${API_URL}/ml/data/preview?limit=${limit}`, {
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al obtener datos');
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiService();
