@@ -1,0 +1,47 @@
+{
+  "categorical": [
+    "task_area",
+    "task_type",
+    "complexity_level",
+    "person_area",
+    "role"
+  ],
+  "numeric": [
+    "duration_est_imputed",
+    "experience_years_imputed",
+    "availability_hours_week_imputed",
+    "current_load_imputed",
+    "performance_index_imputed",
+    "rework_rate_imputed",
+    "experience_complexity_ratio",
+    "load_capacity_ratio"
+  ],
+  "binary": [
+    "match_area",
+    "match_role_type"
+  ],
+  "all_features": [
+    "task_area",
+    "task_type",
+    "complexity_level",
+    "duration_est_imputed",
+    "person_area",
+    "role",
+    "experience_years_imputed",
+    "availability_hours_week_imputed",
+    "current_load_imputed",
+    "performance_index_imputed",
+    "rework_rate_imputed",
+    "match_area",
+    "experience_complexity_ratio",
+    "load_capacity_ratio",
+    "match_role_type"
+  ],
+  "target": "success_label",
+  "class_distribution": {
+    "class_0": 5509,
+    "class_1": 5646,
+    "total": 11155,
+    "scale_pos_weight": 0.9757350336521431
+  }
+}

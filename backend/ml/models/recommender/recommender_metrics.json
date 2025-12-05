@@ -1,0 +1,66 @@
+{
+  "timestamp": "2025-11-21T19:45:41.325332",
+  "model": "CatBoostClassifier",
+  "purpose": "Recommender System (Person-Task Assignment)",
+  "approach": "Binary Classification + Ranking",
+  "dataset_info": {
+    "total_pairs": 11155,
+    "total_tasks": 2849,
+    "train_pairs": 8924,
+    "test_pairs": 2231,
+    "train_tasks": 2819,
+    "test_tasks": 1591,
+    "class_0": 5509,
+    "class_1": 5646,
+    "scale_pos_weight": 0.9757350336521431
+  },
+  "features": {
+    "total": 15,
+    "categorical": 5,
+    "numeric": 8,
+    "binary": 2,
+    "interaction": 4
+  },
+  "classification_metrics": {
+    "roc_auc": 0.8987998308896457,
+    "accuracy": 0.7965038099506948,
+    "precision": 0.8205128205128205,
+    "recall": 0.7652790079716564,
+    "f1_score": 0.7919340054995417,
+    "avg_precision": 0.9060550687237059
+  },
+  "ranking_metrics": {
+    "accuracy_at_1": 52.48271527341295,
+    "accuracy_at_3": 52.48271527341295,
+    "accuracy_at_5": 52.48271527341295,
+    "precision_at_1": 52.48271527341295,
+    "mrr": 0.5248271527341295,
+    "total_tasks_evaluated": 1591
+  },
+  "cross_validation": {
+    "cv_folds": 5,
+    "roc_auc_mean": 0.8948428929764802,
+    "roc_auc_std": 0.004684868257850076,
+    "roc_auc_scores": [
+      0.8916808132351611,
+      0.8983443492411078,
+      0.8910861502223629,
+      0.8907408662985312,
+      0.902362285885238
+    ]
+  },
+  "hyperparameters": {
+    "iterations": 1000,
+    "learning_rate": 0.05,
+    "depth": 6,
+    "l2_leaf_reg": 3,
+    "auto_class_weights": "Balanced",
+    "early_stopping_rounds": 50,
+    "best_iteration": 220
+  },
+  "data_leakage_prevention": {
+    "prohibited_features_used": false,
+    "features_used_are_pre_assignment": true,
+    "temporal_validation": "Features only use information available BEFORE task assignment"
+  }
+}
