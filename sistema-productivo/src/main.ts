@@ -7,6 +7,7 @@ import './styles/tasks.css';
 import './styles/risk-classification.css';
 import './styles/duration-prediction.css';
 import './styles/person-task-recommendation.css';
+import './styles/asignacion-inteligente.css';
 import './styles/performance.css';
 import './styles/process-simulation.css';
 import './styles/intelligent-visualization.css';

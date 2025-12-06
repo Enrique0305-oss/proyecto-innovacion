@@ -1,6 +1,5 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
-import { api } from '../utils/api';
 
 export function DurationPredictionPage(): string {
   return `
@@ -38,38 +37,21 @@ export function DurationPredictionPage(): string {
             </div>
             <div class="module-info">
               <h2 class="module-title">Predicción de Duración Real</h2>
-              <p class="module-description">Modelo 2: Estimación de duración real basada en CatBoost Regressor</p>
+              <p class="module-description">Modelo CatBoost Numeric Only - R² = 0.9742 (97.4% varianza explicada)</p>
             </div>
           </div>
 
           <div class="risk-container">
             <!-- Formulario -->
             <div class="risk-form-card">
-              <h3>Características de la Tarea</h3>
-              <p class="form-subtitle">Ingrese los datos para estimar la duración</p>
+              <h3>Predicción de Duración</h3>
+              <p class="form-subtitle">Ingrese los datos de la tarea para estimar la duración real</p>
 
               <form id="durationForm">
                 <div class="form-group">
-                  <label>Nombre de la Tarea</label>
-                  <input type="text" id="taskName" placeholder="Ej: Desarrollo módulo pagos" />
-                </div>
-
-                <div class="form-group">
-                  <label>Área</label>
-                  <select id="taskArea">
-                    <option value="">Seleccionar área</option>
-                    <option value="TI">TI</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Operaciones">Operaciones</option>
-                    <option value="RRHH">RRHH</option>
-                    <option value="Ventas">Ventas</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label>Complejidad</label>
-                  <select id="taskComplexity">
-                    <option value="">Nivel de complejidad</option>
+                  <label>Complejidad de la Tarea</label>
+                  <select id="taskComplexity" required style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;">
+                    <option value="">Seleccionar complejidad</option>
                     <option value="Baja">Baja</option>
                     <option value="Media">Media</option>
                     <option value="Alta">Alta</option>
@@ -77,18 +59,23 @@ export function DurationPredictionPage(): string {
                 </div>
 
                 <div class="form-group">
-                  <label>Tiempo Estimado Inicial (días)</label>
-                  <input type="number" id="estimatedTime" placeholder="10" min="1" />
+                  <label>Duración Estimada Inicial (días)</label>
+                  <input 
+                    type="number" 
+                    id="estimatedTime" 
+                    placeholder="Ej: 10" 
+                    min="1" 
+                    max="90"
+                    step="0.5"
+                    required 
+                    style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;"
+                  />
                 </div>
 
                 <div class="form-group">
-                  <label>Tamaño del Equipo</label>
-                  <select id="teamSize">
-                    <option value="">Número de personas</option>
-                    <option value="1-2">1-2 personas</option>
-                    <option value="3-5">3-5 personas</option>
-                    <option value="6-10">6-10 personas</option>
-                    <option value="10+">Más de 10 personas</option>
+                  <label>Asignar a Persona (opcional)</label>
+                  <select id="personId" style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;">
+                    <option value="">Sin asignar</option>
                   </select>
                 </div>
 
@@ -97,7 +84,7 @@ export function DurationPredictionPage(): string {
                     <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
                     <path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                   </svg>
-                  Estimar Duración Real
+                  Predecir Duración
                 </button>
               </form>
             </div>
@@ -109,8 +96,8 @@ export function DurationPredictionPage(): string {
                   <circle cx="40" cy="40" r="35" stroke="#cbd5e0" stroke-width="3"/>
                   <path d="M40 20v20l14 10" stroke="#cbd5e0" stroke-width="3" stroke-linecap="round"/>
                 </svg>
-                <h3>Ingrese las características de la tarea</h3>
-                <p>El modelo predecirá la duración real basándose en datos históricos</p>
+                <h3>Ingrese los datos de la tarea</h3>
+                <p>El sistema predecirá la duración real utilizando inteligencia artificial</p>
               </div>
             </div>
           </div>
@@ -120,31 +107,189 @@ export function DurationPredictionPage(): string {
   `;
 }
 
+async function loadPersonsForSelector() {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/users', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const personSelect = document.getElementById('personId') as HTMLSelectElement;
+      
+      if (personSelect && data.users) {
+        data.users.forEach((user: any) => {
+          const option = document.createElement('option');
+          option.value = user.id;
+          const exp = user.experience_years || 0;
+          const perf = user.performance_index || 50;
+          option.textContent = `${user.full_name} - ${exp} años exp, ${perf.toFixed(0)}% perf`;
+          personSelect.appendChild(option);
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando personas:', error);
+  }
+}
+
+function displayResults(
+  estimatedTime: string,
+  predictedDuration: number,
+  difference: number,
+  percentDiff: string,
+  confidenceInterval: any,
+  factors: string[],
+  mode: string,
+  resultCard: HTMLElement | null
+) {
+  if (!resultCard) return;
+  
+  const minDuration = confidenceInterval.min || predictedDuration * 0.8;
+  const maxDuration = confidenceInterval.max || predictedDuration * 1.2;
+  const meanDuration = confidenceInterval.mean || predictedDuration;
+  
+  resultCard.innerHTML = `
+    <div class="duration-results" style="padding: 20px;">
+      <!-- Cards de Resultado -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+        <!-- Estimación Inicial -->
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid #dee2e6;">
+          <h4 style="margin: 0 0 10px 0; color: #6c757d; font-size: 14px; font-weight: 500;">Estimación Inicial</h4>
+          <div style="font-size: 32px; font-weight: 700; color: #495057; margin: 10px 0;">${estimatedTime} días</div>
+          <p style="margin: 0; color: #6c757d; font-size: 13px;">Tiempo planificado</p>
+        </div>
+
+        <!-- Predicción IA -->
+        <div style="background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(0, 188, 212, 0.2) 100%); padding: 20px; border-radius: 12px; text-align: center; border: 2px solid #00bcd4;">
+          <h4 style="margin: 0 0 10px 0; color: #00bcd4; font-size: 14px; font-weight: 600;">Predicción IA (CatBoost)</h4>
+          <div style="font-size: 36px; font-weight: 700; color: #00bcd4; margin: 10px 0;">${predictedDuration.toFixed(1)} días</div>
+          <p style="margin: 0; color: #00838f; font-size: 13px;">Duración estimada real</p>
+        </div>
+
+        <!-- Diferencia -->
+        <div style="background: ${difference > 0 ? 'rgba(255, 152, 0, 0.1)' : 'rgba(76, 175, 80, 0.1)'}; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid ${difference > 0 ? '#ff9800' : '#4caf50'};">
+          <h4 style="margin: 0 0 10px 0; color: ${difference > 0 ? '#ff9800' : '#4caf50'}; font-size: 14px; font-weight: 500;">Diferencia</h4>
+          <div style="font-size: 32px; font-weight: 700; color: ${difference > 0 ? '#ff9800' : '#4caf50'}; margin: 10px 0;">${difference > 0 ? '+' : ''}${difference.toFixed(1)} días</div>
+          <p style="margin: 0; color: ${difference > 0 ? '#e65100' : '#2e7d32'}; font-size: 13px;">(${percentDiff}% ${difference > 0 ? 'más tiempo' : 'menos tiempo'})</p>
+        </div>
+      </div>
+
+      <!-- Intervalo de Confianza -->
+      <div style="background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #e0e0e0;">
+        <h4 style="margin: 0 0 8px 0; color: #495057; font-size: 16px;">📊 Intervalo de Confianza (80%)</h4>
+        <p style="margin: 0 0 20px 0; color: #6c757d; font-size: 14px;">Rango esperado de duración según modelo CatBoost</p>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+          <span><strong>Mínimo:</strong> ${minDuration.toFixed(1)} días</span>
+          <span><strong>Promedio:</strong> ${meanDuration.toFixed(1)} días</span>
+          <span><strong>Máximo:</strong> ${maxDuration.toFixed(1)} días</span>
+        </div>
+        
+        <div style="height: 30px; background: linear-gradient(90deg, #4caf50 0%, #00bcd4 50%, #ff9800 100%); border-radius: 15px; position: relative;">
+          <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 4px; height: 40px; background: #fff; border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: rgba(33, 150, 243, 0.1); border-radius: 8px; border-left: 4px solid #2196f3;">
+          <p style="margin: 0; color: #1565c0; font-size: 14px;">
+            💡 Con 80% de confianza, la tarea tomará entre <strong>${minDuration.toFixed(1)} y ${maxDuration.toFixed(1)} días</strong>. Se recomienda planificar con <strong>${meanDuration.toFixed(1)} días</strong>.
+          </p>
+        </div>
+      </div>
+
+      ${factors.length > 0 ? `
+      <div style="background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #e0e0e0;">
+        <h4 style="margin: 0 0 15px 0; color: #495057; font-size: 16px;">🎯 Factores que Afectan la Duración</h4>
+        <ul style="margin: 0; padding: 0 0 0 20px; color: #6c757d; font-size: 14px; line-height: 2;">
+          ${factors.map(factor => `<li>${factor}</li>`).join('')}
+        </ul>
+      </div>
+      ` : ''}
+
+      <!-- Información del Modelo -->
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e0e0e0;">
+        <h4 style="margin: 0 0 10px 0; color: #495057; font-size: 15px;">ℹ️ Información del Modelo</h4>
+        <p style="margin: 0; color: #6c757d; font-size: 14px; line-height: 1.6;">
+          ${mode === 'personalizado' ? 'Predicción personalizada basada en las métricas del colaborador seleccionado.' : 'Predicción genérica basada en datos históricos del sistema.'}
+        </p>
+      </div>
+
+      <!-- Recomendaciones -->
+      <div style="background: #fff; padding: 25px; border-radius: 12px; border: 1px solid #e0e0e0;">
+        <h4 style="margin: 0 0 20px 0; color: #495057; font-size: 16px;">💡 Recomendaciones</h4>
+        
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; padding: 15px; background: rgba(0, 188, 212, 0.05); border-left: 4px solid #00bcd4; border-radius: 4px;">
+          <div style="background: #00bcd4; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">1</div>
+          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Ajustar cronograma:</strong> Considerar ${meanDuration.toFixed(1)} días en lugar de ${estimatedTime} días${difference > 2 ? ' <span style="color: #ff9800;">(diferencia significativa)</span>' : ''}.</p>
+        </div>
+
+        ${difference > 3 ? `
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; padding: 15px; background: rgba(255, 152, 0, 0.05); border-left: 4px solid #ff9800; border-radius: 4px;">
+          <div style="background: #ff9800; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">2</div>
+          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Recursos adicionales:</strong> La predicción es ${percentDiff}% mayor. Considera asignar más personas o reducir alcance.</p>
+        </div>
+        ` : ''}
+
+        <div style="display: flex; gap: 15px; margin-bottom: ${mode === 'genérico' ? '15px' : '0'}; padding: 15px; background: rgba(33, 150, 243, 0.05); border-left: 4px solid #2196f3; border-radius: 4px;">
+          <div style="background: #2196f3; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">${difference > 3 ? '3' : '2'}</div>
+          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Monitoreo:</strong> Establecer checkpoints cada ${Math.ceil(meanDuration / 3)} días para validar el progreso real.</p>
+        </div>
+
+        ${mode === 'genérico' ? `
+        <div style="display: flex; gap: 15px; padding: 15px; background: rgba(76, 175, 80, 0.05); border-left: 4px solid #4caf50; border-radius: 4px;">
+          <div style="background: #4caf50; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">${difference > 3 ? '4' : '3'}</div>
+          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Mejora de predicción:</strong> Selecciona una persona específica arriba para obtener estimación personalizada basada en experiencia y rendimiento real.</p>
+        </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+
+  // Scroll al resultado
+  resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 export function initDurationPrediction() {
   initAIAssistant();
 
   const form = document.getElementById('durationForm') as HTMLFormElement;
   const resultCard = document.getElementById('durationResult');
 
+  // Cargar personas para el selector
+  loadPersonsForSelector();
+
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const taskName = (document.getElementById('taskName') as HTMLInputElement)?.value;
-      const taskArea = (document.getElementById('taskArea') as HTMLSelectElement)?.value;
       const taskComplexity = (document.getElementById('taskComplexity') as HTMLSelectElement)?.value;
       const estimatedTime = (document.getElementById('estimatedTime') as HTMLInputElement)?.value;
-      const teamSize = (document.getElementById('teamSize') as HTMLSelectElement)?.value;
+      const personId = (document.getElementById('personId') as HTMLSelectElement)?.value;
 
-      if (!taskArea || !taskComplexity || !estimatedTime) {
-        alert('Por favor complete todos los campos requeridos');
+      if (!taskComplexity || !estimatedTime) {
+        alert('Por favor complete los campos requeridos (Complejidad y Duración Estimada)');
         return;
       }
 
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Estimando...';
+        submitBtn.textContent = 'Prediciendo con IA...';
+
+        // Preparar datos según modelo numeric_only
+        const requestData: any = {
+          complexity_level: taskComplexity,
+          duration_est_days: parseFloat(estimatedTime)
+        };
+
+        // Si se seleccionó persona, agregar person_id para modo personalizado
+        if (personId) {
+          requestData.person_id = parseInt(personId);
+        }
+
+        console.log('📤 Enviando solicitud:', requestData);
 
         const response = await fetch('http://127.0.0.1:5000/api/ml/tiempo-real', {
           method: 'POST',
@@ -152,214 +297,61 @@ export function initDurationPrediction() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           },
-          body: JSON.stringify({
-            area: taskArea,
-            complexity_level: taskComplexity,
-            duration_est: parseFloat(estimatedTime)
-          })
+          body: JSON.stringify(requestData)
         });
 
         if (!response.ok) {
-          throw new Error('Error al estimar duración');
+          const errorData = await response.json();
+          console.error('❌ Error del servidor:', errorData);
+          throw new Error(errorData.details || errorData.error || 'Error al estimar duración');
         }
 
         const data = await response.json();
-        const predictedDuration = data.predicted_duration || parseFloat(estimatedTime) * 1.35;
+        console.log('📊 Respuesta del modelo:', data);
+        
+        // Extraer datos de la respuesta
+        const predictedDuration = data.predicted_duration_days || data.duration;
+        const confidenceInterval = data.confidence_interval || {
+          min: predictedDuration * 0.8,
+          max: predictedDuration * 1.2,
+          mean: predictedDuration
+        };
+        const factors = data.factors || [];
+        const mode = requestData.person_id ? 'personalizado' : 'genérico';
+        
         const difference = predictedDuration - parseFloat(estimatedTime);
-        const percentDiff = ((difference / parseFloat(estimatedTime)) * 100).toFixed(0);
+        const percentDiff = ((difference / parseFloat(estimatedTime)) * 100).toFixed(1);
+        
+        displayResults(estimatedTime, predictedDuration, difference, percentDiff, confidenceInterval, factors, mode, resultCard);
       
-      if (resultCard) {
-        resultCard.innerHTML = `
-          <div class="duration-results">
-            <!-- Estimación Inicial -->
-            <div class="duration-card">
-              <h4>Estimación Inicial</h4>
-              <div class="duration-value">${estimatedTime} días</div>
-              <p class="duration-label">Tiempo planificado</p>
-            </div>
-
-            <!-- Predicción IA -->
-            <div class="duration-card duration-highlight">
-              <div class="duration-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="9" stroke="#00bcd4" stroke-width="2"/>
-                  <path d="M12 7v5l4 3" stroke="#00bcd4" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <h4>Predicción IA</h4>
-              <div class="duration-value prediction">${predictedDuration.toFixed(1)} días</div>
-              <p class="duration-label">Duración estimada real</p>
-            </div>
-
-            <!-- Diferencia -->
-            <div class="duration-card">
-              <h4>Diferencia</h4>
-              <div class="duration-value difference">${difference > 0 ? '+' : ''}${difference.toFixed(1)} días</div>
-              <p class="duration-label">(${percentDiff}% ${difference > 0 ? 'más' : 'menos'})</p>
-            </div>
-          </div>
-
-          <!-- Intervalo de Confianza -->
-          <div class="confidence-section">
-            <h4>Intervalo de Confianza</h4>
-            <p class="section-subtitle">Rango esperado de duración (92% confianza)</p>
-            
-            <div class="confidence-slider">
-              <div class="slider-labels">
-                <span class="slider-label">Mínimo<br><strong>12d</strong></span>
-                <span class="slider-label optimist">Optimista</span>
-                <span class="slider-label realist">Realista</span>
-                <span class="slider-label pessimist">Pesimista</span>
-                <span class="slider-label">Máximo<br><strong>15d</strong></span>
-              </div>
-              <div class="slider-track">
-                <div class="slider-fill"></div>
-                <div class="slider-thumb" style="left: 50%;"></div>
-              </div>
-            </div>
-
-            <div class="confidence-info">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="8" fill="#ff9800"/>
-                <path d="M10 6v4M10 13v1" stroke="white" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              <p>Basado en el análisis histórico, la tarea probablemente tomará entre <strong>12 y 15 días</strong>. Se recomienda planificar con 13.5 días.</p>
-            </div>
-          </div>
-
-          <!-- Gráfico de Dispersión -->
-          <div class="chart-section">
-            <h4>Gráfico de Dispersión</h4>
-            <p class="section-subtitle">Comparación entre tiempo estimado vs tiempo real (tareas históricas)</p>
-            
-            <svg class="scatter-chart" width="100%" height="300" viewBox="0 0 700 300">
-              <!-- Grid -->
-              <line x1="60" y1="250" x2="660" y2="250" stroke="#e0e0e0" stroke-width="1"/>
-              <line x1="60" y1="50" x2="60" y2="250" stroke="#e0e0e0" stroke-width="1"/>
-              
-              <!-- Grid lines -->
-              <line x1="60" y1="200" x2="660" y2="200" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="4"/>
-              <line x1="60" y1="150" x2="660" y2="150" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="4"/>
-              <line x1="60" y1="100" x2="660" y2="100" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="4"/>
-              
-              <!-- Y-axis labels -->
-              <text x="45" y="255" text-anchor="end" font-size="12" fill="#6c757d">0</text>
-              <text x="45" y="205" text-anchor="end" font-size="12" fill="#6c757d">6</text>
-              <text x="45" y="155" text-anchor="end" font-size="12" fill="#6c757d">12</text>
-              <text x="45" y="105" text-anchor="end" font-size="12" fill="#6c757d">18</text>
-              <text x="45" y="55" text-anchor="end" font-size="12" fill="#6c757d">24</text>
-              
-              <!-- Y-axis title -->
-              <text x="20" y="150" text-anchor="middle" font-size="13" fill="#495057" transform="rotate(-90 20 150)">Real (días)</text>
-              
-              <!-- X-axis labels -->
-              <text x="130" y="270" text-anchor="middle" font-size="12" fill="#6c757d">5</text>
-              <text x="230" y="270" text-anchor="middle" font-size="12" fill="#6c757d">8</text>
-              <text x="330" y="270" text-anchor="middle" font-size="12" fill="#6c757d">10</text>
-              <text x="430" y="270" text-anchor="middle" font-size="12" fill="#6c757d">12</text>
-              <text x="530" y="270" text-anchor="middle" font-size="12" fill="#6c757d">15</text>
-              <text x="595" y="270" text-anchor="middle" font-size="12" fill="#6c757d">7</text>
-              <text x="630" y="270" text-anchor="middle" font-size="12" fill="#6c757d">20</text>
-              <text x="660" y="270" text-anchor="middle" font-size="12" fill="#6c757d">6</text>
-              
-              <!-- X-axis title -->
-              <text x="360" y="290" text-anchor="middle" font-size="13" fill="#495057">Estimado (días)</text>
-              
-              <!-- Data points -->
-              <circle cx="130" cy="225" r="6" fill="#00bcd4"/>
-              <circle cx="230" cy="183" r="6" fill="#00bcd4"/>
-              <circle cx="280" cy="217" r="6" fill="#00bcd4"/>
-              <circle cx="330" cy="150" r="6" fill="#00bcd4"/>
-              <circle cx="430" cy="183" r="6" fill="#00bcd4"/>
-              <circle cx="530" cy="133" r="6" fill="#00bcd4"/>
-              <circle cx="595" cy="200" r="6" fill="#00bcd4"/>
-              <circle cx="630" cy="92" r="6" fill="#00bcd4"/>
-              <circle cx="660" cy="217" r="6" fill="#00bcd4"/>
-              
-              <!-- Current prediction (highlighted) -->
-              <circle cx="430" cy="158" r="8" fill="#ff9800" stroke="#fff" stroke-width="2"/>
-            </svg>
-          </div>
-
-          <!-- Variables Más Influyentes -->
-          <div class="variables-section">
-            <h4>Variables Más Influyentes</h4>
-            <p class="section-subtitle">Factores que más afectan la duración real</p>
-            
-            <div class="variable-item">
-              <div class="variable-label">
-                <span>Complejidad técnica</span>
-              </div>
-              <div class="variable-bar">
-                <div class="variable-fill" style="width: 95%"></div>
-              </div>
-            </div>
-
-            <div class="variable-item">
-              <div class="variable-label">
-                <span>Histórico del área</span>
-              </div>
-              <div class="variable-bar">
-                <div class="variable-fill" style="width: 78%"></div>
-              </div>
-            </div>
-
-            <div class="variable-item">
-              <div class="variable-label">
-                <span>Recursos asignados</span>
-              </div>
-              <div class="variable-bar">
-                <div class="variable-fill" style="width: 65%"></div>
-              </div>
-            </div>
-
-            <div class="variable-item">
-              <div class="variable-label">
-                <span>Dependencias</span>
-              </div>
-              <div class="variable-bar">
-                <div class="variable-fill" style="width: 42%"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recomendaciones -->
-          <div class="recommendations-section">
-            <h4>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-                <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="#00bcd4"/>
-              </svg>
-              Recomendaciones
-            </h4>
-            
-            <div class="recommendation-item">
-              <div class="recommendation-number">1</div>
-              <p>Ajustar el cronograma considerando 13.5 días en lugar de ${estimatedTime} días.</p>
-            </div>
-
-            <div class="recommendation-item">
-              <div class="recommendation-number">2</div>
-              <p>Establecer puntos de control cada 3 días para monitorear el progreso real.</p>
-            </div>
-
-            <div class="recommendation-item">
-              <div class="recommendation-number">3</div>
-              <p>Considerar asignar recursos adicionales si se requiere cumplir con el plazo inicial.</p>
-            </div>
-          </div>
-        `;
-
-        // Scroll al resultado
-        resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
       } catch (error) {
-        console.error('Error:', error);
-        alert('Error al estimar la duración: ' + (error as Error).message);
+        console.error('❌ Error completo:', error);
+        if (resultCard) {
+          resultCard.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+              <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                <circle cx="30" cy="30" r="25" stroke="#f44336" stroke-width="2"/>
+                <path d="M30 20v12M30 38v2" stroke="#f44336" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <h3 style="color: #f44336; margin: 20px 0 10px 0;">Error al predecir duración</h3>
+              <p style="color: #6c757d; margin: 0;">${(error as Error).message}</p>
+              <button class="btn-calculate" style="margin-top: 20px;" onclick="location.reload()">
+                Reintentar
+              </button>
+            </div>
+          `;
+        }
       } finally {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Estimar Duración Real';
+          submitBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Predecir Duración Real con IA
+          `;
         }
       }
     });
@@ -371,6 +363,7 @@ export function initDurationPrediction() {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('userEmail');
+      localStorage.removeItem('access_token');
       window.location.hash = '#login';
     });
   }

@@ -23,6 +23,15 @@ class WebUser(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Métricas profesionales para ML
+    experience_years = db.Column(db.Integer, default=2)
+    performance_index = db.Column(db.Float, default=50.0)
+    rework_rate = db.Column(db.Float, default=0.10)
+    satisfaction_score = db.Column(db.Float, default=3.0)
+    current_load = db.Column(db.Integer, default=0)
+    tasks_completed = db.Column(db.Integer, default=0)
+    availability_hours_week = db.Column(db.Float, default=40.0)
+    
     # Relaciones
     created_tasks = db.relationship('WebTask', backref='creator', lazy=True, foreign_keys='WebTask.created_by')
     

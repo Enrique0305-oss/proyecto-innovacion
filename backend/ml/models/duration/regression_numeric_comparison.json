@@ -1,0 +1,93 @@
+{
+  "timestamp": "2025-12-06T02:44:03.805489",
+  "model_type": "numeric_only",
+  "note": "Entrenado solo con features numéricas para generalización cross-domain",
+  "dataset_info": {
+    "total_samples": 11153,
+    "train_samples": 8922,
+    "test_samples": 2231,
+    "target_stats": {
+      "mean": 834.2407885764419,
+      "median": 794.1220902777778,
+      "std": 559.6403648934253,
+      "min": 7.833965277777778,
+      "max": 2822.282875,
+      "skewness": 1.1257836334660893
+    },
+    "features_used": [
+      "duration_est_imputed",
+      "experience_years_imputed",
+      "availability_hours_week_imputed",
+      "current_load_imputed",
+      "performance_index_imputed",
+      "rework_rate_imputed",
+      "load_ratio",
+      "complexity_numeric"
+    ]
+  },
+  "models": {
+    "Linear Regression": {
+      "mae": 165.36096853537524,
+      "mae_ci_lower": null,
+      "mae_ci_upper": null,
+      "rmse": 279.8747606184536,
+      "rmse_ci_lower": null,
+      "rmse_ci_upper": null,
+      "r2": 0.7476803364114897,
+      "mape": 20.05921982045935,
+      "within_2_days_pct": 1.4343343792021517,
+      "within_5_days_pct": 3.003137606454505,
+      "within_10_days_pct": 6.364858807709547,
+      "within_20_days_pct": 11.967727476467951
+    },
+    "CatBoost RMSE (Numeric)": {
+      "mae": 62.0187358628071,
+      "mae_ci_lower": 59.821028418470426,
+      "mae_ci_upper": 64.44752656993418,
+      "rmse": 89.49349413172554,
+      "rmse_ci_lower": 85.41586563825447,
+      "rmse_ci_upper": 92.93689696380761,
+      "r2": 0.9742007811720826,
+      "mape": 7.303421117113304,
+      "within_2_days_pct": 2.10667861945316,
+      "within_5_days_pct": 6.6337965038099505,
+      "within_10_days_pct": 13.357238906320035,
+      "within_20_days_pct": 27.790228597041683,
+      "cv_mae_mean": 63.24400877788689,
+      "cv_mae_std": 0.9427558046419774
+    },
+    "CatBoost MAE (Numeric)": {
+      "mae": 61.121174545494775,
+      "mae_ci_lower": null,
+      "mae_ci_upper": null,
+      "rmse": 89.70343616704474,
+      "rmse_ci_lower": null,
+      "rmse_ci_upper": null,
+      "r2": 0.9740795948526342,
+      "mape": 7.278112047960887,
+      "within_2_days_pct": 2.689376961004034,
+      "within_5_days_pct": 7.216494845360824,
+      "within_10_days_pct": 15.912147019273867,
+      "within_20_days_pct": 30.076199013895117
+    }
+  },
+  "best_model": {
+    "name": "CatBoost RMSE (Numeric)",
+    "metrics": {
+      "mae": 62.0187358628071,
+      "mae_ci_lower": 59.821028418470426,
+      "mae_ci_upper": 64.44752656993418,
+      "rmse": 89.49349413172554,
+      "rmse_ci_lower": 85.41586563825447,
+      "rmse_ci_upper": 92.93689696380761,
+      "r2": 0.9742007811720826,
+      "mape": 7.303421117113304,
+      "within_2_days_pct": 2.10667861945316,
+      "within_5_days_pct": 6.6337965038099505,
+      "within_10_days_pct": 13.357238906320035,
+      "within_20_days_pct": 27.790228597041683,
+      "cv_mae_mean": 63.24400877788689,
+      "cv_mae_std": 0.9427558046419774
+    }
+  }
+}

@@ -63,6 +63,12 @@ export function Sidebar(activePage: string = 'dashboard'): string {
             </svg>
             Recomendación Persona-Tarea
           </a>
+          <a href="#asignacion" class="nav-item ${isActive('asignacion')}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="currentColor"/>
+            </svg>
+            Asignación Inteligente
+          </a>
           <a href="#desempeno" class="nav-item ${isActive('desempeno')}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M16 14l-6-6-3 3-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>

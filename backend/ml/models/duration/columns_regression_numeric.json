@@ -1,0 +1,35 @@
+{
+  "numeric": [
+    "duration_est_imputed",
+    "experience_years_imputed",
+    "availability_hours_week_imputed",
+    "current_load_imputed",
+    "performance_index_imputed",
+    "rework_rate_imputed",
+    "load_ratio",
+    "complexity_numeric"
+  ],
+  "categorical": [],
+  "excluded_categorical": [
+    "task_area",
+    "task_type",
+    "person_area",
+    "role"
+  ],
+  "excluded_leakage": [
+    "task_success_rate",
+    "duration_real",
+    "person_avg_delay_ratio",
+    "completed_on_time_alt"
+  ],
+  "target": "duration_real",
+  "target_stats": {
+    "mean": 834.2407885764419,
+    "median": 794.1220902777778,
+    "std": 559.6403648934253,
+    "min": 7.833965277777778,
+    "max": 2822.282875,
+    "skewness": 1.1257836334660893
+  },
+  "note": "Modelo entrenado SOLO con features numéricas para generalización cross-domain"
+}

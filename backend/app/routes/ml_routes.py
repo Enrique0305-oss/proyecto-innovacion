@@ -96,19 +96,15 @@ def prediction_risk():
 @jwt_required()
 def prediction_duration():
     """
-    Predecir la duración real de una tarea
+    Predecir la duración real de una tarea usando modelo CatBoost numeric_only
     
     Body JSON:
-        - task_id: str (opcional)
-        - complexity_level: str
-        - task_type: str
-        - area: str
-        - assignees_count: int
-        - tools_used: str (separados por coma)
-        - dependencies: int
+        - complexity_level: str (requerido) - 'Baja', 'Media', 'Alta'
+        - duration_est_days: float (requerido) - Estimación inicial en días
+        - person_id: int (opcional) - Para predicción personalizada
     
     Returns:
-        JSON con duración estimada en días
+        JSON con duración estimada en días, intervalo de confianza y factores
     """
     try:
         if predict_duration is None:
@@ -122,23 +118,25 @@ def prediction_duration():
         if not data:
             return jsonify({'error': 'No se enviaron datos'}), 400
         
-        required_fields = ['complexity_level', 'task_type', 'area']
+        # Campos requeridos para modelo numeric_only
+        required_fields = ['complexity_level', 'duration_est_days']
         missing = [f for f in required_fields if f not in data]
         
         if missing:
             return jsonify({
                 'error': 'Faltan campos requeridos',
-                'missing_fields': missing
+                'missing_fields': missing,
+                'required': required_fields
             }), 400
         
         # Llamar al modelo
         result = predict_duration(data)
         
         return jsonify({
-            'task_id': data.get('task_id'),
-            'predicted_duration_days': result['duration'],
+            'predicted_duration_days': result.get('duration_days', result.get('duration', 0)),
             'confidence_interval': result.get('confidence_interval'),
-            'factors': result.get('factors', [])
+            'factors': result.get('factors', []),
+            'mode': result.get('mode', 'generico')
         }), 200
         
     except Exception as e:
@@ -198,6 +196,169 @@ def recommendation_person():
     except Exception as e:
         return jsonify({
             'error': 'Error al recomendar persona',
+            'details': str(e),
+            'trace': traceback.format_exc()
+        }), 500
+
+
+@ml_bp.route('/asignacion-inteligente', methods=['POST'])
+@jwt_required()
+def intelligent_assignment():
+    """
+    Asignación inteligente de tareas (COMBINA 3 MODELOS)
+    
+    Ejecuta en paralelo:
+    1. Clasificación de Riesgo → Nivel de riesgo de la tarea
+    2. Recomendación de Personas → Top 5 candidatos ideales
+    3. Predicción de Duración → Duración personalizada por cada candidato
+    
+    Body JSON:
+        - complexity_level: str (requerido) - 'Baja', 'Media', 'Alta'
+        - duration_est_days: float (requerido) - Estimación inicial en días
+        - area: str (opcional) - Para filtrar recomendaciones
+        - top_n: int (default: 5) - Número de candidatos
+    
+    Returns:
+        JSON con análisis completo:
+        - risk: {level, probability, factors}
+        - recommendations: [{person_id, name, score, predicted_duration, observations}]
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No se enviaron datos'}), 400
+        
+        # Validar campos requeridos
+        required_fields = ['complexity_level', 'duration_est_days']
+        missing = [f for f in required_fields if f not in data]
+        
+        if missing:
+            return jsonify({
+                'error': 'Faltan campos requeridos',
+                'missing_fields': missing,
+                'required': required_fields
+            }), 400
+        
+        # 1. CLASIFICACIÓN DE RIESGO
+        risk_result = {'level': 'MEDIO', 'probability': 50, 'factors': []}
+        if predict_risk:
+            try:
+                risk_result = predict_risk(data)
+            except Exception as e:
+                print(f"⚠️ Error en clasificación de riesgo: {e}")
+        
+        # 2. RECOMENDACIÓN DE PERSONAS
+        recommendations = []
+        if recommend_person:
+            try:
+                rec_data = {
+                    'area': data.get('area', 'General'),
+                    'complexity_level': data['complexity_level'],
+                    'task_type': data.get('task_type', 'desarrollo'),
+                    'top_n': data.get('top_n', 5)
+                }
+                rec_result = recommend_person(rec_data)
+                recommended_persons = rec_result.get('recommendations', [])
+                
+                # FALLBACK: Si no hay recomendaciones, obtener usuarios de la BD
+                if not recommended_persons:
+                    print("⚠️ No hay recomendaciones del modelo, obteniendo usuarios de BD...")
+                    from app.models.web_user import WebUser
+                    from app import db
+                    
+                    # Obtener usuarios activos con rol colaborador (role_id=7), filtrar por área si se especificó
+                    query = WebUser.query.filter_by(status='active', role_id=7)
+                    if data.get('area'):
+                        query = query.filter(WebUser.area == data.get('area'))
+                    
+                    users = query.order_by(WebUser.full_name).limit(data.get('top_n', 5)).all()
+                    
+                    # Convertir a formato de recomendaciones
+                    recommended_persons = []
+                    for user in users:
+                        recommended_persons.append({
+                            'person_id': user.id,
+                            'person_name': user.full_name or user.email,
+                            'score': 80.0,  # Score genérico
+                            'experience_years': user.experience_years or 2,
+                            'current_load': user.current_load or 3,
+                            'performance_index': user.performance_index or 50,
+                            'area': user.area
+                        })
+                    print(f"✓ Obtenidos {len(recommended_persons)} usuarios de BD")
+                
+                # 3. PREDICCIÓN DE DURACIÓN para cada persona recomendada
+                for person in recommended_persons:
+                    person_id = person.get('person_id')
+                    
+                    # Predicción personalizada de duración
+                    duration_days = None
+                    if predict_duration and person_id:
+                        try:
+                            duration_data = {
+                                'complexity_level': data['complexity_level'],
+                                'duration_est_days': data['duration_est_days'],
+                                'person_id': person_id
+                            }
+                            duration_result = predict_duration(duration_data)
+                            duration_days = duration_result.get('duration_days')
+                        except Exception as e:
+                            print(f"⚠️ Error en predicción de duración para {person_id}: {e}")
+                    
+                    # Generar observaciones
+                    observations = []
+                    if person.get('score', 0) >= 90:
+                        observations.append('✅ Candidato ideal')
+                    if person.get('current_load', 0) > 5:
+                        observations.append('⚠️ Carga alta')
+                    if person.get('experience_years', 0) < 2:
+                        observations.append('⚠️ Experiencia baja')
+                    
+                    recommendations.append({
+                        'person_id': person.get('person_id'),
+                        'person_name': person.get('name') or person.get('person_name', 'Sin nombre'),
+                        'score': round(person.get('score', 0), 1),
+                        'predicted_duration_days': round(duration_days, 1) if duration_days else None,
+                        'experience_years': person.get('experience_years', 0),
+                        'current_load': person.get('current_load') or person.get('current_workload', 0),
+                        'performance_index': person.get('performance_index', 50),
+                        'observations': observations
+                    })
+            except Exception as e:
+                print(f"⚠️ Error en recomendación de personas: {e}")
+                traceback.print_exc()
+        
+        # Convertir nivel de riesgo del modelo al formato del frontend
+        risk_level_raw = risk_result.get('risk_level', 'MEDIO')
+        probabilities = risk_result.get('probabilities', {})
+        
+        # Convertir BAJO_RIESGO → BAJO, ALTO_RIESGO → ALTO
+        if risk_level_raw == 'BAJO_RIESGO':
+            risk_level = 'BAJO'
+            # Para bajo riesgo, la probabilidad es la de BAJO_RIESGO
+            risk_probability = probabilities.get('BAJO_RIESGO', 0) * 100
+        elif risk_level_raw == 'ALTO_RIESGO':
+            risk_level = 'ALTO'
+            # Para alto riesgo, la probabilidad es la de ALTO_RIESGO
+            risk_probability = probabilities.get('ALTO_RIESGO', 0) * 100
+        else:
+            risk_level = 'MEDIO'
+            risk_probability = 50
+        
+        return jsonify({
+            'risk': {
+                'level': risk_level,
+                'probability': round(risk_probability, 0),
+                'factors': risk_result.get('factors', [])
+            },
+            'recommendations': recommendations,
+            'total_candidates': len(recommendations)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Error en asignación inteligente',
             'details': str(e),
             'trace': traceback.format_exc()
         }), 500

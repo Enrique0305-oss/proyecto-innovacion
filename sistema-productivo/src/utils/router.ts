@@ -4,6 +4,7 @@ import { TasksPage, initTasks } from '../pages/Tasks';
 import { RiskClassificationPage, initRiskClassification } from '../pages/RiskClassification';
 import { DurationPredictionPage, initDurationPrediction } from '../pages/DurationPrediction';
 import { PersonTaskRecommendationPage, initPersonTaskRecommendation } from '../pages/PersonTaskRecommendation';
+import { AsignacionInteligentePage, initAsignacionInteligente } from '../pages/AsignacionInteligente';
 import { PerformancePage, initPerformance } from '../pages/Performance';
 import { ProcessSimulationPage, initProcessSimulation } from '../pages/ProcessSimulation';
 import { IntelligentVisualizationPage, initIntelligentVisualization } from '../pages/IntelligentVisualization';
@@ -53,6 +54,12 @@ const routes: Route[] = [
     path: 'recomendacion',
     render: PersonTaskRecommendationPage,
     init: initPersonTaskRecommendation,
+    requiresAuth: true
+  },
+  {
+    path: 'asignacion',
+    render: AsignacionInteligentePage,
+    init: initAsignacionInteligente,
     requiresAuth: true
   },
   {

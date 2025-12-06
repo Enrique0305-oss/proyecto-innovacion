@@ -135,10 +135,10 @@ def recommend_person(task_data):
                 'score': score,
                 'score_percentage': round(score * 100, 2),
                 'area': person.area or 'Sin área',
-                'role': 'Colaborador',  # role_id = 1
-                'experience_years': 0,  # WebUser no tiene este campo
-                'performance_index': 0,  # WebUser no tiene este campo
-                'satisfaction_score': 0,  # WebUser no tiene este campo
+                'role': 'Colaborador',
+                'experience_years': person.experience_years or 0,
+                'performance_index': person.performance_index or 0,
+                'satisfaction_score': person.satisfaction_score or 0,
                 'current_workload': workload,
                 'skills': task_data.get('skills_required', [])[:4],  # Primeras 4 skills
                 'availability': 'Alta' if workload <= 2 else ('Media' if workload <= 4 else 'Baja'),
@@ -190,14 +190,14 @@ def prepare_features(person, task_data):
     duration_est_imputed = float(task_data.get('duration_est', 10))
     
     # Features de la persona (categóricas)
-    person_area = str(person.area or 'TI')
-    role = 'Colaborador'  # Todos los web_users con role_id=1 son colaboradores
+    person_area = str(person.area or 'IT')
+    role = 'Colaborador'  # Todos los web_users con role_id=7 son colaboradores
     
-    # Features numéricas de la persona (WebUser no tiene estos campos, usamos defaults)
-    experience_years_imputed = 2.0  # Default
-    availability_hours_week_imputed = 40.0  # Default 40 horas/semana
-    current_load_imputed = float(get_current_workload(person.id))
-    performance_index_imputed = 50.0  # Default
+    # Features numéricas de la persona (ahora con campos reales)
+    experience_years_imputed = float(person.experience_years or 2)
+    availability_hours_week_imputed = float(person.availability_hours_week or 40.0)
+    current_load_imputed = float(person.current_load or 0)
+    performance_index_imputed = float(person.performance_index or 50.0)
     rework_rate_imputed = 0.1  # Default 10% de retrabajo
     
     # Features binarias
@@ -336,8 +336,20 @@ def generate_recommendation_reasons(person, task_data, score):
     if person.area == task_data.get('area'):
         reasons.append(f'Experiencia en {person.area}')
     
-    # Workload (usar person.id en lugar de person.person_id)
-    workload = get_current_workload(person.id)
+    # Performance
+    if person.performance_index and person.performance_index >= 85:
+        reasons.append(f'Rendimiento excelente ({person.performance_index:.0f}%)')
+    elif person.performance_index and person.performance_index >= 70:
+        reasons.append(f'Buen rendimiento ({person.performance_index:.0f}%)')
+    
+    # Experiencia
+    if person.experience_years and person.experience_years >= 8:
+        reasons.append(f'Altamente experimentado ({person.experience_years} años)')
+    elif person.experience_years and person.experience_years >= 3:
+        reasons.append(f'{person.experience_years} años de experiencia')
+    
+    # Workload
+    workload = person.current_load or 0
     if workload == 0:
         reasons.append('Disponibilidad completa')
     elif workload <= 2:
@@ -375,9 +387,9 @@ def recommend_person_heuristic(task_data):
                 'score_percentage': round(score, 2),
                 'area': person.area or 'Sin área',
                 'role': 'Colaborador',
-                'experience_years': 0,  # WebUser no tiene este campo
-                'performance_index': 0,  # WebUser no tiene este campo
-                'satisfaction_score': 0,  # WebUser no tiene este campo
+                'experience_years': person.experience_years or 0,
+                'performance_index': person.performance_index or 0,
+                'satisfaction_score': person.satisfaction_score or 0,
                 'current_workload': workload,
                 'skills': task_data.get('skills_required', [])[:4],
                 'availability': 'Alta' if workload <= 2 else ('Media' if workload <= 4 else 'Baja'),
@@ -409,15 +421,39 @@ def calculate_heuristic_score(person, task_data):
     """
     Calcular score heurístico (0-100) para WebUser
     """
-    score = 50  # Base score para colaboradores
+    score = 0
     
-    # Match de área (+30 puntos)
-    if person.area == task_data.get('area'):
-        score += 30
+    # Performance index (0-40 puntos)
+    if person.performance_index:
+        score += min(person.performance_index * 40 / 100, 40)
+    else:
+        score += 20
     
-    # Workload (-10 puntos por tarea activa)
-    workload = get_current_workload(person.id)
-    score -= min(workload * 10, 30)
+    # Experiencia (0-20 puntos)
+    years = person.experience_years or 0
+    if years >= 10:
+        score += 20
+    elif years >= 5:
+        score += 15
+    elif years >= 2:
+        score += 10
+    else:
+        score += 5
+    
+    # Workload actual (0-15 puntos)
+    workload = person.current_load or 0
+    if workload == 0:
+        score += 15
+    elif workload <= 2:
+        score += 12
+    elif workload <= 4:
+        score += 8
+    else:
+        score += 3
+    
+    # Coincidencia de área (0-25 puntos bonus)
+    if task_data.get('area') == person.area:
+        score += 25
     
     # Asegurar que el score esté entre 0-100
     return max(0, min(score, 100))
