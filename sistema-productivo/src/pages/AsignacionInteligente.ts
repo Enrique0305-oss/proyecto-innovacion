@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { API_URL } from '../utils/api';
 
 export function AsignacionInteligentePage(): string {
   return `
@@ -297,7 +298,7 @@ function displayResults(risk: any, recommendations: any[], resultCard: HTMLEleme
 
 async function loadAreasForForm() {
   try {
-    const response = await fetch('http://127.0.0.1:5000/api/areas', {
+    const response = await fetch(`${API_URL}/areas`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`
       }
@@ -380,7 +381,7 @@ export function initAsignacionInteligente() {
 
         console.log('📤 Enviando solicitud:', requestData);
 
-        const response = await fetch('http://127.0.0.1:5000/api/ml/asignacion-inteligente', {
+        const response = await fetch(`${API_URL}/ml/asignacion-inteligente`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

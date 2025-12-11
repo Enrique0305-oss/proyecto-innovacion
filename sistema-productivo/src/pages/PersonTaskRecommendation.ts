@@ -1,6 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
-import { api } from '../utils/api';
+import { API_URL } from '../utils/api';
 
 export function PersonTaskRecommendationPage(): string {
   return `
@@ -171,7 +171,7 @@ export function initPersonTaskRecommendation() {
         submitBtn.textContent = 'Buscando colaborador...';
 
         // Llamada al API
-        const response = await fetch('http://127.0.0.1:5000/api/ml/recomendar-persona', {
+        const response = await fetch(`${API_URL}/ml/recomendar-persona`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

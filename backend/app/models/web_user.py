@@ -62,7 +62,15 @@ class WebUser(db.Model):
             'avatar_url': self.avatar_url,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            # Métricas de desempeño
+            'experience_years': self.experience_years,
+            'performance_index': float(self.performance_index) if self.performance_index else 50.0,
+            'rework_rate': float(self.rework_rate) if self.rework_rate else 0.10,
+            'satisfaction_score': float(self.satisfaction_score) if self.satisfaction_score else 3.0,
+            'current_load': int(self.current_load) if self.current_load else 0,
+            'tasks_completed': self.tasks_completed,
+            'availability_hours_week': float(self.availability_hours_week) if self.availability_hours_week else 40.0
         }
         
         if include_role and self.role:

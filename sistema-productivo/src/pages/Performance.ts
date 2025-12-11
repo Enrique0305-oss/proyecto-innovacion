@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { API_URL } from '../utils/api';
 
 export function PerformancePage(): string {
   return `
@@ -112,87 +113,8 @@ export function PerformancePage(): string {
                     <th>Acción</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <div class="collab-info">
-                        <div class="collab-avatar">MR</div>
-                        <span>María Rodríguez</span>
-                      </div>
-                    </td>
-                    <td><span class="area-badge">Marketing</span></td>
-                    <td>
-                      <div class="performance-indicator">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M7 10V4M4 7l3-3 3 3" stroke="#28a745" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span class="perf-value high">92%</span>
-                      </div>
-                    </td>
-                    <td>
-                      <button class="btn-predict" data-person="maria">Predecir</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div class="collab-info">
-                        <div class="collab-avatar">LG</div>
-                        <span>Luis García</span>
-                      </div>
-                    </td>
-                    <td><span class="area-badge">TI</span></td>
-                    <td>
-                      <div class="performance-indicator">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M7 10V4M4 7l3-3 3 3" stroke="#28a745" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span class="perf-value high">88%</span>
-                      </div>
-                    </td>
-                    <td>
-                      <button class="btn-predict" data-person="luis">Predecir</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div class="collab-info">
-                        <div class="collab-avatar">CM</div>
-                        <span>Carlos Mendoza</span>
-                      </div>
-                    </td>
-                    <td><span class="area-badge">Operaciones</span></td>
-                    <td>
-                      <div class="performance-indicator">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M7 4v6M4 7h6" stroke="#ff9800" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                        <span class="perf-value medium">75%</span>
-                      </div>
-                    </td>
-                    <td>
-                      <button class="btn-predict" data-person="carlos">Predecir</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div class="collab-info">
-                        <div class="collab-avatar">AF</div>
-                        <span>Ana Fernández</span>
-                      </div>
-                    </td>
-                    <td><span class="area-badge">Ventas</span></td>
-                    <td>
-                      <div class="performance-indicator">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M7 4V10M10 7L7 10 4 7" stroke="#dc3545" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span class="perf-value low">65%</span>
-                      </div>
-                    </td>
-                    <td>
-                      <button class="btn-predict" data-person="ana">Predecir</button>
-                    </td>
-                  </tr>
+                <tbody id="collaboratorsTableBody">
+                  <!-- Se llenará dinámicamente -->
                 </tbody>
               </table>
             </div>
@@ -250,169 +172,7 @@ export function PerformancePage(): string {
 
 export function initPerformance() {
   initAIAssistant();
-
-  const predictButtons = document.querySelectorAll('.btn-predict');
-  const detailPanel = document.getElementById('detailPanel');
-
-  predictButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const person = target.getAttribute('data-person');
-      
-      if (detailPanel && person) {
-        const personData: { [key: string]: any } = {
-          maria: { name: 'María Rodríguez', area: 'Marketing', badge: 'Excelente', performance: '92%' },
-          luis: { name: 'Luis García', area: 'TI', badge: 'Excelente', performance: '88%' },
-          carlos: { name: 'Carlos Mendoza', area: 'Operaciones', badge: 'Bueno', performance: '75%' },
-          ana: { name: 'Ana Fernández', area: 'Ventas', badge: 'Regular', performance: '65%' }
-        };
-
-        const data = personData[person];
-        
-        detailPanel.style.display = 'block';
-        detailPanel.innerHTML = `
-          <div class="detail-header">
-            <div class="detail-person">
-              <div class="detail-avatar">MR</div>
-              <div class="detail-person-info">
-                <h3>${data.name}</h3>
-                <div class="detail-badges">
-                  <span class="area-badge">${data.area}</span>
-                  <span class="performance-badge success">${data.badge}</span>
-                </div>
-              </div>
-            </div>
-            <div class="detail-performance">
-              <span class="detail-perf-value">${data.performance}</span>
-              <span class="detail-perf-label">Desempeño</span>
-            </div>
-          </div>
-
-          <div class="detail-stats">
-            <div class="detail-stat">
-              <span class="detail-stat-label">Tareas Completadas</span>
-              <span class="detail-stat-value">48</span>
-            </div>
-            <div class="detail-stat">
-              <span class="detail-stat-label">Tiempo Promedio</span>
-              <span class="detail-stat-value">4.2d</span>
-            </div>
-            <div class="detail-stat">
-              <span class="detail-stat-label">Calidad</span>
-              <span class="detail-stat-value">95%</span>
-            </div>
-            <div class="detail-stat">
-              <span class="detail-stat-label">Tendencia</span>
-              <span class="detail-stat-value trend-up">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 10V4M4 7l3-3 3 3" stroke="#28a745" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Mejora
-              </span>
-            </div>
-          </div>
-
-          <div class="detail-content-grid">
-            <!-- Análisis Multidimensional -->
-            <div class="detail-section">
-              <h4>Análisis Multidimensional</h4>
-              <p class="section-subtitle">Métricas de desempeño del colaborador</p>
-              
-              <svg class="radar-chart" width="100%" height="300" viewBox="0 0 400 300">
-                <!-- Pentagon background -->
-                <polygon points="200,50 320,115 280,235 120,235 80,115" fill="#f8f9fa" stroke="#e0e0e0" stroke-width="1"/>
-                <polygon points="200,90 290,135 265,215 135,215 110,135" fill="#fff" stroke="#e0e0e0" stroke-width="1"/>
-                <polygon points="200,130 260,155 250,195 150,195 140,155" fill="#fff" stroke="#e0e0e0" stroke-width="1"/>
-                
-                <!-- Data polygon -->
-                <polygon points="200,70 300,120 270,220 130,220 100,130" fill="rgba(0, 188, 212, 0.3)" stroke="#00bcd4" stroke-width="2"/>
-                
-                <!-- Axis lines -->
-                <line x1="200" y1="150" x2="200" y2="50" stroke="#cbd5e0" stroke-width="1"/>
-                <line x1="200" y1="150" x2="320" y2="115" stroke="#cbd5e0" stroke-width="1"/>
-                <line x1="200" y1="150" x2="280" y2="235" stroke="#cbd5e0" stroke-width="1"/>
-                <line x1="200" y1="150" x2="120" y2="235" stroke="#cbd5e0" stroke-width="1"/>
-                <line x1="200" y1="150" x2="80" y2="115" stroke="#cbd5e0" stroke-width="1"/>
-                
-                <!-- Points -->
-                <circle cx="200" cy="70" r="4" fill="#00bcd4"/>
-                <circle cx="300" cy="120" r="4" fill="#00bcd4"/>
-                <circle cx="270" cy="220" r="4" fill="#00bcd4"/>
-                <circle cx="130" cy="220" r="4" fill="#00bcd4"/>
-                <circle cx="100" cy="130" r="4" fill="#00bcd4"/>
-                
-                <!-- Labels -->
-                <text x="200" y="40" text-anchor="middle" font-size="12" fill="#495057" font-weight="600">Productividad</text>
-                <text x="330" y="120" text-anchor="start" font-size="12" fill="#495057" font-weight="600">Calidad</text>
-                <text x="290" y="255" text-anchor="middle" font-size="12" fill="#495057" font-weight="600">Puntualidad</text>
-                <text x="110" y="255" text-anchor="middle" font-size="12" fill="#495057" font-weight="600">Colaboración</text>
-                <text x="50" y="120" text-anchor="end" font-size="12" fill="#495057" font-weight="600">Innovación</text>
-                
-                <!-- Values -->
-                <text x="200" y="85" text-anchor="middle" font-size="11" fill="#00bcd4" font-weight="600">90</text>
-                <text x="285" y="120" text-anchor="start" font-size="11" fill="#00bcd4" font-weight="600">95</text>
-                <text x="270" y="210" text-anchor="middle" font-size="11" fill="#00bcd4" font-weight="600">88</text>
-                <text x="130" y="210" text-anchor="middle" font-size="11" fill="#00bcd4" font-weight="600">85</text>
-                <text x="115" y="130" text-anchor="end" font-size="11" fill="#00bcd4" font-weight="600">82</text>
-              </svg>
-              
-              <div class="legend-note">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect width="16" height="16" rx="2" fill="rgba(0, 188, 212, 0.3)"/>
-                </svg>
-                <span>Desempeño</span>
-              </div>
-            </div>
-
-            <!-- Predicción de IA -->
-            <div class="detail-section">
-              <h4>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-                  <circle cx="10" cy="10" r="8" fill="#00bcd4"/>
-                  <path d="M10 6v4M10 13v1" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                Predicción de IA
-              </h4>
-              <p class="section-subtitle">Análisis de riesgo y recomendaciones</p>
-
-              <div class="prediction-card">
-                <div class="prediction-label">Clasificación de Desempeño</div>
-                <div class="prediction-result">
-                  <span class="prediction-badge success">Excelente</span>
-                  <span class="prediction-rank">Top 10%</span>
-                </div>
-                <div class="prediction-bar">
-                  <div class="prediction-fill" style="width: 92%"></div>
-                </div>
-              </div>
-
-              <div class="prediction-card">
-                <div class="prediction-label">Probabilidad de Renuncia</div>
-                <div class="prediction-result">
-                  <span class="prediction-badge low-risk">Baja</span>
-                  <span class="prediction-rank">5-10%</span>
-                </div>
-                <div class="prediction-bar">
-                  <div class="prediction-fill low-risk" style="width: 8%"></div>
-                </div>
-              </div>
-
-              <div class="recommendations-box">
-                <h5>Recomendaciones</h5>
-                <ul class="recommendations-list">
-                  <li>• Asignar proyectos de alto impacto</li>
-                  <li>• Considerar para posiciones de liderazgo</li>
-                  <li>• Mantener motivación con desafíos técnicos</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        `;
-
-        detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    });
-  });
+  loadCollaborators();
 
   // Logout
   const logoutBtn = document.getElementById('logoutBtn');
@@ -423,4 +183,385 @@ export function initPerformance() {
       window.location.hash = '#login';
     });
   }
+}
+
+async function loadCollaborators(): Promise<void> {
+  try {
+    const response = await fetch(`${API_URL}/users`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Error al cargar colaboradores');
+
+    const data = await response.json();
+    console.log('📊 Datos recibidos del backend:', data);
+    console.log('📊 Total de usuarios:', data.users?.length || 0);
+    
+    const tbody = document.getElementById('collaboratorsTableBody');
+    
+    if (tbody && data.users) {
+      tbody.innerHTML = data.users.map((user: any) => {
+        const initials = (user.full_name || 'NN').substring(0, 2).toUpperCase();
+        const performance = user.performance_index || 75;
+        
+        let perfClass = 'medium';
+        let perfIcon = '<path d="M7 4v6M4 7h6" stroke="#ff9800" stroke-width="1.5" stroke-linecap="round"/>';
+        
+        if (performance >= 85) {
+          perfClass = 'high';
+          perfIcon = '<path d="M7 10V4M4 7l3-3 3 3" stroke="#28a745" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        } else if (performance < 70) {
+          perfClass = 'low';
+          perfIcon = '<path d="M7 4V10M10 7L7 10 4 7" stroke="#dc3545" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        }
+        
+        return `
+          <tr>
+            <td>
+              <div class="collab-info">
+                <div class="collab-avatar">${initials}</div>
+                <span>${user.full_name || 'Usuario'}</span>
+              </div>
+            </td>
+            <td><span class="area-badge">${user.area || 'Sin área'}</span></td>
+            <td>
+              <div class="performance-indicator">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  ${perfIcon}
+                </svg>
+                <span class="perf-value ${perfClass}">${performance}%</span>
+              </div>
+            </td>
+            <td>
+              <button class="btn-predict" data-user-id="${user.id}">Predecir</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      // Agregar event listeners a los botones
+      attachPredictButtons();
+    } else {
+      console.warn('⚠️ No se encontraron colaboradores o tbody no existe');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center; padding: 40px; color: #6c757d;">
+              No hay colaboradores disponibles
+            </td>
+          </tr>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando colaboradores:', error);
+    const tbody = document.getElementById('collaboratorsTableBody');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 40px; color: #dc3545;">
+            Error al cargar colaboradores: ${error}
+          </td>
+        </tr>
+      `;
+    }
+  }
+}
+
+function attachPredictButtons(): void {
+  const predictButtons = document.querySelectorAll('.btn-predict');
+  
+  predictButtons.forEach(button => {
+    button.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const userId = target.getAttribute('data-user-id');
+      
+      if (userId) {
+        await performHybridAnalysis(userId);
+      }
+    });
+  });
+}
+
+async function performHybridAnalysis(userId: string): Promise<void> {
+  const detailPanel = document.getElementById('detailPanel');
+  if (!detailPanel) return;
+  
+  try {
+    // Mostrar loading
+    detailPanel.style.display = 'block';
+    detailPanel.innerHTML = `
+      <div style="text-align: center; padding: 60px;">
+        <div style="display: inline-block; width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #00bcd4; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 20px; color: #6c757d;">Analizando desempeño...</p>
+      </div>
+    `;
+    
+    const response = await fetch(`${API_URL}/ml/analisis-desempeno`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({ user_id: userId })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error en el análisis');
+    }
+
+    const result = await response.json();
+    displayHybridResults(userId, result);
+    
+  } catch (error: any) {
+    console.error('Error:', error);
+    alert(`Error: ${error.message}`);
+    if (detailPanel) {
+      detailPanel.style.display = 'none';
+    }
+  }
+}
+
+function displayHybridResults(userId: string, data: any): void {
+  const detailPanel = document.getElementById('detailPanel');
+  if (!detailPanel) return;
+  
+  const { metricas, prediccion, recomendaciones } = data;
+  
+  // Determinar color y badge según clase predicha
+  const claseBadges: { [key: string]: { label: string, color: string, emoji: string } } = {
+    'high_performer': { label: 'Alto Desempeño', color: '#28a745', emoji: '⭐' },
+    'at_risk': { label: 'En Riesgo', color: '#ff9800', emoji: '⚠️' },
+    'resignation_risk': { label: 'Riesgo de Renuncia', color: '#dc3545', emoji: '🚨' }
+  };
+  
+  const claseInfo = claseBadges[prediccion.clase] || { label: 'Desconocido', color: '#6c757d', emoji: '❓' };
+  
+  // Obtener info del usuario desde los datos o localStorage
+  const userName = data.user_name || `Usuario ${userId}`;
+  const initials = userName.substring(0, 2).toUpperCase();
+  
+  detailPanel.innerHTML = `
+    <div class="detail-header">
+      <div class="detail-person">
+        <div class="detail-avatar">${initials}</div>
+        <div class="detail-person-info">
+          <h3>${userName}</h3>
+          <div class="detail-badges">
+            <span class="performance-badge" style="background: ${claseInfo.color};">
+              ${claseInfo.emoji} ${claseInfo.label}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="detail-performance">
+        <span class="detail-perf-value">${metricas.rendimiento}%</span>
+        <span class="detail-perf-label">Desempeño</span>
+      </div>
+    </div>
+
+    <div class="detail-stats">
+      <div class="detail-stat">
+        <span class="detail-stat-label">Tareas Completadas</span>
+        <span class="detail-stat-value">${metricas.tareas_completadas} / ${metricas.tareas_totales}</span>
+      </div>
+      <div class="detail-stat">
+        <span class="detail-stat-label">Tiempo Promedio</span>
+        <span class="detail-stat-value">${metricas.tiempo_promedio}d</span>
+      </div>
+      <div class="detail-stat">
+        <span class="detail-stat-label">Calidad</span>
+        <span class="detail-stat-value">${metricas.calidad}%</span>
+      </div>
+      <div class="detail-stat">
+        <span class="detail-stat-label">Carga Actual</span>
+        <span class="detail-stat-value">${metricas.carga_actual}%</span>
+      </div>
+    </div>
+
+    <div class="detail-content-grid">
+      <!-- CAPA 1: Métricas SQL -->
+      <div class="detail-section">
+        <h4>📊 CAPA 1: Métricas (SQL + Agregación)</h4>
+        <p class="section-subtitle">Datos calculados desde la base de datos</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px;">
+          <!-- Rendimiento -->
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 600; color: #495057;">Rendimiento</span>
+              <span style="font-size: 13px; font-weight: 700; color: ${metricas.rendimiento >= 80 ? '#28a745' : metricas.rendimiento >= 60 ? '#ffc107' : '#dc3545'};">
+                ${metricas.rendimiento}%
+              </span>
+            </div>
+            <div style="background: #e9ecef; height: 12px; border-radius: 6px; overflow: hidden;">
+              <div style="background: ${metricas.rendimiento >= 80 ? '#28a745' : metricas.rendimiento >= 60 ? '#ffc107' : '#dc3545'}; 
+                          width: ${metricas.rendimiento}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Calidad -->
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 600; color: #495057;">Calidad</span>
+              <span style="font-size: 13px; font-weight: 700; color: ${metricas.calidad >= 95 ? '#28a745' : metricas.calidad >= 85 ? '#ffc107' : '#dc3545'};">
+                ${metricas.calidad}%
+              </span>
+            </div>
+            <div style="background: #e9ecef; height: 12px; border-radius: 6px; overflow: hidden;">
+              <div style="background: ${metricas.calidad >= 95 ? '#28a745' : metricas.calidad >= 85 ? '#ffc107' : '#dc3545'}; 
+                          width: ${metricas.calidad}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Tasa de Retrabajos (invertida) -->
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 600; color: #495057;">Tasa de Retrabajos</span>
+              <span style="font-size: 13px; font-weight: 700; color: ${metricas.tasa_retrabajos < 10 ? '#28a745' : metricas.tasa_retrabajos < 20 ? '#ffc107' : '#dc3545'};">
+                ${metricas.tasa_retrabajos}%
+              </span>
+            </div>
+            <div style="background: #e9ecef; height: 12px; border-radius: 6px; overflow: hidden;">
+              <div style="background: ${metricas.tasa_retrabajos < 10 ? '#28a745' : metricas.tasa_retrabajos < 20 ? '#ffc107' : '#dc3545'}; 
+                          width: ${metricas.tasa_retrabajos}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Carga Actual -->
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 600; color: #495057;">Carga Actual</span>
+              <span style="font-size: 13px; font-weight: 700; color: ${metricas.carga_actual < 70 ? '#28a745' : metricas.carga_actual < 90 ? '#ffc107' : '#dc3545'};">
+                ${metricas.carga_actual}%
+              </span>
+            </div>
+            <div style="background: #e9ecef; height: 12px; border-radius: 6px; overflow: hidden;">
+              <div style="background: ${metricas.carga_actual < 70 ? '#28a745' : metricas.carga_actual < 90 ? '#ffc107' : '#dc3545'}; 
+                          width: ${Math.min(metricas.carga_actual, 100)}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Tareas completadas -->
+          <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #00bcd4;">
+            <div style="font-size: 12px; color: #6c757d; margin-bottom: 4px;">Tareas Completadas</div>
+            <div style="font-size: 20px; font-weight: 700; color: #495057;">
+              ${metricas.tareas_completadas} <span style="font-size: 14px; color: #6c757d;">/ ${metricas.tareas_totales}</span>
+            </div>
+          </div>
+
+          <!-- Tiempo Promedio -->
+          <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #9c27b0;">
+            <div style="font-size: 12px; color: #6c757d; margin-bottom: 4px;">Tiempo Promedio</div>
+            <div style="font-size: 20px; font-weight: 700; color: #495057;">
+              ${metricas.tiempo_promedio} <span style="font-size: 14px; color: #6c757d;">días</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAPA 2: Predicción ML -->
+      <div class="detail-section">
+        <h4>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+            <circle cx="10" cy="10" r="8" fill="#00bcd4"/>
+            <path d="M10 6v4M10 13v1" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          🤖 CAPA 2: Predicción ML (CatBoost)
+        </h4>
+        <p class="section-subtitle">Modelo XGBoost con AUC-ROC: 1.0</p>
+
+        <div class="prediction-card" style="background: ${claseInfo.color}; color: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+          <div class="prediction-label" style="font-size: 14px; opacity: 0.9;">Clasificación Predicha</div>
+          <div class="prediction-result" style="font-size: 28px; font-weight: 700; margin: 10px 0;">
+            ${claseInfo.emoji} ${claseInfo.label}
+          </div>
+          <div style="font-size: 16px; opacity: 0.95;">
+            Probabilidad de Renuncia: ${prediccion.probabilidad_renuncia}%
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+          <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;">⚠️ En Riesgo</div>
+            <div style="font-size: 20px; font-weight: 700; color: #ff9800;">${prediccion.probabilidades.at_risk}%</div>
+          </div>
+          <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;">⭐ Alto Desemp.</div>
+            <div style="font-size: 20px; font-weight: 700; color: #28a745;">${prediccion.probabilidades.high_performer}%</div>
+          </div>
+          <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;">🚨 Riesgo Renuncia</div>
+            <div style="font-size: 20px; font-weight: 700; color: #dc3545;">${prediccion.probabilidades.resignation_risk}%</div>
+          </div>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+          <h5 style="margin: 0 0 10px 0; font-size: 14px; color: #495057;">Factores Contribuyentes</h5>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${prediccion.factores.map((f: any) => `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: white; border-radius: 4px;">
+                <span style="font-size: 13px; color: #495057;">${f.factor}</span>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <span style="font-size: 13px; font-weight: 600; color: #00bcd4;">${f.value}</span>
+                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: ${
+                    f.impact === 'crítico' || f.impact === 'alto' ? '#dc3545' : 
+                    f.impact === 'medio' ? '#ffc107' : '#28a745'
+                  }; color: white;">${f.impact}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAPA 3: Motor de Reglas -->
+    <div class="detail-section" style="grid-column: 1 / -1;">
+      <h4>⚙️ CAPA 3: Motor de Recomendaciones (Rule-Based System)</h4>
+      <p class="section-subtitle">Acciones sugeridas según reglas de negocio</p>
+
+      ${recomendaciones.length === 0 ? `
+        <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
+          <div style="font-size: 48px;">✓</div>
+          <p style="color: #6c757d; margin: 10px 0 0 0;">No se requieren acciones especiales en este momento</p>
+        </div>
+      ` : `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
+          ${recomendaciones.map((rec: any) => {
+            const priorityColors: { [key: string]: string } = {
+              'crítica': '#dc3545',
+              'alta': '#ff9800',
+              'media': '#ffc107',
+              'baja': '#28a745'
+            };
+            const color = priorityColors[rec.prioridad] || '#6c757d';
+            
+            return `
+              <div style="background: white; border-left: 4px solid ${color}; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                  <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="font-size: 24px;">${rec.icono}</span>
+                    <h5 style="margin: 0; font-size: 15px; color: #212529; font-weight: 600;">${rec.titulo}</h5>
+                  </div>
+                  <span style="font-size: 10px; padding: 4px 10px; border-radius: 12px; background: ${color}; color: white; text-transform: uppercase; font-weight: 600;">
+                    ${rec.prioridad}
+                  </span>
+                </div>
+                <p style="margin: 0; font-size: 13px; color: #6c757d; line-height: 1.5;">
+                  ${rec.descripcion}
+                </p>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `}
+    </div>
+  `;
+
+  detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

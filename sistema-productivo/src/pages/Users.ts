@@ -1,6 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
-import { api } from '../utils/api';
+import { API_URL, api } from '../utils/api';
 
 // Función para obtener el rol del usuario actual
 function getUserRole(): string {
@@ -592,7 +592,7 @@ export function initUsers(): void {
         'colaborador': 3
       };
 
-      const response = await fetch('http://127.0.0.1:5000/api/auth/register', {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,0 +1,37 @@
+{
+  "feature_columns": [
+    "person_area",
+    "role",
+    "experience_years",
+    "availability_hours",
+    "current_load",
+    "performance_index",
+    "rework_rate",
+    "total_tasks",
+    "avg_delay_ratio",
+    "success_rate",
+    "avg_task_complexity",
+    "load_ratio"
+  ],
+  "categorical_columns": [
+    "person_area",
+    "role"
+  ],
+  "numeric_columns": [
+    "experience_years",
+    "availability_hours",
+    "current_load",
+    "performance_index",
+    "rework_rate",
+    "total_tasks",
+    "avg_delay_ratio",
+    "success_rate",
+    "avg_task_complexity",
+    "load_ratio"
+  ],
+  "class_names": [
+    "at_risk",
+    "high_performer",
+    "resignation_risk"
+  ]
+}

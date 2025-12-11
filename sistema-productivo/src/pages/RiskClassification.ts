@@ -1,6 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
-import { api } from '../utils/api';
+import { API_URL } from '../utils/api';
 
 export function RiskClassificationPage(): string {
   return `
@@ -172,7 +172,7 @@ export function initRiskClassification() {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Calculando...';
 
-        const response = await fetch('http://127.0.0.1:5000/api/ml/prediccion-riesgo', {
+        const response = await fetch(`${API_URL}/ml/prediccion-riesgo`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

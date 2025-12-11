@@ -1,5 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+import { API_URL } from '../utils/api';
 
 export function DurationPredictionPage(): string {
   return `
@@ -109,7 +110,7 @@ export function DurationPredictionPage(): string {
 
 async function loadPersonsForSelector() {
   try {
-    const response = await fetch('http://127.0.0.1:5000/api/users', {
+    const response = await fetch(`${API_URL}/users`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`
       }
@@ -291,7 +292,7 @@ export function initDurationPrediction() {
 
         console.log('📤 Enviando solicitud:', requestData);
 
-        const response = await fetch('http://127.0.0.1:5000/api/ml/tiempo-real', {
+        const response = await fetch(`${API_URL}/ml/tiempo-real`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
