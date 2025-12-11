@@ -10,6 +10,7 @@ class WebTask(db.Model):
     __tablename__ = 'web_tasks'
     
     id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(64), db.ForeignKey('projects.project_id'))
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     priority = db.Column(db.Enum('alta', 'media', 'baja'), default='media')
@@ -41,6 +42,7 @@ class WebTask(db.Model):
         
         return {
             'id': self.id,
+            'project_id': self.project_id,
             'title': self.title,
             'description': self.description,
             'priority': self.priority,

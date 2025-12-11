@@ -16,6 +16,7 @@ def register_blueprints(app):
     from app.routes.ml_training_routes import ml_training_bp
     from app.routes.user_routes import users_bp
     from app.routes.person_routes import persons_bp
+    from app.routes.project_routes import project_bp
     
     # Prefijo base para todas las rutas de API
     api_prefix = '/api'
@@ -28,5 +29,6 @@ def register_blueprints(app):
     app.register_blueprint(ml_training_bp, url_prefix=f'{api_prefix}/ml')  # Rutas de entrenamiento
     app.register_blueprint(users_bp, url_prefix=f'{api_prefix}/users')
     app.register_blueprint(persons_bp, url_prefix=f'{api_prefix}/persons')
+    app.register_blueprint(project_bp, url_prefix=f'{api_prefix}')
     
     print("✅ Blueprints registrados correctamente")

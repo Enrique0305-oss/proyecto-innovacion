@@ -9,7 +9,8 @@ from flask import current_app
 from sqlalchemy import and_, func
 
 from app.extensions import db
-from app.models.task import Task, TaskDependency
+from app.models.task import Task
+from app.models.task import TaskDependency as TrainingTaskDependency
 
 
 _analyzer = None
@@ -250,7 +251,7 @@ def identify_bottlenecks(tasks):
     # 3. Tareas con muchas dependencias sin completar
     for task in tasks:
         if task.status != 'Completed':
-            dependencies = TaskDependency.query.filter_by(
+            dependencies = TrainingTaskDependency.query.filter_by(
                 task_id=task.task_id
             ).count()
             

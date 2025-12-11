@@ -48,14 +48,14 @@ class Task(db.Model):
     # Relaciones
     assignees = db.relationship('Assignee', back_populates='task', lazy='dynamic', cascade='all, delete-orphan')
     dependencies_from = db.relationship(
-        'TaskDependency',
-        foreign_keys='TaskDependency.task_id',
+        'app.models.task.TaskDependency',
+        foreign_keys='app.models.task.TaskDependency.task_id',
         back_populates='task',
         cascade='all, delete-orphan'
     )
     dependencies_to = db.relationship(
-        'TaskDependency',
-        foreign_keys='TaskDependency.depends_on_task_id',
+        'app.models.task.TaskDependency',
+        foreign_keys='app.models.task.TaskDependency.depends_on_task_id',
         back_populates='depends_on_task',
         cascade='all, delete-orphan'
     )
@@ -144,12 +144,12 @@ class TaskDependency(db.Model):
     
     # Relaciones
     task = db.relationship(
-        'Task',
+        'app.models.task.Task',
         foreign_keys=[task_id],
         back_populates='dependencies_from'
     )
     depends_on_task = db.relationship(
-        'Task',
+        'app.models.task.Task',
         foreign_keys=[depends_on_task_id],
         back_populates='dependencies_to'
     )

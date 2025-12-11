@@ -1,6 +1,6 @@
 import { Sidebar } from '../components/Sidebar';
 import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
-import { api } from '../utils/api';
+import { api, API_URL } from '../utils/api';
 
 export function TasksPage(): string {
   return `
@@ -28,56 +28,86 @@ export function TasksPage(): string {
         </header>
 
         <div class="dashboard-content">
-          <!-- Header de sección -->
-          <div class="section-header">
-            <div class="section-info">
-              <h2 class="section-title">Gestión de Tareas</h2>
-              <p class="section-description">Registro y seguimiento de todas las tareas del sistema</p>
+          <!-- Vista de Proyectos (inicial) -->
+          <div id="projectsView">
+            <div class="section-header">
+              <div class="section-info">
+                <h2 class="section-title">Gestión de Proyectos</h2>
+                <p class="section-description">Selecciona un proyecto para ver y gestionar sus tareas</p>
+              </div>
+              <div class="section-actions">
+                <button class="btn-secondary" id="newProjectBtn">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Nuevo Proyecto
+                </button>
+              </div>
             </div>
-            <div class="section-actions">
-              <button class="btn-secondary" id="exportTasksBtn">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 14V3M10 14l-4-4M10 14l4-4M3 17h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Exportar
-              </button>
-              <button class="btn-primary" id="newTaskBtn">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                Nueva Tarea
-              </button>
+
+            <!-- Grid de proyectos -->
+            <div class="projects-grid" id="projectsGrid">
+              <!-- Los proyectos se cargarán dinámicamente -->
             </div>
           </div>
 
-          <!-- Filtros y búsqueda -->
-          <div class="filters-bar">
-            <div class="search-box">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/>
-                <path d="M13 13l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-              <input type="text" placeholder="Buscar por ID o nombre de tarea..." />
+          <!-- Vista de Tareas (se muestra al seleccionar un proyecto) -->
+          <div id="tasksView" style="display: none;">
+            <div class="section-header">
+              <div class="section-info">
+                <button class="btn-back" id="backToProjectsBtn">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M12 4l-8 6 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Volver a Proyectos
+                </button>
+                <h2 class="section-title" id="projectTitleHeader">Proyecto</h2>
+                <p class="section-description" id="projectDescriptionHeader">Gestión de tareas del proyecto</p>
+              </div>
+              <div class="section-actions">
+                <button class="btn-secondary" id="exportTasksBtn">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 14V3M10 14l-4-4M10 14l4-4M3 17h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Exportar
+                </button>
+                <button class="btn-primary" id="newTaskBtn">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Nueva Tarea
+                </button>
+              </div>
             </div>
-            <select class="filter-select">
-              <option>Todos los estados</option>
-              <option>En Progreso</option>
-              <option>Completada</option>
-              <option>Bloqueada</option>
-              <option>Por Hacer</option>
-            </select>
-            <select class="filter-select">
-              <option>Todos los riesgos</option>
-              <option>Bajo</option>
-              <option>Medio</option>
-              <option>Alto</option>
-              <option>Crítico</option>
-            </select>
-          </div>
 
-          <!-- Lista de tareas -->
-          <div class="tasks-table-container">
-            <div class="tasks-table-header">
+            <!-- Filtros y búsqueda -->
+            <div class="filters-bar">
+              <div class="search-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M13 13l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <input type="text" id="taskSearchInput" placeholder="Buscar por nombre de tarea..." />
+              </div>
+              <select class="filter-select" id="statusFilter">
+                <option value="">Todos los estados</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="en_progreso">En Progreso</option>
+                <option value="completada">Completada</option>
+                <option value="retrasada">Retrasada</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+              <select class="filter-select" id="priorityFilter">
+                <option value="">Todas las prioridades</option>
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+
+            <!-- Lista de tareas -->
+            <div class="tasks-table-container">
+              <div class="tasks-table-header">
               <h3>Lista de Tareas</h3>
               <p id="tasksCount">Cargando...</p>
             </div>
@@ -303,9 +333,99 @@ export function TasksPage(): string {
           </div>
         </div>
       </div>
+
+      <!-- Modal Nuevo Proyecto -->
+      <div class="modal-overlay" id="newProjectModal">
+        <div class="modal-container">
+          <div class="modal-header">
+            <h3>Crear Nuevo Proyecto</h3>
+            <button class="modal-close" id="closeProjectModalBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-subtitle">Complete los datos del nuevo proyecto</p>
+            
+            <form id="projectForm" class="task-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="projectId">ID del Proyecto *</label>
+                  <input type="text" id="projectId" placeholder="PROJ-2025-XXX" required />
+                  <small>Ejemplo: PROJ-2025-004</small>
+                </div>
+                <div class="form-group">
+                  <label for="projectName">Nombre del Proyecto *</label>
+                  <input type="text" id="projectName" placeholder="Nombre descriptivo" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="projectDescription">Descripción</label>
+                <textarea id="projectDescription" rows="3" placeholder="Describe el objetivo del proyecto..."></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="projectStartDate">Fecha de Inicio</label>
+                  <input type="date" id="projectStartDate" />
+                </div>
+                <div class="form-group">
+                  <label for="projectEndDate">Fecha de Finalización</label>
+                  <input type="date" id="projectEndDate" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="projectStatus">Estado</label>
+                  <select id="projectStatus">
+                    <option value="planning">Planificación</option>
+                    <option value="in_progress">En Progreso</option>
+                    <option value="on_hold">En Pausa</option>
+                    <option value="completed">Completado</option>
+                    <option value="cancelled">Cancelado</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="projectPriority">Prioridad</label>
+                  <select id="projectPriority">
+                    <option value="low">Baja</option>
+                    <option value="medium" selected>Media</option>
+                    <option value="high">Alta</option>
+                    <option value="critical">Crítica</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="projectBudget">Presupuesto (opcional)</label>
+                  <input type="number" id="projectBudget" placeholder="0.00" step="0.01" />
+                </div>
+                <div class="form-group">
+                  <label for="projectManager">Responsable del Proyecto *</label>
+                  <select id="projectManager" required>
+                    <option value="">Seleccionar responsable...</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" id="cancelProjectBtn">Cancelar</button>
+            <button class="btn-primary" id="createProjectBtn">Crear Proyecto</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }
+
+// Estado global
+let currentProjectId: string | null = null;
+let allTasks: any[] = [];
 
 // Función para obtener el rol del usuario actual
 function getUserRole(): string {
@@ -324,6 +444,228 @@ function getUserRole(): string {
 function canEditFullTask(): boolean {
   const role = getUserRole();
   return role === 'super_admin' || role === 'gerente' || role === 'supervisor';
+}
+
+// Función para cargar proyectos desde el API
+async function loadProjects() {
+  try {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.error('No hay token de autenticación');
+      window.location.href = '/login';
+      return;
+    }
+    
+    console.log('Cargando proyectos desde:', `${API_URL}/projects?include_stats=true`);
+    const response = await fetch(`${API_URL}/projects?include_stats=true`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Respuesta recibida:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error del servidor:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Proyectos cargados:', data);
+    const projects = data.projects || [];
+    
+    const projectsGrid = document.getElementById('projectsGrid');
+    if (!projectsGrid) return;
+    
+    if (projects.length === 0) {
+      projectsGrid.innerHTML = `
+        <div class="empty-state">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          <h3>No hay proyectos disponibles</h3>
+          <p>Crea un nuevo proyecto para comenzar</p>
+        </div>
+      `;
+      return;
+    }
+    
+    projectsGrid.innerHTML = projects.map((project: any) => {
+      const stats = project.stats || {};
+      const completion = stats.completion_percentage || 0;
+      const statusClass = project.status === 'completed' ? 'completed' : 
+                         project.status === 'in_progress' ? 'in-progress' : 
+                         project.status === 'on_hold' ? 'on-hold' : 'planning';
+      const priorityClass = project.priority === 'critical' ? 'critical' : 
+                           project.priority === 'high' ? 'high' : 
+                           project.priority === 'medium' ? 'medium' : 'low';
+      
+      return `
+        <div class="project-card" data-project-id="${project.project_id}">
+          <div class="project-header">
+            <div class="project-title">
+              <h3>${project.name}</h3>
+              <span class="project-id">${project.project_id}</span>
+            </div>
+            <span class="priority-badge priority-${priorityClass}">${project.priority}</span>
+          </div>
+          
+          <p class="project-description">${project.description || 'Sin descripción'}</p>
+          
+          ${project.manager_name ? `
+          <div class="project-manager">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Responsable: <strong>${project.manager_name}</strong></span>
+          </div>
+          ` : ''}
+          
+          <div class="project-stats">
+            <div class="stat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              </svg>
+              <span>${stats.total_tasks || 0} tareas</span>
+            </div>
+            <div class="stat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z"/>
+              </svg>
+              <span>${stats.team_size || 0} miembros</span>
+            </div>
+            <div class="stat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <span>${stats.dependencies_count || 0} dependencias</span>
+            </div>
+          </div>
+          
+          <div class="project-progress">
+            <div class="progress-header">
+              <span>Progreso</span>
+              <span class="progress-percentage">${completion.toFixed(0)}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${completion}%"></div>
+            </div>
+          </div>
+          
+          <div class="project-footer">
+            <span class="status-badge status-${statusClass}">${translateStatus(project.status)}</span>
+            <button class="btn-view-tasks" data-project-id="${project.project_id}">
+              Ver Tareas
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Event listeners para ver tareas de cada proyecto
+    document.querySelectorAll('.btn-view-tasks').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const projectId = (e.currentTarget as HTMLElement).dataset.projectId;
+        if (projectId) {
+          showProjectTasks(projectId);
+        }
+      });
+    });
+    
+  } catch (error) {
+    console.error('Error al cargar proyectos:', error);
+    const projectsGrid = document.getElementById('projectsGrid');
+    if (projectsGrid) {
+      projectsGrid.innerHTML = `
+        <div class="error-state">
+          <p>Error al cargar proyectos. Por favor, intenta nuevamente.</p>
+        </div>
+      `;
+    }
+  }
+}
+
+// Función para traducir estados
+function translateStatus(status: string): string {
+  const translations: any = {
+    'planning': 'Planificación',
+    'in_progress': 'En Progreso',
+    'completed': 'Completado',
+    'on_hold': 'En Pausa',
+    'cancelled': 'Cancelado'
+  };
+  return translations[status] || status;
+}
+
+// Función para mostrar tareas de un proyecto
+async function showProjectTasks(projectId: string) {
+  try {
+    currentProjectId = projectId;
+    
+    // Obtener detalles del proyecto
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.error('No hay token de autenticación');
+      window.location.href = '/login';
+      return;
+    }
+    
+    const projectResponse = await fetch(`${API_URL}/projects/${projectId}?include_tasks=true`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!projectResponse.ok) {
+      const errorText = await projectResponse.text();
+      console.error('Error al obtener proyecto:', errorText);
+      throw new Error(`HTTP error! status: ${projectResponse.status}`);
+    }
+    
+    const projectData = await projectResponse.json();
+    const project = projectData.project;
+    
+    // Actualizar header
+    const projectTitleHeader = document.getElementById('projectTitleHeader');
+    const projectDescriptionHeader = document.getElementById('projectDescriptionHeader');
+    if (projectTitleHeader) projectTitleHeader.textContent = project.name;
+    if (projectDescriptionHeader) projectDescriptionHeader.textContent = project.description || 'Gestión de tareas del proyecto';
+    
+    // Obtener todas las tareas del proyecto
+    const tasksResponse = await api.getTasks();
+    allTasks = (tasksResponse.tasks || []).filter((task: any) => task.project_id === projectId);
+    
+    // Cambiar a vista de tareas
+    const projectsView = document.getElementById('projectsView');
+    const tasksView = document.getElementById('tasksView');
+    if (projectsView) projectsView.style.display = 'none';
+    if (tasksView) tasksView.style.display = 'block';
+    
+    // Renderizar tareas
+    renderTasks(allTasks);
+    
+  } catch (error) {
+    console.error('Error al cargar tareas del proyecto:', error);
+    alert('Error al cargar las tareas del proyecto');
+  }
+}
+
+// Función para volver a la vista de proyectos
+function showProjectsView() {
+  currentProjectId = null;
+  allTasks = [];
+  
+  const projectsView = document.getElementById('projectsView');
+  const tasksView = document.getElementById('tasksView');
+  if (projectsView) projectsView.style.display = 'block';
+  if (tasksView) tasksView.style.display = 'none';
 }
 
 // Función para cargar áreas dinámicamente
@@ -382,119 +724,139 @@ async function loadUsersForTaskForm() {
   }
 }
 
-// Función para cargar tareas desde el API
+// Función para cargar tareas desde el API (filtradas por proyecto)
 async function loadTasks() {
+  if (!currentProjectId) {
+    // Si no hay proyecto seleccionado, cargar vista de proyectos
+    await loadProjects();
+    return;
+  }
+  
   try {
     const response = await api.getTasks();
-    const tasks = response.tasks || [];
-    
-    // Actualizar contador
-    const tasksCount = document.getElementById('tasksCount');
-    if (tasksCount) {
-      tasksCount.textContent = `Total: ${tasks.length} tareas`;
-    }
-
-    // Renderizar tareas
-    const tbody = document.getElementById('tasksTableBody');
-    if (!tbody) return;
-
-    if (tasks.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">No hay tareas registradas</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = tasks.map((task: any) => {
-      const statusMap: any = {
-        'pendiente': { class: 'status-pending', label: 'Pendiente' },
-        'en_progreso': { class: 'status-progress', label: 'En Progreso' },
-        'completada': { class: 'status-completed', label: 'Completada' },
-        'retrasada': { class: 'status-blocked', label: 'Retrasada' },
-        'cancelada': { class: 'status-blocked', label: 'Cancelada' }
-      };
-
-      const status = statusMap[task.status] || { class: 'status-pending', label: task.status };
-      const estimatedDays = task.estimated_hours ? (task.estimated_hours / 8).toFixed(1) + 'd' : '-';
-      const actualDays = task.actual_hours ? (task.actual_hours / 8).toFixed(1) + 'd' : '-';
-      
-      // Calcular riesgo simple basado en complejidad
-      let riskClass = 'risk-low';
-      let riskLabel = 'Bajo';
-      if (task.complexity_score >= 8) {
-        riskClass = 'risk-critical';
-        riskLabel = 'Crítico';
-      } else if (task.complexity_score >= 6) {
-        riskClass = 'risk-high';
-        riskLabel = 'Alto';
-      } else if (task.complexity_score >= 4) {
-        riskClass = 'risk-medium';
-        riskLabel = 'Medio';
-      }
-
-      return `
+    allTasks = (response.tasks || []).filter((task: any) => task.project_id === currentProjectId);
+    renderTasks(allTasks);
+  } catch (error) {
+    console.error('Error al cargar tareas:', error);
+    const tbody = document.querySelector('.tasks-table tbody');
+    if (tbody) {
+      tbody.innerHTML = `
         <tr>
-          <td class="task-id">${task.id}</td>
-          <td class="task-name">${task.title}</td>
-          <td><span class="area-badge">${task.area || 'Sin área'}</span></td>
-          <td class="task-responsibles">
-            <div>${task.assigned_name || task.assigned_to || 'Sin asignar'}</div>
-          </td>
-          <td>${estimatedDays}</td>
-          <td>${actualDays}</td>
-          <td><span class="status-badge ${status.class}">${status.label}</span></td>
-          <td><span class="risk-badge ${riskClass}">${riskLabel}</span></td>
-          <td class="task-actions">
-            <button class="btn-icon btn-view-task" 
-              data-id="${task.id}"
-              data-title="${task.title}"
-              data-area="${task.area || 'Sin área'}"
-              data-description="${task.description || 'Sin descripción'}"
-              data-status="${task.status}"
-              data-assigned="${task.assigned_name || task.assigned_to || 'Sin asignar'}"
-              data-estimated="${estimatedDays}"
-              data-actual="${actualDays}"
-              title="Ver detalles">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <circle cx="9" cy="9" r="2" stroke="currentColor" stroke-width="1.5"/>
-                <path d="M1 9s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-            </button>
-            ${getUserRole() === 'super_admin' || getUserRole() === 'gerente' || getUserRole() === 'supervisor' ? `
-              <button class="btn-icon btn-edit-task" 
-                data-id="${task.id}"
-                data-title="${task.title}"
-                data-area="${task.area || ''}"
-                data-description="${task.description || ''}"
-                data-estimated-hours="${task.estimated_hours || ''}"
-                data-assigned="${task.assigned_to || ''}"
-                data-status="${task.status || 'pendiente'}"
-                data-priority="${task.priority || 'media'}"
-                title="Editar">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M12 3l3 3-9 9H3v-3l9-9z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            ` : `
-              <select class="status-quick-change" data-task-id="${task.id}" data-current-status="${task.status}">
-                <option value="">Cambiar estado</option>
-                ${task.status === 'pendiente' ? '<option value="en_progreso">▶ Iniciar</option>' : ''}
-                ${task.status === 'en_progreso' ? '<option value="completada">✓ Completar</option>' : ''}
-                ${task.status === 'pendiente' || task.status === 'en_progreso' ? '<option value="cancelada">✗ Cancelar</option>' : ''}
-              </select>
-            `}
+          <td colspan="7" style="text-align: center; padding: 2rem;">
+            <p>Error al cargar tareas. Por favor, intenta nuevamente.</p>
           </td>
         </tr>
       `;
-    }).join('');
-
-    // Agregar event listeners a los botones de acción
-    attachTaskActionListeners();
-
-  } catch (error) {
-    console.error('Error al cargar tareas:', error);
-    const tbody = document.getElementById('tasksTableBody');
-    if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: red;">Error al cargar tareas</td></tr>';
     }
+  }
+}
+
+// Función para renderizar tareas en la tabla
+function renderTasks(tasks: any[]) {
+  const tbody = document.querySelector('.tasks-table tbody');
+  if (!tbody) return;
+  
+  if (tasks.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 2rem;">
+          <p>No hay tareas en este proyecto.</p>
+          <p style="color: var(--text-secondary); margin-top: 0.5rem;">Crea una nueva tarea para comenzar.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = tasks.map((task: any) => {
+    const statusMap: any = {
+      'pendiente': { class: 'status-pending', label: 'Pendiente' },
+      'en_progreso': { class: 'status-progress', label: 'En Progreso' },
+      'completada': { class: 'status-completed', label: 'Completada' },
+      'retrasada': { class: 'status-blocked', label: 'Retrasada' },
+      'cancelada': { class: 'status-blocked', label: 'Cancelada' }
+    };
+    
+    const priorityMap: any = {
+      'baja': { class: 'priority-low', label: 'Baja' },
+      'media': { class: 'priority-medium', label: 'Media' },
+      'alta': { class: 'priority-high', label: 'Alta' }
+    };
+    
+    const status = statusMap[task.status] || { class: 'status-pending', label: task.status };
+    const priority = priorityMap[task.priority] || { class: 'priority-medium', label: task.priority };
+    
+    return `
+      <tr data-task-id="${task.id}">
+        <td class="task-id-cell">#${task.id}</td>
+        <td class="task-name-cell">
+          <div class="task-name">
+            <strong>${task.title}</strong>
+            ${task.description ? `<span class="task-subtitle">${task.description.substring(0, 50)}${task.description.length > 50 ? '...' : ''}</span>` : ''}
+          </div>
+        </td>
+        <td>${task.area || '-'}</td>
+        <td><span class="status-badge ${status.class}">${status.label}</span></td>
+        <td><span class="priority-badge ${priority.class}">${priority.label}</span></td>
+        <td>${task.assigned_name || task.assigned_to || 'Sin asignar'}</td>
+        <td class="actions-cell">
+          <button class="btn-icon btn-view" data-task-id="${task.id}" title="Ver detalles">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+          ${canEditFullTask() ? `
+            <button class="btn-icon btn-edit" data-task-id="${task.id}" title="Editar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button class="btn-icon btn-delete" data-task-id="${task.id}" title="Eliminar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+              </svg>
+            </button>
+          ` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  // Event listeners para botones de acciones
+  document.querySelectorAll('.btn-view').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const taskId = (e.currentTarget as HTMLElement).dataset.taskId;
+      const task = tasks.find(t => t.id === parseInt(taskId || '0'));
+      if (task) showTaskDetails(task);
+    });
+  });
+  
+  if (canEditFullTask()) {
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const taskId = (e.currentTarget as HTMLElement).dataset.taskId;
+        const task = tasks.find(t => t.id === parseInt(taskId || '0'));
+        if (task) openEditTaskModal(task);
+      });
+    });
+    
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const taskId = (e.currentTarget as HTMLElement).dataset.taskId;
+        if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+          try {
+            await api.deleteTask(parseInt(taskId || '0'));
+            alert('Tarea eliminada exitosamente');
+            loadTasks();
+          } catch (error) {
+            console.error('Error al eliminar tarea:', error);
+            alert('Error al eliminar la tarea');
+          }
+        }
+      });
+    });
   }
 }
 
@@ -682,6 +1044,131 @@ function resetTaskModal() {
   form?.reset();
 }
 
+// Función para cargar gerentes/administradores para el select de responsable
+async function loadManagersForProject() {
+  try {
+    const response = await api.getUsers();
+    const users = response.users || [];
+    
+    // Filtrar solo gerentes y super_admin
+    const managers = users.filter((user: any) => 
+      user.role?.name === 'gerente' || user.role?.name === 'super_admin'
+    );
+    
+    const managerSelect = document.getElementById('projectManager') as HTMLSelectElement;
+    if (managerSelect) {
+      managerSelect.innerHTML = '<option value="">Seleccionar responsable...</option>' +
+        managers.map((user: any) => 
+          `<option value="${user.email}">${user.full_name} (${user.role?.display_name || user.role?.name})</option>`
+        ).join('');
+    }
+  } catch (error) {
+    console.error('Error al cargar gerentes:', error);
+  }
+}
+
+// Función para abrir modal de nuevo proyecto
+function openNewProjectModal() {
+  const modal = document.getElementById('newProjectModal');
+  if (!modal) return;
+  
+  // Limpiar formulario
+  const form = document.getElementById('projectForm') as HTMLFormElement;
+  form?.reset();
+  
+  // Generar ID sugerido
+  const today = new Date();
+  const year = today.getFullYear();
+  const nextNumber = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  const suggestedId = `PROJ-${year}-${nextNumber}`;
+  (document.getElementById('projectId') as HTMLInputElement).value = suggestedId;
+  
+  // Establecer fecha de inicio a hoy
+  const startDateInput = document.getElementById('projectStartDate') as HTMLInputElement;
+  if (startDateInput) {
+    startDateInput.valueAsDate = today;
+  }
+  
+  // Cargar gerentes
+  loadManagersForProject();
+  
+  // Mostrar modal
+  modal.classList.add('active');
+}
+
+// Función para crear proyecto
+async function createProject() {
+  try {
+    const projectId = (document.getElementById('projectId') as HTMLInputElement)?.value;
+    const name = (document.getElementById('projectName') as HTMLInputElement)?.value;
+    const description = (document.getElementById('projectDescription') as HTMLTextAreaElement)?.value;
+    const startDate = (document.getElementById('projectStartDate') as HTMLInputElement)?.value;
+    const endDate = (document.getElementById('projectEndDate') as HTMLInputElement)?.value;
+    const status = (document.getElementById('projectStatus') as HTMLSelectElement)?.value;
+    const priority = (document.getElementById('projectPriority') as HTMLSelectElement)?.value;
+    const budget = (document.getElementById('projectBudget') as HTMLInputElement)?.value;
+    const managerEmail = (document.getElementById('projectManager') as HTMLSelectElement)?.value;
+    
+    // Validar campos requeridos
+    if (!projectId || !name || !managerEmail) {
+      alert('Por favor complete los campos requeridos: ID, Nombre y Responsable');
+      return;
+    }
+    
+    // Obtener el ID del usuario por su email
+    const usersResponse = await api.getUsers();
+    const manager = usersResponse.users.find((u: any) => u.email === managerEmail);
+    
+    if (!manager) {
+      alert('No se encontró el usuario responsable');
+      return;
+    }
+    
+    const projectData: any = {
+      project_id: projectId,
+      name: name,
+      description: description || null,
+      start_date: startDate || null,
+      expected_end_date: endDate || null,
+      status: status || 'planning',
+      priority: priority || 'medium',
+      budget: budget ? parseFloat(budget) : null,
+      manager_id: manager.id
+    };
+    
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`${API_URL}/projects`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(projectData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al crear proyecto');
+    }
+    
+    const data = await response.json();
+    console.log('Proyecto creado:', data);
+    
+    alert('¡Proyecto creado exitosamente!');
+    
+    // Cerrar modal
+    const modal = document.getElementById('newProjectModal');
+    modal?.classList.remove('active');
+    
+    // Recargar lista de proyectos
+    loadProjects();
+    
+  } catch (error: any) {
+    console.error('Error al crear proyecto:', error);
+    alert('Error al crear el proyecto: ' + error.message);
+  }
+}
+
 export function initTasks() {
   // Inicializar AI Assistant
   initAIAssistant();
@@ -775,7 +1262,8 @@ export function initTasks() {
         priority: isEditing ? taskPriority : 'media',
         estimated_hours: estimatedDays ? parseFloat(estimatedDays) * 8 : null,
         assigned_to: responsible || null,
-        status: isEditing ? taskStatus : 'pendiente'
+        status: isEditing ? taskStatus : 'pendiente',
+        project_id: currentProjectId // Asignar al proyecto actual
       };
 
       if (isEditing && taskId) {
@@ -784,6 +1272,10 @@ export function initTasks() {
         alert('¡Tarea actualizada exitosamente!');
       } else {
         // Crear nueva tarea
+        if (!currentProjectId) {
+          alert('Debes seleccionar un proyecto primero');
+          return;
+        }
         await api.createTask(taskData);
         alert('¡Tarea creada exitosamente!');
       }
@@ -821,4 +1313,81 @@ export function initTasks() {
       window.location.hash = '#login';
     });
   }
+  
+  // Botón volver a proyectos
+  const backToProjectsBtn = document.getElementById('backToProjectsBtn');
+  if (backToProjectsBtn) {
+    backToProjectsBtn.addEventListener('click', () => {
+      showProjectsView();
+    });
+  }
+  
+  // Filtros de búsqueda
+  const searchInput = document.getElementById('taskSearchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const priorityFilter = document.getElementById('priorityFilter');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+  }
+  if (statusFilter) {
+    statusFilter.addEventListener('change', applyFilters);
+  }
+  if (priorityFilter) {
+    priorityFilter.addEventListener('change', applyFilters);
+  }
+  
+  // Modal de nuevo proyecto
+  const newProjectBtn = document.getElementById('newProjectBtn');
+  const projectModal = document.getElementById('newProjectModal');
+  const closeProjectModalBtn = document.getElementById('closeProjectModalBtn');
+  const cancelProjectBtn = document.getElementById('cancelProjectBtn');
+  const createProjectBtn = document.getElementById('createProjectBtn');
+  
+  if (newProjectBtn) {
+    newProjectBtn.addEventListener('click', openNewProjectModal);
+  }
+  
+  const closeProjectModal = () => {
+    projectModal?.classList.remove('active');
+  };
+  
+  closeProjectModalBtn?.addEventListener('click', closeProjectModal);
+  cancelProjectBtn?.addEventListener('click', closeProjectModal);
+  
+  // Cerrar al hacer click fuera del modal
+  projectModal?.addEventListener('click', (e) => {
+    if (e.target === projectModal) {
+      closeProjectModal();
+    }
+  });
+  
+  // Crear proyecto
+  createProjectBtn?.addEventListener('click', createProject);
+}
+
+// Función para aplicar filtros a las tareas
+function applyFilters() {
+  const searchInput = document.getElementById('taskSearchInput') as HTMLInputElement;
+  const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
+  const priorityFilter = document.getElementById('priorityFilter') as HTMLSelectElement;
+  
+  if (!searchInput || !statusFilter || !priorityFilter) return;
+  
+  const searchTerm = searchInput.value.toLowerCase();
+  const statusValue = statusFilter.value;
+  const priorityValue = priorityFilter.value;
+  
+  const filteredTasks = allTasks.filter(task => {
+    const matchesSearch = !searchTerm || 
+      task.title.toLowerCase().includes(searchTerm) ||
+      (task.description && task.description.toLowerCase().includes(searchTerm));
+    
+    const matchesStatus = !statusValue || task.status === statusValue;
+    const matchesPriority = !priorityValue || task.priority === priorityValue;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+  
+  renderTasks(filteredTasks);
 }
