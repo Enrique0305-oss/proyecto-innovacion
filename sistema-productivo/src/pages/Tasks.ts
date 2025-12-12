@@ -399,17 +399,11 @@ export function TasksPage(): string {
                 </div>
               </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="projectBudget">Presupuesto (opcional)</label>
-                  <input type="number" id="projectBudget" placeholder="0.00" step="0.01" />
-                </div>
-                <div class="form-group">
-                  <label for="projectManager">Responsable del Proyecto *</label>
-                  <select id="projectManager" required>
-                    <option value="">Seleccionar responsable...</option>
-                  </select>
-                </div>
+              <div class="form-group">
+                <label for="projectManager">Responsable del Proyecto *</label>
+                <select id="projectManager" required>
+                  <option value="">Seleccionar responsable...</option>
+                </select>
               </div>
             </form>
           </div>
@@ -509,7 +503,15 @@ async function loadProjects() {
               <h3>${project.name}</h3>
               <span class="project-id">${project.project_id}</span>
             </div>
-            <span class="priority-badge priority-${priorityClass}">${project.priority}</span>
+            <div class="project-header-actions">
+              <button class="btn-icon-small btn-edit-project" data-project-id="${project.project_id}" title="Editar proyecto">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <span class="priority-badge priority-${priorityClass}">${project.priority}</span>
+            </div>
           </div>
           
           <p class="project-description">${project.description || 'Sin descripción'}</p>
@@ -574,6 +576,20 @@ async function loadProjects() {
         const projectId = (e.currentTarget as HTMLElement).dataset.projectId;
         if (projectId) {
           showProjectTasks(projectId);
+        }
+      });
+    });
+    
+    // Event listeners para editar proyectos
+    document.querySelectorAll('.btn-edit-project').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const projectId = (e.currentTarget as HTMLElement).dataset.projectId;
+        if (projectId) {
+          const project = projects.find((p: any) => p.project_id === projectId);
+          if (project) {
+            await openEditProjectModal(project);
+          }
         }
       });
     });
@@ -1072,16 +1088,27 @@ function openNewProjectModal() {
   const modal = document.getElementById('newProjectModal');
   if (!modal) return;
   
+  // Cambiar título
+  const modalTitle = modal.querySelector('.modal-header h3');
+  if (modalTitle) modalTitle.textContent = 'Crear Nuevo Proyecto';
+  
   // Limpiar formulario
   const form = document.getElementById('projectForm') as HTMLFormElement;
   form?.reset();
+  
+  // Limpiar flag de edición
+  const projectIdInput = document.getElementById('projectId') as HTMLInputElement;
+  if (projectIdInput) {
+    projectIdInput.removeAttribute('data-editing');
+    projectIdInput.readOnly = false;
+  }
   
   // Generar ID sugerido
   const today = new Date();
   const year = today.getFullYear();
   const nextNumber = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
   const suggestedId = `PROJ-${year}-${nextNumber}`;
-  (document.getElementById('projectId') as HTMLInputElement).value = suggestedId;
+  projectIdInput.value = suggestedId;
   
   // Establecer fecha de inicio a hoy
   const startDateInput = document.getElementById('projectStartDate') as HTMLInputElement;
@@ -1092,21 +1119,86 @@ function openNewProjectModal() {
   // Cargar gerentes
   loadManagersForProject();
   
+  // Cambiar texto del botón
+  const createBtn = document.getElementById('createProjectBtn');
+  if (createBtn) createBtn.textContent = 'Crear Proyecto';
+  
   // Mostrar modal
   modal.classList.add('active');
 }
 
-// Función para crear proyecto
+// Función para abrir modal en modo edición
+async function openEditProjectModal(project: any) {
+  const modal = document.getElementById('newProjectModal');
+  if (!modal) return;
+  
+  // Cambiar título
+  const modalTitle = modal.querySelector('.modal-header h3');
+  if (modalTitle) modalTitle.textContent = 'Editar Proyecto';
+  
+  // Cargar gerentes primero
+  await loadManagersForProject();
+  
+  // Esperar un momento para que se carguen los selects
+  setTimeout(() => {
+    // Rellenar formulario
+    const projectIdInput = document.getElementById('projectId') as HTMLInputElement;
+    if (projectIdInput) {
+      projectIdInput.value = project.project_id;
+      projectIdInput.readOnly = true; // No permitir cambiar el ID
+      projectIdInput.setAttribute('data-editing', 'true');
+    }
+    
+    (document.getElementById('projectName') as HTMLInputElement).value = project.name || '';
+    (document.getElementById('projectDescription') as HTMLTextAreaElement).value = project.description || '';
+    
+    if (project.start_date) {
+      (document.getElementById('projectStartDate') as HTMLInputElement).value = project.start_date;
+    }
+    if (project.expected_end_date) {
+      (document.getElementById('projectEndDate') as HTMLInputElement).value = project.expected_end_date;
+    }
+    
+    (document.getElementById('projectStatus') as HTMLSelectElement).value = project.status || 'planning';
+    (document.getElementById('projectPriority') as HTMLSelectElement).value = project.priority || 'medium';
+    
+    // Seleccionar manager por ID
+    if (project.manager_id) {
+      const managerSelect = document.getElementById('projectManager') as HTMLSelectElement;
+      // Buscar la opción que corresponde al manager
+      for (let i = 0; i < managerSelect.options.length; i++) {
+        const option = managerSelect.options[i];
+        if (option.value) {
+          // Necesitamos comparar por email, así que buscaremos el email del manager
+          // Por ahora usamos el valor directamente
+          managerSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
+    
+    // Cambiar texto del botón
+    const createBtn = document.getElementById('createProjectBtn');
+    if (createBtn) createBtn.textContent = 'Actualizar Proyecto';
+  }, 100);
+  
+  // Mostrar modal
+  modal.classList.add('active');
+}
+
+// Función para crear o actualizar proyecto
 async function createProject() {
   try {
-    const projectId = (document.getElementById('projectId') as HTMLInputElement)?.value;
+    const projectIdInput = document.getElementById('projectId') as HTMLInputElement;
+    const projectId = projectIdInput?.value;
+    const isEditing = projectIdInput?.getAttribute('data-editing') === 'true';
+    
     const name = (document.getElementById('projectName') as HTMLInputElement)?.value;
     const description = (document.getElementById('projectDescription') as HTMLTextAreaElement)?.value;
     const startDate = (document.getElementById('projectStartDate') as HTMLInputElement)?.value;
     const endDate = (document.getElementById('projectEndDate') as HTMLInputElement)?.value;
     const status = (document.getElementById('projectStatus') as HTMLSelectElement)?.value;
     const priority = (document.getElementById('projectPriority') as HTMLSelectElement)?.value;
-    const budget = (document.getElementById('projectBudget') as HTMLInputElement)?.value;
     const managerEmail = (document.getElementById('projectManager') as HTMLSelectElement)?.value;
     
     // Validar campos requeridos
@@ -1132,13 +1224,15 @@ async function createProject() {
       expected_end_date: endDate || null,
       status: status || 'planning',
       priority: priority || 'medium',
-      budget: budget ? parseFloat(budget) : null,
       manager_id: manager.id
     };
     
     const token = localStorage.getItem('access_token');
-    const response = await fetch(`${API_URL}/projects`, {
-      method: 'POST',
+    const url = isEditing ? `${API_URL}/projects/${projectId}` : `${API_URL}/projects`;
+    const method = isEditing ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -1148,13 +1242,13 @@ async function createProject() {
     
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Error al crear proyecto');
+      throw new Error(errorData.message || `Error al ${isEditing ? 'actualizar' : 'crear'} proyecto`);
     }
     
     const data = await response.json();
-    console.log('Proyecto creado:', data);
+    console.log(`Proyecto ${isEditing ? 'actualizado' : 'creado'}:`, data);
     
-    alert('¡Proyecto creado exitosamente!');
+    alert(`¡Proyecto ${isEditing ? 'actualizado' : 'creado'} exitosamente!`);
     
     // Cerrar modal
     const modal = document.getElementById('newProjectModal');
@@ -1164,8 +1258,8 @@ async function createProject() {
     loadProjects();
     
   } catch (error: any) {
-    console.error('Error al crear proyecto:', error);
-    alert('Error al crear el proyecto: ' + error.message);
+    console.error('Error al procesar proyecto:', error);
+    alert('Error: ' + error.message);
   }
 }
 

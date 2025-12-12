@@ -631,6 +631,39 @@
   gap: var(--spacing-md);
 }
 
+.project-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.btn-icon-small {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-small:hover {
+  background-color: var(--bg-secondary);
+  color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.btn-icon-small svg {
+  stroke-width: 1.5;
+}
+
+.btn-edit-project:hover {
+  color: var(--color-warning);
+}
+
 .project-title {
   flex: 1;
 }

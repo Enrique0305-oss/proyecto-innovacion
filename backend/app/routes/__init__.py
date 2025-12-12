@@ -17,6 +17,7 @@ def register_blueprints(app):
     from app.routes.user_routes import users_bp
     from app.routes.person_routes import persons_bp
     from app.routes.project_routes import project_bp
+    from app.routes.process_mining_routes import process_mining_bp
     
     # Prefijo base para todas las rutas de API
     api_prefix = '/api'
@@ -30,5 +31,6 @@ def register_blueprints(app):
     app.register_blueprint(users_bp, url_prefix=f'{api_prefix}/users')
     app.register_blueprint(persons_bp, url_prefix=f'{api_prefix}/persons')
     app.register_blueprint(project_bp, url_prefix=f'{api_prefix}')
+    app.register_blueprint(process_mining_bp, url_prefix=f'{api_prefix}/ml/process-mining')
     
     print("✅ Blueprints registrados correctamente")

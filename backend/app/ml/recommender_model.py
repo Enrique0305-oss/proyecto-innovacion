@@ -278,15 +278,15 @@ def get_candidates(task_data):
     area = task_data.get('area')
     exclude_ids = task_data.get('exclude_person_ids', [])
     
-    # Consulta base: usuarios con role_id = 7 (colaboradores) y activos
+    # Consulta base: usuarios con role_id = 4 (colaboradores) y activos
     query = WebUser.query.filter(
-        WebUser.role_id == 7,  # Solo colaboradores
+        WebUser.role_id == 4,  # Solo colaboradores (role_id=4)
         WebUser.status == 'active'  # Solo activos
     )
     
-    # Filtrar por área si se especifica
-    if area:
-        query = query.filter(WebUser.area == area)
+    # Filtrar por área si se especifica (opcional)
+    # if area:
+    #     query = query.filter(WebUser.area == area)
     
     # Excluir personas específicas
     if exclude_ids:
@@ -295,7 +295,12 @@ def get_candidates(task_data):
     # Ordenar por nombre
     query = query.order_by(WebUser.full_name)
     
-    return query.all()
+    candidates = query.all()
+    print(f"✓ Candidatos encontrados: {len(candidates)}")
+    for c in candidates:
+        print(f"  - {c.full_name} (ID: {c.id}, Área: {c.area}, Role: {c.role_id})")
+    
+    return candidates
 
 
 def get_current_workload(user_id):

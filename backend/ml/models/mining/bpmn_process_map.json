@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "generated_at": "2025-12-10T23:47:45.680202",
+    "total_cases": 2442,
+    "total_activities": 204,
+    "date_range": {
+      "start": "2013-01-16T00:00:00",
+      "end": "2023-09-01T00:00:00"
+    }
+  },
+  "process_steps": [
+    {
+      "id": "step_1",
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2020-",
+      "order": 1,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 198
+    },
+    {
+      "id": "step_2",
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2021-",
+      "order": 2,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 168
+    },
+    {
+      "id": "step_3",
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2017-",
+      "order": 3,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 135
+    },
+    {
+      "id": "step_4",
+      "name": "PIURA - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "order": 4,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 134
+    },
+    {
+      "id": "step_5",
+      "name": "AYACUCHO - PP Acceso de Hogares Rurales a Mercados Loc. 2021-",
+      "order": 5,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 133
+    },
+    {
+      "id": "step_6",
+      "name": "JUNIN - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "order": 6,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 130
+    },
+    {
+      "id": "step_7",
+      "name": "AYACUCHO - PP Acceso de Hogares Rurales a Mercados Loc. 2017-",
+      "order": 7,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 128
+    },
+    {
+      "id": "step_8",
+      "name": "ANCASH - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "order": 8,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 126
+    },
+    {
+      "id": "step_9",
+      "name": "HUANCAVELICA - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "order": 9,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 120
+    },
+    {
+      "id": "step_10",
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2018-",
+      "order": 10,
+      "congestion_pct": 0.0,
+      "congestion_level": "Bajo",
+      "color": "green",
+      "avg_duration_days": 0.0,
+      "total_cases": 112
+    }
+  ]
+}

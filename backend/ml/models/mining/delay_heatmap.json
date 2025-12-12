@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "generated_at": "2025-12-10T23:47:45.687582",
+    "metric": "congestion_percentage"
+  },
+  "activities": [
+    {
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2020-",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 198
+    },
+    {
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2021-",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 168
+    },
+    {
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2017-",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 135
+    },
+    {
+      "name": "PIURA - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 134
+    },
+    {
+      "name": "AYACUCHO - PP Acceso de Hogares Rurales a Mercados Loc. 2021-",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 133
+    },
+    {
+      "name": "JUNIN - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 130
+    },
+    {
+      "name": "AYACUCHO - PP Acceso de Hogares Rurales a Mercados Loc. 2017-",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 128
+    },
+    {
+      "name": "ANCASH - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 126
+    },
+    {
+      "name": "HUANCAVELICA - PP Acceso de Hogares Rurales a Mercados Locales 20",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 120
+    },
+    {
+      "name": "CAJAMARCA - PP Acceso de Hogares Rurales a Mercados Loc. 2018-",
+      "congestion_pct": 0.0,
+      "avg_duration_days": 0.0,
+      "risk_level": "Bajo",
+      "total_tasks": 112
+    }
+  ]
+}
