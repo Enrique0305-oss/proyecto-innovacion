@@ -4,6 +4,7 @@ Endpoints para predicciones usando modelos ML entrenados
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from datetime import datetime
 import traceback
 
 # Imports de los módulos ML (se crearán después)
@@ -14,6 +15,7 @@ try:
     from app.ml.performance_model import predict_performance
     from app.ml.process_mining import analyze_process
     from app.ml.attrition_model import predict_attrition
+    from app.ml.chat_assistant import assistant
 except ImportError as e:
     # Los módulos ML se crearán después
     predict_risk = None
@@ -22,6 +24,7 @@ except ImportError as e:
     predict_performance = None
     analyze_process = None
     predict_attrition = None
+    assistant = None
 
 # Crear Blueprint
 ml_bp = Blueprint('ml', __name__)
@@ -864,3 +867,45 @@ def ml_health():
         'models': models_status,
         'message': 'Todos los modelos disponibles' if all_ready else 'Algunos modelos no están disponibles'
     }), 200 if all_ready else 503
+
+
+@ml_bp.route('/chat', methods=['POST'])
+@jwt_required()
+def chat():
+    """
+    Asistente de chat inteligente que usa los modelos ML del sistema
+    
+    Body JSON:
+        - message: str (mensaje del usuario)
+    
+    Returns:
+        JSON con respuesta del asistente
+    """
+    try:
+        if assistant is None:
+            return jsonify({
+                'error': 'Asistente de chat no disponible',
+                'message': 'El módulo de chat no está configurado'
+            }), 503
+        
+        data = request.get_json()
+        
+        if not data or 'message' not in data:
+            return jsonify({'error': 'Se requiere el campo "message"'}), 400
+        
+        user_message = data['message']
+        
+        # Procesar mensaje con el asistente
+        response = assistant.process_message(user_message)
+        
+        return jsonify({
+            'response': response,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Error al procesar mensaje',
+            'details': str(e),
+            'trace': traceback.format_exc()
+        }), 500

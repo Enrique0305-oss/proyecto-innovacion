@@ -1,3 +1,5 @@
+import { API_URL } from '../utils/api';
+
 export function AIAssistant(): string {
   return `
     <div class="ai-assistant-overlay" id="aiAssistantOverlay">
@@ -28,7 +30,13 @@ export function AIAssistant(): string {
             </div>
             <div class="ai-message-content">
               <div class="ai-message-text">
-                ¡Hola! Soy tu asistente de IA. Puedo ayudarte a analizar predicciones, resumir insights y recomendar acciones. ¿En qué puedo ayudarte hoy?
+                ¡Hola! 👋 Soy tu asistente de IA. Puedo ayudarte a:<br><br>
+                📊 Predecir riesgos de tareas<br>
+                ⏱️ Estimar duraciones<br>
+                👤 Recomendar personas<br>
+                📈 Analizar desempeño<br>
+                📋 Mostrar estadísticas<br><br>
+                Escribe "ayuda" para ver ejemplos de comandos. ¿En qué puedo ayudarte?
               </div>
             </div>
           </div>
@@ -118,19 +126,57 @@ export function initAIAssistant() {
     addMessage(userMessage, false);
     input.value = '';
 
-    // Simular respuesta del bot
-    setTimeout(() => {
-      const responses = [
-        'Basándome en los datos actuales, puedo observar que la eficiencia general está en 85%, lo cual es un buen indicador. ¿Te gustaría profundizar en algún área específica?',
-        'He detectado 3 cuellos de botella que requieren atención. El proceso de aprobación parece ser el punto crítico. ¿Quieres que analice las causas?',
-        'Las predicciones de los 24 modelos activos muestran una precisión del 95%. Te recomiendo priorizar las tareas en el área de Operaciones para mejorar la eficiencia en un 15%.',
-        'Según el análisis, Luis García tiene el perfil ideal para 5 tareas prioritarias. ¿Deseas ver el detalle de la recomendación?',
-        'El tiempo promedio ha disminuido un 12% respecto al mes anterior, lo cual es excelente. ¿Necesitas un reporte detallado de esta métrica?'
-      ];
+    // Mostrar indicador de "escribiendo..."
+    const chatBody = document.getElementById('aiChatBody');
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'ai-message ai-message-bot typing-indicator';
+    typingIndicator.id = 'typingIndicator';
+    typingIndicator.innerHTML = `
+      <div class="ai-message-avatar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="ai-message-content">
+        <div class="ai-message-text">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    `;
+    chatBody?.appendChild(typingIndicator);
+    if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
+
+    // Llamar al backend real
+    fetch(`${API_URL}/ml/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({ message: userMessage })
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Remover indicador de escribiendo
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+
+      // Mostrar respuesta del asistente
+      const response = data.response || 'Lo siento, no pude procesar tu mensaje.';
+      addMessage(response, true);
+    })
+    .catch(error => {
+      console.error('Error en chat:', error);
       
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      addMessage(randomResponse, true);
-    }, 1000);
+      // Remover indicador de escribiendo
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+
+      // Respuesta de error
+      addMessage('❌ Lo siento, ocurrió un error al procesar tu mensaje. Por favor, intenta de nuevo.', true);
+    });
   }
 
   // Event listeners
