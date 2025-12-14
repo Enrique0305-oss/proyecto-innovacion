@@ -50,6 +50,18 @@ export function DurationPredictionPage(): string {
 
               <form id="durationForm">
                 <div class="form-group">
+                  <label>Nombre de la Tarea</label>
+                  <input type="text" id="taskName" placeholder="Ej: Implementación Sistema CRM" style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;" />
+                </div>
+
+                <div class="form-group">
+                  <label>Área</label>
+                  <select id="taskArea" style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;">
+                    <option value="">Cargando áreas...</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
                   <label>Complejidad de la Tarea</label>
                   <select id="taskComplexity" required style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;">
                     <option value="">Seleccionar complejidad</option>
@@ -74,7 +86,7 @@ export function DurationPredictionPage(): string {
                 </div>
 
                 <div class="form-group">
-                  <label>Asignar a Persona (opcional)</label>
+                  <label>Asignar a Persona</label>
                   <select id="personId" style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;">
                     <option value="">Sin asignar</option>
                   </select>
@@ -106,6 +118,35 @@ export function DurationPredictionPage(): string {
       </main>
     </div>
   `;
+}
+
+async function loadAreasForSelector() {
+  try {
+    const response = await fetch(`${API_URL}/areas?status=active`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const areaSelect = document.getElementById('taskArea') as HTMLSelectElement;
+      
+      if (areaSelect && data.areas) {
+        // Limpiar opciones existentes excepto la primera
+        areaSelect.innerHTML = '<option value="">Seleccionar área</option>';
+        
+        data.areas.forEach((area: any) => {
+          const option = document.createElement('option');
+          option.value = area.name;
+          option.textContent = area.name;
+          areaSelect.appendChild(option);
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando áreas:', error);
+  }
 }
 
 async function loadPersonsForSelector() {
@@ -144,7 +185,9 @@ function displayResults(
   confidenceInterval: any,
   factors: string[],
   mode: string,
-  resultCard: HTMLElement | null
+  resultCard: HTMLElement | null,
+  taskName?: string,
+  taskArea?: string
 ) {
   if (!resultCard) return;
   
@@ -154,6 +197,12 @@ function displayResults(
   
   resultCard.innerHTML = `
     <div class="duration-results" style="padding: 20px;">
+      ${taskName || taskArea ? `
+      <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; border-left: 4px solid #00bcd4; margin-bottom: 20px;">
+        ${taskName ? `<div style="font-size: 16px; font-weight: 600; color: #00838f; margin-bottom: 5px;">📋 ${taskName}</div>` : ''}
+        ${taskArea ? `<div style="font-size: 14px; color: #0097a7;">🏢 Área: <strong>${taskArea}</strong></div>` : ''}
+      </div>
+      ` : ''}
       <!-- Cards de Resultado -->
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
         <!-- Estimación Inicial -->
@@ -258,13 +307,16 @@ export function initDurationPrediction() {
   const form = document.getElementById('durationForm') as HTMLFormElement;
   const resultCard = document.getElementById('durationResult');
 
-  // Cargar personas para el selector
+  // Cargar áreas y personas para los selectores
+  loadAreasForSelector();
   loadPersonsForSelector();
 
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      const taskName = (document.getElementById('taskName') as HTMLInputElement)?.value;
+      const taskArea = (document.getElementById('taskArea') as HTMLSelectElement)?.value;
       const taskComplexity = (document.getElementById('taskComplexity') as HTMLSelectElement)?.value;
       const estimatedTime = (document.getElementById('estimatedTime') as HTMLInputElement)?.value;
       const personId = (document.getElementById('personId') as HTMLSelectElement)?.value;
@@ -323,7 +375,7 @@ export function initDurationPrediction() {
         const difference = predictedDuration - parseFloat(estimatedTime);
         const percentDiff = ((difference / parseFloat(estimatedTime)) * 100).toFixed(1);
         
-        displayResults(estimatedTime, predictedDuration, difference, percentDiff, confidenceInterval, factors, mode, resultCard);
+        displayResults(estimatedTime, predictedDuration, difference, percentDiff, confidenceInterval, factors, mode, resultCard, taskName, taskArea);
       
       } catch (error) {
         console.error('❌ Error completo:', error);

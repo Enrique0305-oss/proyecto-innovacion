@@ -224,7 +224,7 @@ export function initRiskClassification() {
               <path d="M12 8v4M12 16v1" stroke="#ff5722" stroke-width="2" stroke-linecap="round"/>
             </svg>
             <h3>Predicción de Riesgo</h3>
-            <p>Nivel de riesgo calculado por el modelo de IA</p>
+            ${taskName ? `<p class="task-name-display">Tarea: <strong>${taskName}</strong> - Área: <strong>${taskArea}</strong></p>` : `<p>Nivel de riesgo calculado por el modelo de IA</p>`}
           </div>
 
           <div class="risk-prediction">

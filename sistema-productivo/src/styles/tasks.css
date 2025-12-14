@@ -354,7 +354,6 @@
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
@@ -377,6 +376,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -419,6 +419,8 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-md);
+  flex-shrink: 0;
+  background: white;
 }
 
 /* Task Form */
@@ -692,23 +694,33 @@
   overflow: hidden;
 }
 
+/* Contenedor para área y responsable */
+.project-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.project-area,
 .project-manager {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  margin-top: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
 }
 
+.project-area svg,
 .project-manager svg {
   stroke-width: 1.5;
   flex-shrink: 0;
 }
 
+.project-area strong,
 .project-manager strong {
   color: var(--text-primary);
   font-weight: 600;

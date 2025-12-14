@@ -185,6 +185,19 @@
   font-size: var(--font-size-sm);
 }
 
+.task-name-display {
+  background: #f0f7ff;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius);
+  border-left: 3px solid var(--color-primary);
+  color: var(--text-primary) !important;
+  font-size: var(--font-size-sm) !important;
+}
+
+.task-name-display strong {
+  color: var(--color-primary);
+}
+
 /* Risk Prediction */
 .risk-prediction {
   text-align: center;

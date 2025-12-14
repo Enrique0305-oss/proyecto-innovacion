@@ -43,9 +43,18 @@ def get_projects():
         
         projects = query.all()
         
+        # Debug: Ver qué devuelve to_dict para el primer proyecto
+        projects_data = [p.to_dict(include_tasks=include_tasks, include_stats=include_stats) for p in projects]
+        if projects_data:
+            print("\n=== DEBUG: Primer proyecto en JSON ===")
+            import json
+            print(json.dumps(projects_data[0], indent=2, default=str))
+            print(f"¿Tiene 'area'? {'area' in projects_data[0]}")
+            print(f"Valor de 'area': {projects_data[0].get('area')}")
+        
         return jsonify({
             'status': 'success',
-            'projects': [p.to_dict(include_tasks=include_tasks, include_stats=include_stats) for p in projects],
+            'projects': projects_data,
             'count': len(projects),
             'user_area': user.area,
             'user_role': user.role_id

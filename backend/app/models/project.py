@@ -42,6 +42,9 @@ class Project(db.Model):
     budget = db.Column(db.Numeric(15, 2))
     progress_percentage = db.Column(db.Numeric(5, 2), default=0.00)
     
+    # Área del proyecto
+    area = db.Column(db.String(100))
+    
     # Gestión
     manager_id = db.Column(db.Integer, db.ForeignKey('web_users.id'))
     
@@ -68,6 +71,7 @@ class Project(db.Model):
             'project_id': self.project_id,
             'name': self.name,
             'description': self.description,
+            'area': self.area,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'expected_end_date': self.expected_end_date.isoformat() if self.expected_end_date else None,
             'actual_end_date': self.actual_end_date.isoformat() if self.actual_end_date else None,
