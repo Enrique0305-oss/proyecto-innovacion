@@ -366,6 +366,13 @@ export function TasksPage(): string {
                 <textarea id="projectDescription" rows="3" placeholder="Describe el objetivo del proyecto..."></textarea>
               </div>
 
+              <div class="form-group">
+                <label for="projectArea">Área *</label>
+                <select id="projectArea" required>
+                  <option value="">Seleccionar área...</option>
+                </select>
+              </div>
+
               <div class="form-row">
                 <div class="form-group">
                   <label for="projectStartDate">Fecha de Inicio</label>
@@ -446,7 +453,7 @@ async function loadProjects() {
     const token = localStorage.getItem('access_token');
     if (!token) {
       console.error('No hay token de autenticación');
-      window.location.href = '/login';
+      window.location.hash = '#login';
       return;
     }
     
@@ -459,6 +466,13 @@ async function loadProjects() {
     });
     
     console.log('Respuesta recibida:', response.status, response.statusText);
+    
+    if (response.status === 401) {
+      // Token inválido o expirado, redirigir al login
+      localStorage.clear();
+      window.location.hash = '#login';
+      return;
+    }
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -758,7 +772,7 @@ async function loadTasks() {
     if (tbody) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align: center; padding: 2rem;">
+          <td colspan="9" style="text-align: center; padding: 2rem;">
             <p>Error al cargar tareas. Por favor, intenta nuevamente.</p>
           </td>
         </tr>
@@ -775,7 +789,7 @@ function renderTasks(tasks: any[]) {
   if (tasks.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align: center; padding: 2rem;">
+        <td colspan="9" style="text-align: center; padding: 2rem;">
           <p>No hay tareas en este proyecto.</p>
           <p style="color: var(--text-secondary); margin-top: 0.5rem;">Crea una nueva tarea para comenzar.</p>
         </td>
@@ -802,6 +816,14 @@ function renderTasks(tasks: any[]) {
     const status = statusMap[task.status] || { class: 'status-pending', label: task.status };
     const priority = priorityMap[task.priority] || { class: 'priority-medium', label: task.priority };
     
+    // Calcular nivel de riesgo
+    const riskClass = task.complexity_score >= 7 ? 'risk-high' : task.complexity_score >= 4 ? 'risk-medium' : 'risk-low';
+    const riskLabel = task.complexity_score >= 7 ? 'Alto' : task.complexity_score >= 4 ? 'Medio' : 'Bajo';
+    
+    // Convertir horas a días (8 horas = 1 día)
+    const estimatedDays = task.estimated_hours ? (task.estimated_hours / 8).toFixed(1) : null;
+    const actualDays = task.actual_hours ? (task.actual_hours / 8).toFixed(1) : null;
+    
     return `
       <tr data-task-id="${task.id}">
         <td class="task-id-cell">#${task.id}</td>
@@ -812,9 +834,11 @@ function renderTasks(tasks: any[]) {
           </div>
         </td>
         <td>${task.area || '-'}</td>
-        <td><span class="status-badge ${status.class}">${status.label}</span></td>
-        <td><span class="priority-badge ${priority.class}">${priority.label}</span></td>
         <td>${task.assigned_name || task.assigned_to || 'Sin asignar'}</td>
+        <td>${estimatedDays ? estimatedDays + ' días' : '-'}</td>
+        <td>${actualDays ? actualDays + ' días' : '-'}</td>
+        <td><span class="status-badge ${status.class}">${status.label}</span></td>
+        <td><span class="risk-badge ${riskClass}">${riskLabel}</span></td>
         <td class="actions-cell">
           <button class="btn-icon btn-view" data-task-id="${task.id}" title="Ver detalles">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1083,6 +1107,25 @@ async function loadManagersForProject() {
   }
 }
 
+// Función para cargar áreas en el formulario de proyectos
+async function loadAreasForProjectForm() {
+  try {
+    const { api } = await import('../utils/api');
+    const response = await api.getAreas('active');
+    const areas = response.areas || [];
+    
+    const projectAreaSelect = document.getElementById('projectArea') as HTMLSelectElement;
+    if (projectAreaSelect) {
+      projectAreaSelect.innerHTML = '<option value="">Seleccionar área...</option>' +
+        areas.map((area: any) => 
+          `<option value="${area.name}">${area.name}</option>`
+        ).join('');
+    }
+  } catch (error) {
+    console.error('Error al cargar áreas:', error);
+  }
+}
+
 // Función para abrir modal de nuevo proyecto
 function openNewProjectModal() {
   const modal = document.getElementById('newProjectModal');
@@ -1119,6 +1162,9 @@ function openNewProjectModal() {
   // Cargar gerentes
   loadManagersForProject();
   
+  // Cargar áreas
+  loadAreasForProjectForm();
+  
   // Cambiar texto del botón
   const createBtn = document.getElementById('createProjectBtn');
   if (createBtn) createBtn.textContent = 'Crear Proyecto';
@@ -1139,6 +1185,9 @@ async function openEditProjectModal(project: any) {
   // Cargar gerentes primero
   await loadManagersForProject();
   
+  // Cargar áreas
+  await loadAreasForProjectForm();
+  
   // Esperar un momento para que se carguen los selects
   setTimeout(() => {
     // Rellenar formulario
@@ -1151,6 +1200,7 @@ async function openEditProjectModal(project: any) {
     
     (document.getElementById('projectName') as HTMLInputElement).value = project.name || '';
     (document.getElementById('projectDescription') as HTMLTextAreaElement).value = project.description || '';
+    (document.getElementById('projectArea') as HTMLSelectElement).value = project.area || '';
     
     if (project.start_date) {
       (document.getElementById('projectStartDate') as HTMLInputElement).value = project.start_date;
@@ -1195,6 +1245,7 @@ async function createProject() {
     
     const name = (document.getElementById('projectName') as HTMLInputElement)?.value;
     const description = (document.getElementById('projectDescription') as HTMLTextAreaElement)?.value;
+    const area = (document.getElementById('projectArea') as HTMLSelectElement)?.value;
     const startDate = (document.getElementById('projectStartDate') as HTMLInputElement)?.value;
     const endDate = (document.getElementById('projectEndDate') as HTMLInputElement)?.value;
     const status = (document.getElementById('projectStatus') as HTMLSelectElement)?.value;
@@ -1202,8 +1253,8 @@ async function createProject() {
     const managerEmail = (document.getElementById('projectManager') as HTMLSelectElement)?.value;
     
     // Validar campos requeridos
-    if (!projectId || !name || !managerEmail) {
-      alert('Por favor complete los campos requeridos: ID, Nombre y Responsable');
+    if (!projectId || !name || !area || !managerEmail) {
+      alert('Por favor complete los campos requeridos: ID, Nombre, Área y Responsable');
       return;
     }
     
@@ -1220,6 +1271,7 @@ async function createProject() {
       project_id: projectId,
       name: name,
       description: description || null,
+      area: area,
       start_date: startDate || null,
       expected_end_date: endDate || null,
       status: status || 'planning',

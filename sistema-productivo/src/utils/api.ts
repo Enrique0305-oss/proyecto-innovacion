@@ -21,6 +21,33 @@ interface ApiError {
 }
 
 class ApiService {
+  private handleUnauthorized(): void {
+    // Limpiar sesión y redirigir al login
+    this.logout();
+    window.location.hash = '#login';
+  }
+
+  private async handleResponse(response: Response): Promise<any> {
+    // Si es 401, redirigir al login
+    if (response.status === 401) {
+      this.handleUnauthorized();
+      throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+    }
+
+    if (!response.ok) {
+      let errorMessage = 'Error en la solicitud';
+      try {
+        const error: ApiError = await response.json();
+        errorMessage = error.error || error.message || errorMessage;
+      } catch {
+        errorMessage = `Error ${response.status}: ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -80,11 +107,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error('Error al obtener tareas');
-    }
-
-    return response.json();
+    return this.handleResponse(response);
   }
 
   async createTask(task: any) {
@@ -139,11 +162,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error('Error al obtener estadísticas');
-    }
-
-    return response.json();
+    return this.handleResponse(response);
   }
 
   // People endpoints
@@ -156,11 +175,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error('Error al obtener personas');
-    }
-
-    return response.json();
+    return this.handleResponse(response);
   }
 
   // Areas endpoints
@@ -172,11 +187,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error('Error al obtener áreas');
-    }
-
-    return response.json();
+    return this.handleResponse(response);
   }
 
   async createArea(area: any) {
@@ -236,11 +247,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error('Error al obtener usuarios');
-    }
-
-    return response.json();
+    return this.handleResponse(response);
   }
 
   async updateUser(id: number, userData: any) {

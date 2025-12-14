@@ -9,6 +9,7 @@ from datetime import datetime
 from app.extensions import db
 from app.models.web_user import WebUser
 from app.models.role import Role
+from app.utils.permissions import get_user_permissions, get_accessible_areas
 
 # Crear Blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -70,8 +71,8 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        # Crear token JWT (identity debe ser string)
-        access_token = create_access_token(identity=str(new_user.id))
+        # Crear token JWT con el email del usuario
+        access_token = create_access_token(identity=new_user.email)
         
         return jsonify({
             'message': 'Usuario registrado exitosamente',
@@ -145,14 +146,18 @@ def login():
         
         print(f"✅ Last login actualizado")
         
-        # Crear token JWT (identity debe ser string)
-        access_token = create_access_token(identity=str(user.id))
+        # Crear token JWT con el email del usuario
+        access_token = create_access_token(identity=user.email)
         
         print(f"✅ Token JWT creado")
         
         # Convertir usuario a dict
         print(f"📦 Convirtiendo usuario a dict...")
         user_dict = user.to_dict()
+        
+        # Agregar permisos y áreas accesibles
+        user_dict['permissions'] = get_user_permissions(user)
+        user_dict['accessible_areas'] = get_accessible_areas(user)
         
         print(f"✅ Usuario convertido a dict")
         
@@ -186,8 +191,8 @@ def get_current_user():
         JSON con la información del usuario
     """
     try:
-        user_id = int(get_jwt_identity())  # Convertir de string a int
-        user = WebUser.query.get(user_id)
+        user_email = get_jwt_identity()  # Obtener email del JWT
+        user = WebUser.query.filter_by(email=user_email).first()
         
         if not user:
             return jsonify({'error': 'Usuario no encontrado'}), 404

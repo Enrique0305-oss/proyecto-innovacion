@@ -559,30 +559,64 @@ def hybrid_performance_analysis():
         carga_actual = metrics['carga_actual']
         
         # Clasificación heurística basada en rendimiento y métricas
-        if rendimiento >= 85 and tasa_retrabajos < 10:
+        # Calcular probabilidad de renuncia de forma gradual
+        base_attrition = 0.10  # Base 10%
+        
+        # Factores que aumentan riesgo de renuncia
+        if rendimiento < 60:
+            base_attrition += 0.25
+        elif rendimiento < 70:
+            base_attrition += 0.15
+        elif rendimiento < 75:
+            base_attrition += 0.05
+            
+        if tasa_retrabajos > 25:
+            base_attrition += 0.20
+        elif tasa_retrabajos > 15:
+            base_attrition += 0.10
+        elif tasa_retrabajos > 10:
+            base_attrition += 0.05
+            
+        if carga_actual > 90:
+            base_attrition += 0.25
+        elif carga_actual > 80:
+            base_attrition += 0.15
+        elif carga_actual > 70:
+            base_attrition += 0.05
+            
+        # Factores que disminuyen riesgo de renuncia
+        if rendimiento >= 85:
+            base_attrition -= 0.05
+        if tasa_retrabajos < 5:
+            base_attrition -= 0.05
+        if carga_actual < 50:
+            base_attrition -= 0.05
+            
+        # Limitar entre 0.05 y 0.95
+        attrition_prob = max(0.05, min(0.95, base_attrition))
+        
+        # Clasificar según el riesgo calculado
+        if rendimiento >= 80 and attrition_prob < 0.20:
             performance_class = 'high_performer'
-            prob_high = 0.85
-            prob_at_risk = 0.10
-            prob_resignation = 0.05
-            attrition_prob = 0.05
-        elif rendimiento < 60 or tasa_retrabajos > 25:
-            performance_class = 'at_risk'
-            prob_high = 0.10
-            prob_at_risk = 0.70
-            prob_resignation = 0.20
-            attrition_prob = 0.35
-        elif carga_actual > 85 or (rendimiento < 70 and tasa_retrabajos > 15):
+            prob_high = 0.70 + (rendimiento - 80) / 100
+            prob_at_risk = 0.20
+            prob_resignation = attrition_prob
+        elif attrition_prob > 0.40:
             performance_class = 'resignation_risk'
-            prob_high = 0.15
-            prob_at_risk = 0.35
-            prob_resignation = 0.50
-            attrition_prob = 0.50
-        else:
+            prob_high = 0.10
+            prob_at_risk = 0.40
+            prob_resignation = attrition_prob
+        elif rendimiento < 65 or tasa_retrabajos > 20:
             performance_class = 'at_risk'
-            prob_high = 0.40
-            prob_at_risk = 0.45
-            prob_resignation = 0.15
-            attrition_prob = 0.25
+            prob_high = 0.15
+            prob_at_risk = 0.60
+            prob_resignation = attrition_prob
+        else:
+            # Rendimiento medio (65-80)
+            performance_class = 'at_risk'
+            prob_high = 0.30 + (rendimiento - 65) / 100
+            prob_at_risk = 0.50
+            prob_resignation = attrition_prob
         
         probabilities = {
             'high_performer': prob_high,
@@ -726,6 +760,66 @@ def hybrid_performance_analysis():
                 'descripcion': 'Desempeño moderado. Establecer seguimientos quincenales.',
                 'prioridad': 'baja',
                 'icono': '📊'
+            })
+        
+        # REGLA 7: Buen desempeño - mantener motivación
+        if 75 <= rendimiento < 90 and prob_renuncia < 15:
+            recommendations.append({
+                'tipo': 'mantener_motivacion',
+                'titulo': 'Mantener Motivación',
+                'descripcion': f'Buen desempeño ({rendimiento}%). Continuar seguimiento y ofrecer oportunidades de desarrollo.',
+                'prioridad': 'media',
+                'icono': '💪'
+            })
+            recommendations.append({
+                'tipo': 'desarrollo',
+                'titulo': 'Oportunidades de Crecimiento',
+                'descripcion': 'Asignar proyectos desafiantes para mantener el interés y desarrollo profesional.',
+                'prioridad': 'media',
+                'icono': '📈'
+            })
+        
+        # REGLA 8: Riesgo moderado de renuncia
+        if 25 <= prob_renuncia < 50 and rendimiento >= 70:
+            recommendations.append({
+                'tipo': 'prevencion_renuncia',
+                'titulo': 'Prevención de Renuncia',
+                'descripcion': f'Riesgo moderado de salida ({prob_renuncia:.0f}%). Revisar satisfacción y plan de carrera.',
+                'prioridad': 'media',
+                'icono': '⚠️'
+            })
+        
+        # REGLA 9: Alta tasa de retrabajos
+        if metrics['tasa_retrabajos'] > 15:
+            recommendations.append({
+                'tipo': 'calidad',
+                'titulo': 'Mejorar Calidad de Trabajo',
+                'descripcion': f'Tasa de retrabajos elevada ({metrics["tasa_retrabajos"]}%). Revisar procesos y capacitar en QA.',
+                'prioridad': 'alta',
+                'icono': '🔍'
+            })
+        
+        # REGLA 10: Pocas tareas completadas
+        if total_tasks < 10 and user.created_at:
+            from datetime import datetime
+            days_since_join = (datetime.utcnow() - user.created_at).days
+            if days_since_join > 30:
+                recommendations.append({
+                    'tipo': 'productividad',
+                    'titulo': 'Aumentar Productividad',
+                    'descripcion': f'Solo {total_tasks} tareas asignadas. Considerar aumentar carga gradualmente.',
+                    'prioridad': 'baja',
+                    'icono': '📋'
+                })
+        
+        # REGLA 11: Desempeño estable y alto (sin problemas)
+        if rendimiento >= 80 and prob_renuncia < 10 and metrics['tasa_retrabajos'] < 10 and metrics['carga_actual'] < 80:
+            recommendations.append({
+                'tipo': 'sin_acciones',
+                'titulo': 'Desempeño Óptimo',
+                'descripcion': 'El colaborador mantiene un excelente nivel. Continuar con seguimiento regular.',
+                'prioridad': 'baja',
+                'icono': '✅'
             })
         
         # ============================================================

@@ -9,15 +9,22 @@ from datetime import datetime
 from app.extensions import db
 from app.models.web_task import WebTask
 from app.models.web_user import WebUser
+from app.utils.permissions import (
+    get_current_user,
+    apply_area_filter,
+    can_access_resource,
+    has_permission
+)
 
 # Crear Blueprint
 tasks_bp = Blueprint('tasks', __name__)
 
 
 @tasks_bp.route('/', methods=['GET'])
+@jwt_required()
 def get_tasks():
     """
-    Obtener lista de tareas con filtros y paginación
+    Obtener lista de tareas con filtros y paginación (filtrado automático por área/usuario)
     
     Query Params:
         - page: int (default: 1)
@@ -31,6 +38,11 @@ def get_tasks():
         JSON con lista paginada de tareas
     """
     try:
+        # Obtener usuario actual
+        user = get_current_user()
+        if not user:
+            return jsonify({'error': 'Usuario no encontrado'}), 401
+        
         # Parámetros de paginación
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
@@ -38,7 +50,18 @@ def get_tasks():
         # Construir query
         query = WebTask.query
         
-        # Filtros
+        # FILTRO AUTOMÁTICO POR ROL
+        # Si es colaborador (role_id=4), solo ve sus tareas
+        if has_permission(user, 'view_own_tasks_only'):
+            query = query.filter(
+                (WebTask.assigned_to == user.email) | 
+                (WebTask.assigned_to == str(user.id))
+            )
+        # Si es supervisor de área (role_id=5), solo ve tareas de su área
+        else:
+            query = apply_area_filter(query, WebTask, user)
+        
+        # Filtros adicionales
         status = request.args.get('status')
         if status:
             query = query.filter(WebTask.status == status)

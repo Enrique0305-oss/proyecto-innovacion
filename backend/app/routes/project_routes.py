@@ -2,25 +2,41 @@
 Rutas de API para gestión de proyectos
 """
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required
 from app.extensions import db
 from app.models.project import Project
 from app.models.task_dependency import WebTaskDependency
 from app.models.web_task import WebTask
 from app.models.web_user import WebUser
+from app.utils.permissions import (
+    get_current_user, 
+    apply_area_filter,
+    can_access_resource,
+    require_permission
+)
 from sqlalchemy import func
 
 project_bp = Blueprint('projects', __name__)
 
 
 @project_bp.route('/projects', methods=['GET'])
+@jwt_required()
 def get_projects():
-    """Obtiene todos los proyectos con estadísticas"""
+    """Obtiene todos los proyectos con estadísticas (filtrado por área si aplica)"""
     try:
+        # Obtener usuario actual
+        user = get_current_user()
+        if not user:
+            return jsonify({'error': 'Usuario no encontrado'}), 401
+        
         include_stats = request.args.get('include_stats', 'false').lower() == 'true'
         include_tasks = request.args.get('include_tasks', 'false').lower() == 'true'
         status_filter = request.args.get('status')
         
         query = Project.query
+        
+        # Aplicar filtro por área según permisos del usuario
+        query = apply_area_filter(query, Project, user)
         
         if status_filter:
             query = query.filter_by(status=status_filter)
@@ -30,20 +46,35 @@ def get_projects():
         return jsonify({
             'status': 'success',
             'projects': [p.to_dict(include_tasks=include_tasks, include_stats=include_stats) for p in projects],
-            'count': len(projects)
+            'count': len(projects),
+            'user_area': user.area,
+            'user_role': user.role_id
         }), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @project_bp.route('/projects/<project_id>', methods=['GET'])
+@jwt_required()
 def get_project(project_id):
     """Obtiene un proyecto específico con todas sus relaciones"""
     try:
+        user = get_current_user()
+        if not user:
+            return jsonify({'error': 'Usuario no encontrado'}), 401
+            
         include_stats = request.args.get('include_stats', 'true').lower() == 'true'
         include_tasks = request.args.get('include_tasks', 'true').lower() == 'true'
         
         project = Project.query.get_or_404(project_id)
+        
+        # Verificar si el usuario puede acceder a este proyecto
+        if not can_access_resource(user, project):
+            return jsonify({
+                'error': 'No tienes permiso para ver este proyecto',
+                'project_area': project.area,
+                'user_area': user.area
+            }), 403
         
         return jsonify({
             'status': 'success',
