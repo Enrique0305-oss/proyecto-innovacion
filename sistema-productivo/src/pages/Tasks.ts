@@ -1704,7 +1704,7 @@ function openNewMeetingModal() {
   if (currentProjectId) {
     setTimeout(() => {
       const projectSelect = document.getElementById('meetingProject') as HTMLSelectElement;
-      if (projectSelect) {
+      if (projectSelect && currentProjectId) {
         projectSelect.value = currentProjectId;
       }
     }, 100);

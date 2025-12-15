@@ -96,7 +96,7 @@ export function AsignacionInteligentePage(): string {
                 </div>
 
                 <div class="form-group">
-                  <label>Área (opcional)</label>
+                  <label>Área</label>
                   <select id="taskArea">
                     <option value="">Todas las áreas</option>
                     <!-- Se cargan dinámicamente desde la BD -->
@@ -104,7 +104,7 @@ export function AsignacionInteligentePage(): string {
                 </div>
 
                 <div class="form-group">
-                  <label>Tipo de Tarea (opcional)</label>
+                  <label>Tipo de Tarea</label>
                   <select id="taskType">
                     <option value="">Sin especificar</option>
                     <option value="desarrollo">Desarrollo</option>
