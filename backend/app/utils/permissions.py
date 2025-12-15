@@ -242,7 +242,7 @@ def apply_area_filter(query, model, user):
     
     Args:
         query: Consulta SQLAlchemy
-        model: Modelo con campo 'area'
+        model: Modelo con campo 'area' o 'area_id'
         user: Usuario actual
         
     Returns:
@@ -256,8 +256,22 @@ def apply_area_filter(query, model, user):
     if not user.area:
         return query.filter(False)  # Retorna vacío
     
+    # Obtener ID del área del usuario si existe
+    from app.models.area import Area
+    user_area_obj = Area.query.filter_by(name=user.area).first()
+    
+    if not user_area_obj:
+        return query.filter(False)  # Si no existe el área, no mostrar nada
+    
     # Filtrar por área del usuario
-    return query.filter(model.area == user.area)
+    # Si el modelo tiene area_id (como Project), usar eso
+    if hasattr(model, 'area_id'):
+        return query.filter(model.area_id == user_area_obj.id)
+    # Si tiene area como string (legacy), usar eso
+    elif hasattr(model, 'area'):
+        return query.filter(model.area == user.area)
+    
+    return query
 
 
 def can_access_resource(user, resource):
@@ -267,7 +281,7 @@ def can_access_resource(user, resource):
     
     Args:
         user: Usuario actual
-        resource: Objeto con campo 'area'
+        resource: Objeto con campo 'area' o relación 'area'
         
     Returns:
         bool: True si puede acceder
@@ -287,7 +301,17 @@ def can_access_resource(user, resource):
     if not user.area:
         return False
     
-    return resource.area == user.area
+    # Obtener área del recurso
+    resource_area_name = None
+    if hasattr(resource, 'area') and resource.area:
+        # Si es una relación (objeto Area)
+        if hasattr(resource.area, 'name'):
+            resource_area_name = resource.area.name
+        # Si es un string directo
+        else:
+            resource_area_name = resource.area
+    
+    return resource_area_name == user.area
 
 
 # =====================================================

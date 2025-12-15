@@ -15,6 +15,7 @@ from app.utils.permissions import (
     require_permission
 )
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 project_bp = Blueprint('projects', __name__)
 
@@ -33,7 +34,7 @@ def get_projects():
         include_tasks = request.args.get('include_tasks', 'false').lower() == 'true'
         status_filter = request.args.get('status')
         
-        query = Project.query
+        query = Project.query.options(joinedload(Project.area))
         
         # Aplicar filtro por área según permisos del usuario
         query = apply_area_filter(query, Project, user)
@@ -75,13 +76,13 @@ def get_project(project_id):
         include_stats = request.args.get('include_stats', 'true').lower() == 'true'
         include_tasks = request.args.get('include_tasks', 'true').lower() == 'true'
         
-        project = Project.query.get_or_404(project_id)
+        project = Project.query.options(joinedload(Project.area)).get_or_404(project_id)
         
         # Verificar si el usuario puede acceder a este proyecto
         if not can_access_resource(user, project):
             return jsonify({
                 'error': 'No tienes permiso para ver este proyecto',
-                'project_area': project.area,
+                'project_area': project.area.name if project.area else None,
                 'user_area': user.area
             }), 403
         
