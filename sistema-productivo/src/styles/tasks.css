@@ -926,3 +926,192 @@
     flex-wrap: wrap;
   }
 }
+
+/* Estilos para botones de acciones del proyecto */
+.project-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  flex: 1;
+}
+
+.btn-view-tasks,
+.btn-view-meetings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn-view-meetings {
+  background: #9c27b0;
+}
+
+.btn-view-tasks:hover {
+  background: var(--color-primary-dark);
+  transform: translateX(2px);
+}
+
+.btn-view-meetings:hover {
+  background: #7b1fa2;
+  transform: translateX(2px);
+}
+
+/* Grid de reuniones */
+.meetings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+/* Tarjeta de reunión */
+.meeting-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.meeting-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.meeting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.meeting-title {
+  flex: 1;
+}
+
+.meeting-title h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.meeting-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.meeting-type-badge.presencial {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.meeting-type-badge.virtual {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.meeting-type-badge.hibrido {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.meeting-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.5;
+}
+
+.meeting-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.meeting-detail {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.meeting-detail svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.meeting-participants {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.meeting-participants svg {
+  color: var(--color-primary);
+}
+
+.meeting-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
+}
+
+.status-badge.status-scheduled {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.status-in-progress {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.status-badge.status-completed {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.status-badge.status-cancelled {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.status-badge.status-rescheduled {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+/* Responsive para reuniones */
+@media (max-width: 768px) {
+  .meetings-grid {
+    grid-template-columns: 1fr;
+  }
+}

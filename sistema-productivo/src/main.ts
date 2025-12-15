@@ -14,6 +14,7 @@ import './styles/intelligent-visualization.css';
 import './styles/users.css';
 import './styles/areas.css';
 import './styles/ia-configuration.css';
+import './styles/retrain-ia.css';
 import { initRouter } from './utils/router';
 
 // Inicializar el router

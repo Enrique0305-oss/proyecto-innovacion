@@ -11,6 +11,7 @@ import { IntelligentVisualizationPage, initIntelligentVisualization } from '../p
 import { UsersPage, initUsers } from '../pages/Users';
 import { AreasPage, initAreas } from '../pages/Areas';
 import { IAConfigurationPage, initIAConfiguration } from '../pages/IAConfiguration';
+import { RetrainIA } from '../pages/RetrainIA';
 
 type Route = {
   path: string;
@@ -96,6 +97,14 @@ const routes: Route[] = [
     path: 'configuracion-ia',
     render: IAConfigurationPage,
     init: initIAConfiguration,
+    requiresAuth: true
+  },
+  {
+    path: 'reentrenamiento-ia',
+    render: () => {
+      const container = RetrainIA();
+      return container.outerHTML;
+    },
     requiresAuth: true
   }
 ];

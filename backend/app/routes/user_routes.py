@@ -146,16 +146,18 @@ def update_user(id):
                 return jsonify({'error': 'Ya existe un usuario con ese email'}), 409
             user.email = data['email']
         
-        # Solo admins pueden cambiar estos campos
-        if current_user.can('users.edit'):
-            if 'role_id' in data:
-                user.role_id = data['role_id']
-            if 'area' in data:
-                user.area = data['area']
-            if 'person_id' in data:
-                user.person_id = data['person_id']
-            if 'status' in data:
-                user.status = data['status']
+        # Super admin puede cambiar todos estos campos
+        if 'role_id' in data:
+            user.role_id = data['role_id']
+        
+        if 'area' in data:
+            user.area = data['area']
+        
+        if 'person_id' in data:
+            user.person_id = data['person_id']
+        
+        if 'status' in data:
+            user.status = data['status']
         
         if 'avatar_url' in data:
             user.avatar_url = data['avatar_url']

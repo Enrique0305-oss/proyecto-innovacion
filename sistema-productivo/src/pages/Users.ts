@@ -104,10 +104,7 @@ export function UsersPage(): string {
               <input type="text" placeholder="Buscar por nombre o email..." id="searchInput">
             </div>
             <select class="filter-select" id="roleFilter">
-              <option value="">Todos los roles</option>
-              <option value="admin">Administrador</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="colaborador">Colaborador</option>
+              <option value="">Cargando roles...</option>
             </select>
             <select class="filter-select" id="statusFilter">
               <option value="">Todos</option>
@@ -161,10 +158,7 @@ export function UsersPage(): string {
               <div class="form-group">
                 <label for="userRole">Rol</label>
                 <select id="userRole" required>
-                  <option value="">Seleccionar rol</option>
-                  <option value="admin">Administrador</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="colaborador">Colaborador</option>
+                  <option value="">Cargando roles...</option>
                 </select>
               </div>
               <div class="form-group">
@@ -241,9 +235,7 @@ export function UsersPage(): string {
               <div class="form-group">
                 <label for="editUserRole">Rol</label>
                 <select id="editUserRole" required>
-                  <option value="1">Administrador</option>
-                  <option value="2">Supervisor</option>
-                  <option value="3">Colaborador</option>
+                  <option value="">Cargando roles...</option>
                 </select>
               </div>
               <div class="form-group">
@@ -448,12 +440,12 @@ function openEditModal(id: string, name: string, email: string, role: string, ar
   (document.getElementById('editUserId') as HTMLInputElement).value = id;
   (document.getElementById('editUserName') as HTMLInputElement).value = name;
   (document.getElementById('editUserEmail') as HTMLInputElement).value = email;
-  (document.getElementById('editUserRole') as HTMLSelectElement).value = role;
   (document.getElementById('editUserStatus') as HTMLInputElement).checked = status === 'active';
 
-  // Cargar áreas y luego seleccionar el área actual
-  loadAreasForSelect().then(() => {
+  // Cargar roles y áreas, luego seleccionar valores actuales
+  Promise.all([loadAreasForSelect(), loadRolesForSelect()]).then(() => {
     (document.getElementById('editUserArea') as HTMLSelectElement).value = area;
+    (document.getElementById('editUserRole') as HTMLSelectElement).value = role;
   });
 
   modal.classList.add('active');
@@ -524,12 +516,80 @@ async function loadAreasForSelect() {
   }
 }
 
+// Función para cargar roles dinámicamente
+async function loadRolesForSelect() {
+  try {
+    const response = await api.getRoles();
+    const roles = response.roles || [];
+    
+    // Filtrar solo roles activos
+    const activeRoles = roles.filter((role: any) => role.status === 'active');
+    
+    // Actualizar select de crear usuario
+    const userRoleSelect = document.getElementById('userRole') as HTMLSelectElement;
+    if (userRoleSelect) {
+      userRoleSelect.innerHTML = '<option value="">Seleccionar rol</option>';
+      activeRoles.forEach((role: any) => {
+        const option = document.createElement('option');
+        option.value = role.id.toString();
+        option.textContent = role.display_name || role.name;
+        userRoleSelect.appendChild(option);
+      });
+    }
+    
+    // Actualizar select de editar usuario
+    const editUserRoleSelect = document.getElementById('editUserRole') as HTMLSelectElement;
+    if (editUserRoleSelect) {
+      editUserRoleSelect.innerHTML = '<option value="">Seleccionar rol</option>';
+      activeRoles.forEach((role: any) => {
+        const option = document.createElement('option');
+        option.value = role.id.toString();
+        option.textContent = role.display_name || role.name;
+        editUserRoleSelect.appendChild(option);
+      });
+    }
+
+    // Actualizar filtro de roles
+    const roleFilterSelect = document.getElementById('roleFilter') as HTMLSelectElement;
+    if (roleFilterSelect) {
+      // Guardar el valor actual del filtro
+      const currentValue = roleFilterSelect.value;
+      roleFilterSelect.innerHTML = '<option value="">Todos los roles</option>';
+      activeRoles.forEach((role: any) => {
+        const option = document.createElement('option');
+        option.value = role.name;
+        option.textContent = role.display_name || role.name;
+        roleFilterSelect.appendChild(option);
+      });
+      // Restaurar el valor del filtro si existía
+      if (currentValue) {
+        roleFilterSelect.value = currentValue;
+      }
+    }
+  } catch (error) {
+    console.error('Error al cargar roles:', error);
+    // Si falla, poner mensaje de error
+    const userRoleSelect = document.getElementById('userRole') as HTMLSelectElement;
+    const editUserRoleSelect = document.getElementById('editUserRole') as HTMLSelectElement;
+    
+    if (userRoleSelect) {
+      userRoleSelect.innerHTML = '<option value="">Error al cargar roles</option>';
+    }
+    if (editUserRoleSelect) {
+      editUserRoleSelect.innerHTML = '<option value="">Error al cargar roles</option>';
+    }
+  }
+}
+
 export function initUsers(): void {
   // Initialize AI Assistant
   initAIAssistant();
 
   // Cargar usuarios desde el API
   loadUsers();
+
+  // Cargar roles para el filtro
+  loadRolesForSelect();
 
   // Modal controls
   const modal = document.getElementById('modalNewUser');
@@ -544,6 +604,7 @@ export function initUsers(): void {
     dashboardLayout?.classList.add('blur-background');
     document.body.style.overflow = 'hidden';
     loadAreasForSelect(); // Cargar áreas al abrir el modal
+    loadRolesForSelect(); // Cargar roles al abrir el modal
   };
 
   const closeModal = () => {
@@ -585,13 +646,6 @@ export function initUsers(): void {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Creando...';
 
-      // Mapear rol a role_id (1=admin, 2=supervisor, 3=colaborador)
-      const roleMap: { [key: string]: number } = {
-        'admin': 1,
-        'supervisor': 2,
-        'colaborador': 3
-      };
-
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
@@ -602,7 +656,7 @@ export function initUsers(): void {
           email: userEmail,
           password: userPassword,
           full_name: userName,
-          role_id: roleMap[userRole] || 3,
+          role_id: parseInt(userRole),
           area: userArea,
           status: userStatus ? 'active' : 'inactive'
         })
@@ -708,7 +762,8 @@ export function initUsers(): void {
 
       alert('Usuario actualizado exitosamente');
       closeEditModal();
-      loadUsers();
+      // Recargar la página para reflejar los cambios
+      window.location.reload();
     } catch (error) {
       console.error('Error al actualizar usuario:', error);
       alert('Error al actualizar el usuario: ' + (error as Error).message);

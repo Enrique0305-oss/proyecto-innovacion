@@ -281,6 +281,16 @@ class ApiService {
     return response.json();
   }
 
+  // Roles endpoints
+  async getRoles() {
+    const response = await fetch(`${API_URL}/users/roles`, {
+      mode: 'cors',
+      headers: this.getHeaders(),
+    });
+
+    return this.handleResponse(response);
+  }
+
   // ============================================================================
   // ML Endpoints - Machine Learning
   // ============================================================================
@@ -412,3 +422,17 @@ class ApiService {
 }
 
 export const api = new ApiService();
+
+// Exportar función helper para obtener headers de autenticación
+export function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}

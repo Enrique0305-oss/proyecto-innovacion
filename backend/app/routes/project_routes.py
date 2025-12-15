@@ -8,6 +8,7 @@ from app.models.project import Project
 from app.models.task_dependency import WebTaskDependency
 from app.models.web_task import WebTask
 from app.models.web_user import WebUser
+from app.models.meeting import Meeting
 from app.utils.permissions import (
     get_current_user, 
     apply_area_filter,
@@ -338,3 +339,37 @@ def get_dependency_status(dependency_id):
         }), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@project_bp.route('/projects/<project_id>/meetings', methods=['GET'])
+@jwt_required()
+def get_project_meetings(project_id):
+    """
+    Obtiene todas las reuniones de un proyecto específico
+    
+    Path Params:
+        project_id: ID del proyecto
+    
+    Returns:
+        JSON con lista de reuniones del proyecto
+    """
+    try:
+        # Verificar que el proyecto existe
+        project = Project.query.get_or_404(project_id)
+        
+        # Obtener reuniones del proyecto
+        meetings = Meeting.query.filter_by(project_id=project_id).order_by(Meeting.meeting_date.desc()).all()
+        
+        return jsonify({
+            'status': 'success',
+            'project_id': project_id,
+            'project_name': project.name,
+            'meetings': [meeting.to_dict() for meeting in meetings],
+            'total': len(meetings)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500

@@ -36,6 +36,16 @@ export function TasksPage(): string {
                 <p class="section-description">Selecciona un proyecto para ver y gestionar sus tareas</p>
               </div>
               <div class="section-actions">
+                <button class="btn-secondary" id="newMeetingBtn">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="3" y="4" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                    <path d="M7 2v4M13 2v4M3 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="7" cy="12" r="1" fill="currentColor"/>
+                    <circle cx="10" cy="12" r="1" fill="currentColor"/>
+                    <circle cx="13" cy="12" r="1" fill="currentColor"/>
+                  </svg>
+                  Agregar Reunión
+                </button>
                 <button class="btn-secondary" id="newProjectBtn">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -132,6 +142,60 @@ export function TasksPage(): string {
             </table>
           </div>
         </div>
+
+          <!-- Vista de Reuniones (se muestra al seleccionar ver reuniones de un proyecto) -->
+          <div id="meetingsView" style="display: none;">
+            <div class="section-header">
+              <div class="section-info">
+                <button class="btn-back" id="backToProjectsFromMeetingsBtn">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M12 4l-8 6 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Volver a Proyectos
+                </button>
+                <h2 class="section-title" id="projectTitleHeaderMeetings">Proyecto</h2>
+                <p class="section-description" id="projectDescriptionHeaderMeetings">Gestión de reuniones del proyecto</p>
+              </div>
+              <div class="section-actions">
+                <button class="btn-primary" id="newMeetingBtnInView">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Nueva Reunión
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtros y búsqueda -->
+            <div class="filters-bar">
+              <div class="search-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M13 13l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <input type="text" id="meetingSearchInput" placeholder="Buscar reunión..." />
+              </div>
+              <select class="filter-select" id="meetingStatusFilter">
+                <option value="">Todos los estados</option>
+                <option value="programada">Programada</option>
+                <option value="en_curso">En Curso</option>
+                <option value="completada">Completada</option>
+                <option value="cancelada">Cancelada</option>
+                <option value="reprogramada">Reprogramada</option>
+              </select>
+              <select class="filter-select" id="meetingTypeFilter">
+                <option value="">Todos los tipos</option>
+                <option value="presencial">Presencial</option>
+                <option value="virtual">Virtual</option>
+                <option value="hibrido">Híbrido</option>
+              </select>
+            </div>
+
+            <!-- Lista de reuniones -->
+            <div class="meetings-grid" id="meetingsGrid">
+              <!-- Las reuniones se cargarán dinámicamente -->
+            </div>
+          </div>
       </main>
 
       <!-- Modal Nueva Tarea -->
@@ -420,6 +484,96 @@ export function TasksPage(): string {
           </div>
         </div>
       </div>
+
+      <!-- Modal Nueva Reunión -->
+      <div class="modal-overlay" id="newMeetingModal">
+        <div class="modal-container">
+          <div class="modal-header">
+            <h3>Programar Reunión</h3>
+            <button class="modal-close" id="closeMeetingModalBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-subtitle">Complete los detalles de la reunión</p>
+            
+            <form id="meetingForm" class="task-form">
+              <div class="form-group">
+                <label for="meetingTitle">Título de la Reunión *</label>
+                <input type="text" id="meetingTitle" placeholder="Ej: Revisión de Avances del Proyecto" required />
+              </div>
+
+              <div class="form-group">
+                <label for="meetingDescription">Descripción / Agenda</label>
+                <textarea id="meetingDescription" rows="3" placeholder="Temas a tratar en la reunión..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="meetingProject">Proyecto *</label>
+                <select id="meetingProject" required>
+                  <option value="">Seleccionar proyecto...</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="meetingDate">Fecha *</label>
+                  <input type="date" id="meetingDate" required />
+                </div>
+                <div class="form-group">
+                  <label for="meetingTime">Hora *</label>
+                  <input type="time" id="meetingTime" required />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="meetingDuration">Duración (minutos) *</label>
+                  <input type="number" id="meetingDuration" placeholder="60" min="15" step="15" required />
+                </div>
+                <div class="form-group">
+                  <label for="meetingType">Tipo</label>
+                  <select id="meetingType">
+                    <option value="presencial">Presencial</option>
+                    <option value="virtual" selected>Virtual</option>
+                    <option value="hibrido">Híbrido</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="meetingLocation">Ubicación / Link</label>
+                <input type="text" id="meetingLocation" placeholder="Sala de reuniones o enlace de videollamada" />
+              </div>
+
+              <div class="form-group">
+                <label for="meetingParticipants">Participantes</label>
+                <select id="meetingParticipants" multiple>
+                  <option value="">Seleccionar participantes...</option>
+                </select>
+                <small>Mantén presionado Ctrl/Cmd para seleccionar múltiples</small>
+              </div>
+
+              <div class="form-group">
+                <label for="meetingStatus">Estado</label>
+                <select id="meetingStatus">
+                  <option value="programada">Programada</option>
+                  <option value="en_curso">En Curso</option>
+                  <option value="completada">Completada</option>
+                  <option value="cancelada">Cancelada</option>
+                  <option value="reprogramada">Reprogramada</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" id="cancelMeetingBtn">Cancelar</button>
+            <button class="btn-primary" id="createMeetingBtn">Programar Reunión</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -586,12 +740,21 @@ async function loadProjects() {
           
           <div class="project-footer">
             <span class="status-badge status-${statusClass}">${translateStatus(project.status)}</span>
-            <button class="btn-view-tasks" data-project-id="${project.project_id}">
-              Ver Tareas
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </button>
+            <div class="project-actions">
+              <button class="btn-view-tasks" data-project-id="${project.project_id}">
+                Ver Tareas
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+              <button class="btn-view-meetings" data-project-id="${project.project_id}">
+                Ver Reuniones
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/>
+                  <path d="M16 2v4M8 2v4M3 10h18" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -603,6 +766,16 @@ async function loadProjects() {
         const projectId = (e.currentTarget as HTMLElement).dataset.projectId;
         if (projectId) {
           showProjectTasks(projectId);
+        }
+      });
+    });
+    
+    // Event listeners para ver reuniones de cada proyecto
+    document.querySelectorAll('.btn-view-meetings').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const projectId = (e.currentTarget as HTMLElement).dataset.projectId;
+        if (projectId) {
+          showProjectMeetings(projectId);
         }
       });
     });
@@ -707,8 +880,180 @@ function showProjectsView() {
   
   const projectsView = document.getElementById('projectsView');
   const tasksView = document.getElementById('tasksView');
+  const meetingsView = document.getElementById('meetingsView');
   if (projectsView) projectsView.style.display = 'block';
   if (tasksView) tasksView.style.display = 'none';
+  if (meetingsView) meetingsView.style.display = 'none';
+}
+
+// Función para mostrar reuniones de un proyecto
+async function showProjectMeetings(projectId: string) {
+  try {
+    currentProjectId = projectId;
+    
+    // Obtener detalles del proyecto
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.error('No hay token de autenticación');
+      window.location.href = '/login';
+      return;
+    }
+    
+    const projectResponse = await fetch(`${API_URL}/projects/${projectId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!projectResponse.ok) {
+      throw new Error(`HTTP error! status: ${projectResponse.status}`);
+    }
+    
+    const projectData = await projectResponse.json();
+    const project = projectData.project;
+    
+    // Actualizar header
+    const projectTitleHeader = document.getElementById('projectTitleHeaderMeetings');
+    const projectDescriptionHeader = document.getElementById('projectDescriptionHeaderMeetings');
+    if (projectTitleHeader) projectTitleHeader.textContent = project.name;
+    if (projectDescriptionHeader) projectDescriptionHeader.textContent = `Reuniones del proyecto ${project.name}`;
+    
+    // Obtener reuniones del proyecto
+    const meetingsResponse = await fetch(`${API_URL}/projects/${projectId}/meetings`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!meetingsResponse.ok) {
+      throw new Error(`HTTP error! status: ${meetingsResponse.status}`);
+    }
+    
+    const meetingsData = await meetingsResponse.json();
+    const meetings = meetingsData.meetings || [];
+    
+    // Cambiar a vista de reuniones
+    const projectsView = document.getElementById('projectsView');
+    const tasksView = document.getElementById('tasksView');
+    const meetingsView = document.getElementById('meetingsView');
+    if (projectsView) projectsView.style.display = 'none';
+    if (tasksView) tasksView.style.display = 'none';
+    if (meetingsView) meetingsView.style.display = 'block';
+    
+    // Renderizar reuniones
+    renderMeetings(meetings);
+    
+  } catch (error) {
+    console.error('Error al cargar reuniones del proyecto:', error);
+    alert('Error al cargar las reuniones del proyecto');
+  }
+}
+
+// Función para renderizar reuniones
+function renderMeetings(meetings: any[]) {
+  const meetingsGrid = document.getElementById('meetingsGrid');
+  if (!meetingsGrid) return;
+  
+  if (meetings.length === 0) {
+    meetingsGrid.innerHTML = `
+      <div class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>No hay reuniones programadas para este proyecto</p>
+        <button class="btn-primary" id="addFirstMeetingBtn">Programar Primera Reunión</button>
+      </div>
+    `;
+    
+    document.getElementById('addFirstMeetingBtn')?.addEventListener('click', () => {
+      openNewMeetingModal();
+    });
+    return;
+  }
+  
+  meetingsGrid.innerHTML = meetings.map((meeting: any) => {
+    const statusClass = meeting.status === 'completada' ? 'completed' : 
+                       meeting.status === 'en_curso' ? 'in-progress' : 
+                       meeting.status === 'cancelada' ? 'cancelled' : 
+                       meeting.status === 'reprogramada' ? 'rescheduled' : 'scheduled';
+    
+    const meetingDate = new Date(meeting.meeting_date);
+    const formattedDate = meetingDate.toLocaleDateString('es-ES', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const formattedTime = meeting.meeting_time || '';
+    
+    return `
+      <div class="meeting-card">
+        <div class="meeting-header">
+          <div class="meeting-title">
+            <h3>${meeting.title}</h3>
+            <span class="meeting-type-badge ${meeting.meeting_type}">${meeting.meeting_type || 'virtual'}</span>
+          </div>
+          <span class="status-badge status-${statusClass}">${meeting.status || 'programada'}</span>
+        </div>
+        
+        <p class="meeting-description">${meeting.description || 'Sin agenda definida'}</p>
+        
+        <div class="meeting-details">
+          <div class="meeting-detail">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18" stroke-width="2"/>
+            </svg>
+            <span>${formattedDate}</span>
+          </div>
+          <div class="meeting-detail">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10" stroke-width="2"/>
+              <path d="M12 6v6l4 2" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>${formattedTime} (${meeting.duration || 60} min)</span>
+          </div>
+          ${meeting.location ? `
+          <div class="meeting-detail">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke-width="2"/>
+              <circle cx="12" cy="10" r="3" stroke-width="2"/>
+            </svg>
+            <span>${meeting.location}</span>
+          </div>
+          ` : ''}
+        </div>
+        
+        ${meeting.participants && meeting.participants.length > 0 ? `
+        <div class="meeting-participants">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+          <span>${meeting.participants.length} participantes</span>
+        </div>
+        ` : ''}
+        
+        <div class="meeting-actions">
+          <button class="btn-icon-small btn-edit-meeting" data-meeting-id="${meeting.id}" title="Editar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="btn-icon-small btn-delete-meeting" data-meeting-id="${meeting.id}" title="Eliminar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // Función para cargar áreas dinámicamente
@@ -1328,6 +1673,170 @@ async function createProject() {
   }
 }
 
+// Función para abrir modal de nueva reunión
+function openNewMeetingModal() {
+  const modal = document.getElementById('newMeetingModal');
+  if (!modal) return;
+  
+  // Limpiar formulario
+  const form = document.getElementById('meetingForm') as HTMLFormElement;
+  form?.reset();
+  
+  // Establecer fecha de hoy
+  const dateInput = document.getElementById('meetingDate') as HTMLInputElement;
+  if (dateInput) {
+    dateInput.valueAsDate = new Date();
+  }
+  
+  // Establecer duración por defecto
+  const durationInput = document.getElementById('meetingDuration') as HTMLInputElement;
+  if (durationInput) {
+    durationInput.value = '60';
+  }
+  
+  // Cargar proyectos
+  loadProjectsForMeetingForm();
+  
+  // Cargar participantes (usuarios)
+  loadParticipantsForMeetingForm();
+  
+  // Si estamos en vista de reuniones de un proyecto, pre-seleccionar ese proyecto
+  if (currentProjectId) {
+    setTimeout(() => {
+      const projectSelect = document.getElementById('meetingProject') as HTMLSelectElement;
+      if (projectSelect) {
+        projectSelect.value = currentProjectId;
+      }
+    }, 100);
+  }
+  
+  // Mostrar modal
+  modal.classList.add('active');
+}
+
+// Función para cargar proyectos en el select del modal de reunión
+async function loadProjectsForMeetingForm() {
+  try {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`${API_URL}/projects`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) throw new Error('Error al cargar proyectos');
+    
+    const data = await response.json();
+    const projects = data.projects || [];
+    
+    const selectElement = document.getElementById('meetingProject') as HTMLSelectElement;
+    if (!selectElement) return;
+    
+    selectElement.innerHTML = '<option value="">Seleccionar proyecto...</option>';
+    projects.forEach((project: any) => {
+      const option = document.createElement('option');
+      option.value = project.project_id;
+      option.textContent = `${project.project_id} - ${project.name}`;
+      selectElement.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error al cargar proyectos:', error);
+  }
+}
+
+// Función para cargar participantes (usuarios) en el select del modal de reunión
+async function loadParticipantsForMeetingForm() {
+  try {
+    const response = await api.getUsers();
+    const users = response.users || [];
+    
+    const selectElement = document.getElementById('meetingParticipants') as HTMLSelectElement;
+    if (!selectElement) return;
+    
+    selectElement.innerHTML = '';
+    users.forEach((user: any) => {
+      const option = document.createElement('option');
+      option.value = user.id.toString();
+      option.textContent = user.full_name || user.email;
+      selectElement.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error al cargar participantes:', error);
+  }
+}
+
+// Función para crear reunión
+async function createMeeting() {
+  try {
+    const title = (document.getElementById('meetingTitle') as HTMLInputElement)?.value;
+    const description = (document.getElementById('meetingDescription') as HTMLTextAreaElement)?.value;
+    const projectId = (document.getElementById('meetingProject') as HTMLSelectElement)?.value;
+    const date = (document.getElementById('meetingDate') as HTMLInputElement)?.value;
+    const time = (document.getElementById('meetingTime') as HTMLInputElement)?.value;
+    const duration = (document.getElementById('meetingDuration') as HTMLInputElement)?.value;
+    const type = (document.getElementById('meetingType') as HTMLSelectElement)?.value;
+    const location = (document.getElementById('meetingLocation') as HTMLInputElement)?.value;
+    const status = (document.getElementById('meetingStatus') as HTMLSelectElement)?.value;
+    
+    // Obtener participantes seleccionados
+    const participantsSelect = document.getElementById('meetingParticipants') as HTMLSelectElement;
+    const selectedParticipants = Array.from(participantsSelect.selectedOptions).map(option => parseInt(option.value));
+    
+    // Validar campos requeridos
+    if (!title || !projectId || !date || !time || !duration) {
+      alert('Por favor complete los campos requeridos: Título, Proyecto, Fecha, Hora y Duración');
+      return;
+    }
+    
+    const meetingData = {
+      title: title,
+      description: description || null,
+      project_id: projectId,
+      meeting_date: date,
+      meeting_time: time,
+      duration: parseInt(duration),
+      meeting_type: type || 'virtual',
+      location: location || null,
+      status: status || 'programada',
+      participant_ids: selectedParticipants
+    };
+    
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`${API_URL}/meetings`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(meetingData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al crear reunión');
+    }
+    
+    const data = await response.json();
+    console.log('Reunión creada:', data);
+    
+    alert('¡Reunión programada exitosamente!');
+    
+    // Cerrar modal
+    const modal = document.getElementById('newMeetingModal');
+    modal?.classList.remove('active');
+    
+    // Si estamos en vista de reuniones, recargarlas
+    if (currentProjectId && document.getElementById('meetingsView')?.style.display !== 'none') {
+      showProjectMeetings(currentProjectId);
+    }
+    
+  } catch (error: any) {
+    console.error('Error al crear reunión:', error);
+    alert('Error: ' + error.message);
+  }
+}
+
 export function initTasks() {
   // Inicializar AI Assistant
   initAIAssistant();
@@ -1481,6 +1990,14 @@ export function initTasks() {
     });
   }
   
+  // Botón volver a proyectos desde reuniones
+  const backToProjectsFromMeetingsBtn = document.getElementById('backToProjectsFromMeetingsBtn');
+  if (backToProjectsFromMeetingsBtn) {
+    backToProjectsFromMeetingsBtn.addEventListener('click', () => {
+      showProjectsView();
+    });
+  }
+  
   // Filtros de búsqueda
   const searchInput = document.getElementById('taskSearchInput');
   const statusFilter = document.getElementById('statusFilter');
@@ -1523,6 +2040,39 @@ export function initTasks() {
   
   // Crear proyecto
   createProjectBtn?.addEventListener('click', createProject);
+  
+  // Modal de nueva reunión
+  const newMeetingBtn = document.getElementById('newMeetingBtn');
+  const newMeetingBtnInView = document.getElementById('newMeetingBtnInView');
+  const meetingModal = document.getElementById('newMeetingModal');
+  const closeMeetingModalBtn = document.getElementById('closeMeetingModalBtn');
+  const cancelMeetingBtn = document.getElementById('cancelMeetingBtn');
+  const createMeetingBtn = document.getElementById('createMeetingBtn');
+  
+  if (newMeetingBtn) {
+    newMeetingBtn.addEventListener('click', openNewMeetingModal);
+  }
+  
+  if (newMeetingBtnInView) {
+    newMeetingBtnInView.addEventListener('click', openNewMeetingModal);
+  }
+  
+  const closeMeetingModal = () => {
+    meetingModal?.classList.remove('active');
+  };
+  
+  closeMeetingModalBtn?.addEventListener('click', closeMeetingModal);
+  cancelMeetingBtn?.addEventListener('click', closeMeetingModal);
+  
+  // Cerrar al hacer click fuera del modal
+  meetingModal?.addEventListener('click', (e) => {
+    if (e.target === meetingModal) {
+      closeMeetingModal();
+    }
+  });
+  
+  // Crear reunión
+  createMeetingBtn?.addEventListener('click', createMeeting);
 }
 
 // Función para aplicar filtros a las tareas
