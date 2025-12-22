@@ -51,12 +51,18 @@ def register():
         if WebUser.query.filter_by(email=email).first():
             return jsonify({'error': 'El email ya está registrado'}), 409
         
-        # Obtener rol (default: user)
-        role_name = data.get('role_name', 'user')
-        role = Role.query.filter_by(name=role_name).first()
+        # Obtener rol (aceptar role_id o role_name)
+        role = None
+        if 'role_id' in data:
+            role = Role.query.get(data['role_id'])
+        elif 'role_name' in data:
+            role = Role.query.filter_by(name=data['role_name']).first()
+        else:
+            # Default: colaborador
+            role = Role.query.filter_by(name='colaborador').first()
         
         if not role:
-            return jsonify({'error': f'Rol {role_name} no existe'}), 400
+            return jsonify({'error': f'Rol no existe'}), 400
         
         # Crear nuevo usuario
         new_user = WebUser(
@@ -64,7 +70,17 @@ def register():
             full_name=full_name,
             role_id=role.id,
             area=data.get('area'),
-            status='active'
+            status=data.get('status', 'active'),
+            person_id=data.get('person_id'),
+            # Métricas profesionales
+            experience_years=data.get('experience_years', 2),
+            skills=data.get('skills'),
+            performance_index=data.get('performance_index', 50.0),
+            rework_rate=data.get('rework_rate', 0.10),
+            satisfaction_score=data.get('satisfaction_score', 3.0),
+            current_load=data.get('current_load', 0),
+            tasks_completed=data.get('tasks_completed', 0),
+            availability_hours_week=data.get('availability_hours_week', 40.0)
         )
         new_user.set_password(password)
         

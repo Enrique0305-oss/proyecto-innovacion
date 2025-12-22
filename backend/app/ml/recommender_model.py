@@ -140,7 +140,7 @@ def recommend_person(task_data):
                 'performance_index': person.performance_index or 0,
                 'satisfaction_score': person.satisfaction_score or 0,
                 'current_workload': workload,
-                'skills': task_data.get('skills_required', [])[:4],  # Primeras 4 skills
+                'skills': person.skills.split(',') if person.skills else [],  # Habilidades reales del usuario
                 'availability': 'Alta' if workload <= 2 else ('Media' if workload <= 4 else 'Baja'),
                 'reasons': generate_recommendation_reasons(person, task_data, score)
             })
@@ -156,7 +156,7 @@ def recommend_person(task_data):
         return {
             'recommendations': scored_candidates[:top_n],
             'total_candidates': len(candidates),
-            'criteria_used': ['performance_index', 'experience', 'area_match', 'workload', 'ml_prediction'],
+            'criteria_used': ['performance_index', 'experience', 'area_match', 'workload', 'skill_match', 'ml_prediction'],
             'model_used': 'catboost_recommender'
         }
         
@@ -214,6 +214,10 @@ def prepare_features(person, task_data):
     max_capacity = 10.0  # Máximo de tareas simultáneas
     load_capacity_ratio = current_load_imputed / max_capacity if max_capacity > 0 else 0.0
     
+    # skill_match_score: coincidencia de habilidades (0-1)
+    skill_match_score = calculate_skill_match(person, task_data)
+    print(f"  - Skill match: {skill_match_score:.2f}")
+    
     # Crear diccionario con TODAS las features en el orden correcto según all_features
     feature_dict = {
         'task_area': task_area,
@@ -269,6 +273,46 @@ def _matches_role_type(role, task_type):
             return any(t in task_lower for t in task_types)
     
     return False  # Por defecto no hay match
+
+
+def calculate_skill_match(person, task_data):
+    """
+    Calcular coincidencia de habilidades entre persona y tarea (0-1)
+    
+    Args:
+        person: WebUser con campo skills
+        task_data: dict con skills_required (opcional)
+    
+    Returns:
+        float: Score de 0 a 1 (1 = match perfecto)
+    """
+    # Obtener habilidades requeridas por la tarea
+    required_skills = task_data.get('skills_required', [])
+    
+    # Si no hay skills requeridas, score neutro
+    if not required_skills:
+        return 0.5
+    
+    # Obtener habilidades de la persona
+    person_skills_str = person.skills or ''
+    if not person_skills_str.strip():
+        return 0.2  # Penalización si no tiene habilidades definidas
+    
+    # Convertir a listas en minúsculas
+    person_skills = [s.strip().lower() for s in person_skills_str.split(',')]
+    required_skills_lower = [s.strip().lower() for s in required_skills]
+    
+    # Contar coincidencias
+    matches = 0
+    for req_skill in required_skills_lower:
+        # Match exacto o parcial (ej: "python" en "python avanzado")
+        if any(req_skill in p_skill or p_skill in req_skill for p_skill in person_skills):
+            matches += 1
+    
+    # Calcular porcentaje de match
+    match_ratio = matches / len(required_skills_lower) if required_skills_lower else 0.5
+    
+    return match_ratio
 
 
 def get_candidates(task_data):
@@ -337,6 +381,15 @@ def generate_recommendation_reasons(person, task_data, score):
     elif score >= 0.7:
         reasons.append(f'Buena compatibilidad ({score*100:.1f}%)')
     
+    # Habilidades
+    skill_match = calculate_skill_match(person, task_data)
+    if skill_match >= 0.8:
+        reasons.append(f'✅ Habilidades altamente compatibles ({skill_match*100:.0f}%)')
+    elif skill_match >= 0.5:
+        reasons.append(f'Habilidades compatibles ({skill_match*100:.0f}%)')
+    elif skill_match < 0.3 and task_data.get('skills_required'):
+        reasons.append(f'⚠️ Habilidades parciales ({skill_match*100:.0f}%)')
+    
     # Área
     if person.area == task_data.get('area'):
         reasons.append(f'Experiencia en {person.area}')
@@ -396,7 +449,7 @@ def recommend_person_heuristic(task_data):
                 'performance_index': person.performance_index or 0,
                 'satisfaction_score': person.satisfaction_score or 0,
                 'current_workload': workload,
-                'skills': task_data.get('skills_required', [])[:4],
+                'skills': person.skills.split(',') if person.skills else [],  # Habilidades reales del usuario
                 'availability': 'Alta' if workload <= 2 else ('Media' if workload <= 4 else 'Baja'),
                 'reasons': generate_recommendation_reasons(person, task_data, score / 100)
             })
@@ -408,7 +461,7 @@ def recommend_person_heuristic(task_data):
         return {
             'recommendations': scored_candidates[:top_n],
             'total_candidates': len(candidates),
-            'criteria_used': ['area_match', 'workload'],
+            'criteria_used': ['area_match', 'workload', 'skill_match', 'performance', 'experience'],
             'model_used': 'heuristic_fallback'
         }
         
@@ -425,14 +478,15 @@ def recommend_person_heuristic(task_data):
 def calculate_heuristic_score(person, task_data):
     """
     Calcular score heurístico (0-100) para WebUser
+    Incluye matching de habilidades
     """
     score = 0
     
-    # Performance index (0-40 puntos)
+    # Performance index (0-30 puntos)
     if person.performance_index:
-        score += min(person.performance_index * 40 / 100, 40)
+        score += min(person.performance_index * 30 / 100, 30)
     else:
-        score += 20
+        score += 15
     
     # Experiencia (0-20 puntos)
     years = person.experience_years or 0
@@ -456,18 +510,13 @@ def calculate_heuristic_score(person, task_data):
     else:
         score += 3
     
-    # Coincidencia de área (0-25 puntos bonus)
+    # Coincidencia de área (0-15 puntos)
     if task_data.get('area') == person.area:
-        score += 25
+        score += 15
     
-    # Asegurar que el score esté entre 0-100
-    return max(0, min(score, 100))
-    
-    # Satisfacción (0-15 puntos)
-    if person.satisfaction_score:
-        score += min(person.satisfaction_score * 15 / 100, 15)
-    else:
-        score += 7
+    # Coincidencia de habilidades (0-20 puntos) - NUEVO
+    skill_match = calculate_skill_match(person, task_data)
+    score += skill_match * 20
     
     # Asegurar que el score esté entre 0-100
     return max(0, min(score, 100))

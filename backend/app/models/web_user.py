@@ -25,6 +25,7 @@ class WebUser(db.Model):
     
     # Métricas profesionales para ML
     experience_years = db.Column(db.Integer, default=2)
+    skills = db.Column(db.Text)  # Habilidades separadas por comas
     performance_index = db.Column(db.Float, default=50.0)
     rework_rate = db.Column(db.Float, default=0.10)
     satisfaction_score = db.Column(db.Float, default=3.0)
@@ -65,6 +66,7 @@ class WebUser(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             # Métricas de desempeño
             'experience_years': self.experience_years,
+            'skills': self.skills,
             'performance_index': float(self.performance_index) if self.performance_index else 50.0,
             'rework_rate': float(self.rework_rate) if self.rework_rate else 0.10,
             'satisfaction_score': float(self.satisfaction_score) if self.satisfaction_score else 3.0,

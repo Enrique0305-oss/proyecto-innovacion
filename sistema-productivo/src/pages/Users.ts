@@ -180,6 +180,18 @@ export function UsersPage(): string {
               </div>
             </div>
 
+            <div class="form-row">
+              <div class="form-group">
+                <label for="userExperience">Años de Experiencia</label>
+                <input type="number" id="userExperience" placeholder="2" min="0" max="50" value="2">
+              </div>
+              <div class="form-group">
+                <label for="userSkills">Habilidades</label>
+                <input type="text" id="userSkills" placeholder="Python, JavaScript, SQL, Machine Learning">
+                <small style="color: #666; font-size: 12px;">Separadas por comas</small>
+              </div>
+            </div>
+
             <div class="form-group">
               <div class="toggle-group">
                 <label for="userStatus">Estado del Usuario</label>
@@ -658,7 +670,9 @@ export function initUsers(): void {
           full_name: userName,
           role_id: parseInt(userRole),
           area: userArea,
-          status: userStatus ? 'active' : 'inactive'
+          status: userStatus ? 'active' : 'inactive',
+          experience_years: parseInt((document.getElementById('userExperience') as HTMLInputElement).value) || 2,
+          skills: (document.getElementById('userSkills') as HTMLInputElement).value || ''
         })
       });
 
