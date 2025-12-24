@@ -1,0 +1,78 @@
+{
+  "model_info": {
+    "name": "CatBoost Bottleneck Predictor",
+    "version": "1.0_corregido",
+    "type": "binary_classifier",
+    "description": "Predictor de cuellos de botella en flujo de procesos usando CatBoost",
+    "trained_date": "2025-12-20T14:38:19"
+  },
+  "model_files": {
+    "model": "model_bottleneck_corregido.pkl",
+    "metrics": "metrics_corregido.json",
+    "recommendations": "recommendations_corregido.json",
+    "visualizations": [
+      "metrics/evaluation_metrics.png",
+      "metrics/comparacion_antes_despues.png"
+    ]
+  },
+  "features": {
+    "categorical": [
+      "area",
+      "task_type",
+      "complexity_level",
+      "resource_area",
+      "resource_role",
+      "experience_category",
+      "quarter",
+      "day_of_week"
+    ],
+    "numerical": [
+      "experience_years",
+      "current_load",
+      "availability",
+      "tasks_completed",
+      "performance_index",
+      "rework_rate",
+      "betweenness",
+      "degree_centrality",
+      "in_degree",
+      "out_degree",
+      "impact_count",
+      "project_progress",
+      "load_ratio",
+      "is_overloaded",
+      "week_of_year",
+      "month",
+      "project_size",
+      "complexity_numeric"
+    ],
+    "total_features": 26
+  },
+  "performance": {
+    "accuracy": 0.9993,
+    "precision": 0.9983,
+    "recall": 0.9983,
+    "f1_score": 0.9983,
+    "roc_auc": 0.9999,
+    "cv_accuracy_mean": 0.9952,
+    "cv_accuracy_std": 0.0018
+  },
+  "target_definition": {
+    "delay_threshold": 1.2,
+    "description": "Tareas con delay_ratio > 1.2 (retraso > 20%) se consideran cuellos de botella",
+    "classes": ["Normal", "Bottleneck"]
+  },
+  "confusion_matrix": {
+    "true_negatives": 2097,
+    "false_positives": 1,
+    "false_negatives": 1,
+    "true_positives": 583
+  },
+  "dataset_info": {
+    "train_size": 6257,
+    "test_size": 2682,
+    "train_bottlenecks": 1363,
+    "test_bottlenecks": 584,
+    "bottleneck_rate": 0.2177
+  }
+}

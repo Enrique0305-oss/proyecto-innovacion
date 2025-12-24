@@ -1,0 +1,36 @@
+{
+  "model_name": "CatBoost Bottleneck Classifier (CORREGIDO)",
+  "train_date": "2025-12-20T14:38:19.367058",
+  "corrections_applied": [
+    "Normalización de delay_ratio (duration_est de minutos a días)",
+    "Split aleatorio estratificado (datos recientes sintéticos)",
+    "Target con criterio robusto (delay > 1.2, NO percentil)",
+    "Validación cruzada estratificada (StratifiedKFold)",
+    "Features diversificadas"
+  ],
+  "dataset": {
+    "train_size": 6257,
+    "test_size": 2682,
+    "train_bottlenecks": 1363,
+    "test_bottlenecks": 584
+  },
+  "metrics": {
+    "accuracy": 0.9992542878448919,
+    "precision": 0.9982876712328768,
+    "recall": 0.9982876712328768,
+    "f1_score": 0.9982876712328768,
+    "roc_auc": 0.9999869412486778,
+    "cv_accuracy_mean": 0.9952049861708077,
+    "cv_accuracy_std": 0.0018235507955286108
+  },
+  "confusion_matrix": {
+    "true_negatives": 2097,
+    "false_positives": 1,
+    "false_negatives": 1,
+    "true_positives": 583
+  },
+  "target_criteria": {
+    "delay_threshold": 1.2,
+    "additional": "alta centralidad O alto impacto"
+  }
+}

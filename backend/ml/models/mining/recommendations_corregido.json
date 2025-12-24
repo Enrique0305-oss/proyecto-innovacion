@@ -1,0 +1,52 @@
+{
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "type": "AREA_RISK",
+      "area": "PIURA",
+      "count": 65,
+      "avg_delay": 1.3993441949997791,
+      "action": "Reforzar área 'PIURA': 65 cuellos de botella (delay promedio: 1.40x)"
+    },
+    {
+      "priority": "HIGH",
+      "type": "AREA_RISK",
+      "area": "HUANCAVELICA",
+      "count": 64,
+      "avg_delay": 1.3754314792988644,
+      "action": "Reforzar área 'HUANCAVELICA': 64 cuellos de botella (delay promedio: 1.38x)"
+    },
+    {
+      "priority": "HIGH",
+      "type": "AREA_RISK",
+      "area": "PUNO",
+      "count": 54,
+      "avg_delay": 1.3574497671278667,
+      "action": "Reforzar área 'PUNO': 54 cuellos de botella (delay promedio: 1.36x)"
+    },
+    {
+      "priority": "MEDIUM",
+      "type": "COMPLEXITY_ISSUE",
+      "complexity": "100",
+      "count": 178,
+      "avg_delay": 1.3095136722036202,
+      "action": "Revisar complejidad '100': 178 bottlenecks"
+    },
+    {
+      "priority": "MEDIUM",
+      "type": "COMPLEXITY_ISSUE",
+      "complexity": "106",
+      "count": 19,
+      "avg_delay": 1.2772776961293055,
+      "action": "Revisar complejidad '106': 19 bottlenecks"
+    },
+    {
+      "priority": "MEDIUM",
+      "type": "COMPLEXITY_ISSUE",
+      "complexity": "101",
+      "count": 16,
+      "avg_delay": 1.3700268714045138,
+      "action": "Revisar complejidad '101': 16 bottlenecks"
+    }
+  ]
+}

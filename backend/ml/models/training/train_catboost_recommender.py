@@ -3,16 +3,16 @@ Entrenamiento de Modelo CatBoost para Sistema de Recomendación de Asignaciones
 ===============================================================================
 MODELO 3: Clasificación Binaria + Ranking para recomendar personas óptimas.
 
-⚠️  PREVENCIÓN DE DATA LEAKAGE - FEATURES PERMITIDAS:
+  PREVENCIÓN DE DATA LEAKAGE - FEATURES PERMITIDAS:
     Solo usamos información disponible ANTES de asignar la tarea:
     
-    ✅ PERMITIDO (conocido antes de asignación):
+     PERMITIDO (conocido antes de asignación):
        - Features de persona: role, area, experience, availability, current_load
        - Features de tarea: task_area, task_type, complexity, duration_est
        - Features de interacción: match_area, experience_complexity_ratio
        - Histórico PREVIO de la persona (tareas anteriores a esta)
     
-    ❌ PROHIBIDO (conocido después de asignación):
+     PROHIBIDO (conocido después de asignación):
        - duration_real (resultado de la tarea)
        - completed_on_time_alt (calculado con duration_real)
        - person_avg_delay_ratio (usa duration_real de tareas futuras)

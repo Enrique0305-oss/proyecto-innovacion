@@ -1,8 +1,9 @@
 """
-Rutas para Process Mining y Simulación de Flujo
-Endpoints ML para análisis de procesos con IA
+Rutas para Process Mining - Predicción de Cuellos de Botella
+Endpoint ML usando exclusivamente el modelo CatBoost Bottleneck Predictor
 """
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
+from flask_jwt_extended import jwt_required
 from sqlalchemy import text
 from app.extensions import db
 import pandas as pd
@@ -12,6 +13,7 @@ import joblib
 import json
 from pathlib import Path
 from datetime import datetime
+import traceback
 
 process_mining_bp = Blueprint('process_mining', __name__)
 
@@ -19,18 +21,32 @@ process_mining_bp = Blueprint('process_mining', __name__)
 ML_MODELS_PATH = Path(__file__).parent.parent.parent / 'ml' / 'models' / 'mining'
 METRICS_PATH = ML_MODELS_PATH / 'metrics'
 
-# Cargar modelos PKL (lazy loading)
-_models_cache = {}
+# Cache del modelo
+_bottleneck_model = None
+_bottleneck_config = None
 
-def load_model(model_name):
-    """Carga modelo PKL con cache"""
-    if model_name not in _models_cache:
-        model_path = ML_MODELS_PATH / f'{model_name}.pkl'
-        if model_path.exists():
-            _models_cache[model_name] = joblib.load(model_path)
-        else:
+
+def load_bottleneck_model():
+    """Carga el modelo de bottleneck con cache"""
+    global _bottleneck_model, _bottleneck_config
+    
+    if _bottleneck_model is None:
+        model_path = ML_MODELS_PATH / 'model_bottleneck_corregido.pkl'
+        config_path = ML_MODELS_PATH / 'bottleneck_config.json'
+        
+        if not model_path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {model_path}")
-    return _models_cache[model_name]
+        
+        _bottleneck_model = joblib.load(model_path)
+        
+        if config_path.exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                _bottleneck_config = json.load(f)
+        
+        print(f"✓ Modelo bottleneck cargado: {model_path}")
+    
+    return _bottleneck_model, _bottleneck_config
+
 
 def load_json_artifact(filename):
     """Carga archivo JSON de artefactos"""
@@ -41,469 +57,393 @@ def load_json_artifact(filename):
     return None
 
 
-# ============================================================================
-# FUNCIÓN ADAPTADORA: web_tasks → formato del modelo
-# ============================================================================
-
-def get_process_mining_data(project_id=None):
+def get_process_data(project_id=None):
     """
-    Extrae datos de web_tasks y los adapta al formato esperado por los modelos ML
+    Extrae datos de la tabla 'web_tasks' adaptados al modelo bottleneck
     
     Returns:
-        DataFrame con features: task_id, duration_est, betweenness, degree_centrality,
-                                in_degree, out_degree, complexity, resource_area
+        DataFrame con features necesarias para predicción
     """
-    # Query base adaptada a web_tasks
-    base_query = """
-        SELECT 
-            wt.id AS task_id,
-            wt.project_id AS case_id,
-            wt.assigned_to AS person_id,
-            
-            -- Timestamps
-            wt.start_date AS start_timestamp,
-            wt.completed_at AS complete_timestamp,
-            
-            -- Activity
-            CONCAT(COALESCE(wt.area, 'Unknown'), ' - ', 
-                   COALESCE(wt.title, 'Task')) AS activity,
-            wt.status,
-            
-            -- FEATURE 6: Complexity (convertir 1-10 → Low/Medium/High)
-            CASE 
-                WHEN wt.complexity_score IS NULL THEN 'Medium'
-                WHEN wt.complexity_score <= 3 THEN 'Low'
-                WHEN wt.complexity_score <= 7 THEN 'Medium'
-                ELSE 'High'
-            END AS complexity,
-            
-            -- FEATURE 1: Duration estimada
-            COALESCE(wt.estimated_hours, 0) AS duration_est,
-            COALESCE(wt.actual_hours, 0) AS duration_real,
-            
-            -- FEATURE 7: Resource area (directo)
-            COALESCE(wt.area, 'Unknown') AS resource_area,
-            
-            -- Delay ratio (para análisis)
-            CASE 
-                WHEN wt.actual_hours IS NOT NULL 
-                     AND wt.estimated_hours IS NOT NULL 
-                     AND wt.estimated_hours > 0
-                THEN wt.actual_hours / wt.estimated_hours
-                ELSE 1.0 
-            END AS delay_ratio
-            
-        FROM web_tasks wt
+    try:
+        # Usar tabla 'web_tasks'
+        base_query = """
+            SELECT
+                wt.id AS task_id,
+                wt.project_id,
+                COALESCE(wt.title, 'Sin nombre') AS activity,
+                wt.status,
+                wt.assigned_to AS person_id,
+
+                -- Features categóricas
+                COALESCE(wt.area, 'Unknown') AS area,
+                COALESCE(wt.priority, 'media') AS task_type,
+                CASE
+                    WHEN wt.complexity_score IS NULL THEN 'Medium'
+                    WHEN wt.complexity_score <= 3 THEN 'Low'
+                    WHEN wt.complexity_score <= 7 THEN 'Medium'
+                    ELSE 'High'
+                END AS complexity_level,
+
+                -- Features numéricas (en horas, convertiremos a días)
+                COALESCE(wt.estimated_hours, 0) AS duration_est,
+                COALESCE(wt.actual_hours, 0) AS duration_real,
+
+                -- Timestamps
+                wt.start_date,
+                wt.completed_at,
+                wt.created_at
+
+            FROM web_tasks wt
+            WHERE 1=1
+        """
         
-        WHERE 1=1
-    """
+        if project_id:
+            base_query += f" AND wt.project_id = '{project_id}'"
+        
+        base_query += " ORDER BY wt.created_at DESC LIMIT 1000"
+        
+        print(f"   📊 Ejecutando query SQL en tabla 'web_tasks'...")
+        df = pd.read_sql(text(base_query), db.engine)
+        print(f"   ✅ Query ejecutada: {len(df)} registros obtenidos")
+        
+        if len(df) == 0:
+            print(f"   ⚠️ No hay datos en tabla 'web_tasks'")
+            return pd.DataFrame()
     
-    # Filtrar por proyecto si se especifica
-    if project_id:
-        base_query += f" AND wt.project_id = '{project_id}'"
+    except Exception as e:
+        print(f"   ❌ Error al cargar datos: {str(e)}")
+        return pd.DataFrame()
     
-    base_query += " ORDER BY wt.project_id, wt.created_at"
+    # Calcular delay_ratio
+    df['delay_ratio'] = df.apply(
+        lambda row: row['duration_real'] / row['duration_est'] if row['duration_est'] > 0 else 1.0,
+        axis=1
+    )
     
-    # Ejecutar query
-    df = pd.read_sql(text(base_query), db.engine)
-    
-    if len(df) == 0:
-        # Retornar DataFrame vacío con columnas esperadas
-        return pd.DataFrame(columns=[
-            'task_id', 'case_id', 'activity', 'duration_est', 'duration_real',
-            'delay_ratio', 'complexity', 'resource_area', 'betweenness',
-            'degree_centrality', 'in_degree', 'out_degree'
-        ])
-    
-    # FEATURES 2-5: Construir grafo desde web_task_dependencies
+    # Construir grafo de dependencias
+    # Usar 'web_task_dependencies'
     deps_query = """
-        SELECT predecessor_task_id, successor_task_id, project_id
+        SELECT predecessor_task_id, successor_task_id
         FROM web_task_dependencies
     """
-    
     if project_id:
         deps_query += f" WHERE project_id = '{project_id}'"
     
     try:
         deps_df = pd.read_sql(text(deps_query), db.engine)
-    except:
+        print(f"   🔗 Dependencias cargadas: {len(deps_df)} edges")
+    except Exception as e:
+        print(f"   ⚠️ No se pudieron cargar dependencias: {str(e)}")
         deps_df = pd.DataFrame(columns=['predecessor_task_id', 'successor_task_id'])
     
-    # Construir grafo NetworkX
+    # Calcular métricas de grafo
     G = nx.DiGraph()
-    
-    # Agregar todos los nodos (tareas)
     for task_id in df['task_id']:
         G.add_node(task_id)
     
-    # Agregar edges (dependencias)
     for _, row in deps_df.iterrows():
         if row['predecessor_task_id'] in df['task_id'].values and \
            row['successor_task_id'] in df['task_id'].values:
             G.add_edge(row['predecessor_task_id'], row['successor_task_id'])
     
-    # Calcular métricas de grafo
+    # Calcular centralidad
     if G.number_of_edges() > 0:
         betweenness = nx.betweenness_centrality(G)
-        degree_cent = nx.degree_centrality(G)
     else:
         betweenness = {node: 0 for node in G.nodes()}
-        degree_cent = {node: 0 for node in G.nodes()}
     
-    # Agregar features al DataFrame
     df['betweenness'] = df['task_id'].map(betweenness).fillna(0)
-    df['degree_centrality'] = df['task_id'].map(degree_cent).fillna(0)
-    df['in_degree'] = df['task_id'].map(dict(G.in_degree())).fillna(0)
-    df['out_degree'] = df['task_id'].map(dict(G.out_degree())).fillna(0)
+    df['degree_centrality'] = df['task_id'].apply(lambda x: G.degree(x))
+    df['in_degree'] = df['task_id'].apply(lambda x: G.in_degree(x))
+    df['out_degree'] = df['task_id'].apply(lambda x: G.out_degree(x))
+    
+    # Calcular impact_count (descendientes en el grafo)
+    def count_descendants(node):
+        try:
+            return len(nx.descendants(G, node))
+        except:
+            return 0
+    
+    df['impact_count'] = df['task_id'].apply(count_descendants)
+    
+    # Features adicionales
+    df['week_of_year'] = pd.to_datetime(df['created_at']).dt.isocalendar().week
+    df['month'] = pd.to_datetime(df['created_at']).dt.month
+    df['day_of_week'] = pd.to_datetime(df['created_at']).dt.dayofweek
+    df['quarter'] = pd.to_datetime(df['created_at']).dt.quarter
+    
+    # Progreso del proyecto
+    project_sizes = df.groupby('project_id').size()
+    df['project_size'] = df['project_id'].map(project_sizes)
+    df['task_number_in_project'] = df.groupby('project_id').cumcount() + 1
+    df['project_progress'] = df['task_number_in_project'] / df['project_size']
+    
+    # Features de persona (valores por defecto si no hay datos)
+    df['resource_area'] = df['area']
+    df['resource_role'] = 'Unknown'
+    df['experience_category'] = 'Mid'
+    df['experience_years'] = 2.0
+    df['current_load'] = 20.0
+    df['availability'] = 40.0
+    df['tasks_completed'] = 10
+    df['performance_index'] = 1.0
+    df['rework_rate'] = 0.0
+    df['load_ratio'] = df['current_load'] / df['availability']
+    df['is_overloaded'] = (df['load_ratio'] > 0.8).astype(int)
+    df['complexity_numeric'] = df['complexity_level'].map({'Low': 100, 'Medium': 200, 'High': 300}).fillna(200)
+    
+    return df
+
+
+def predict_bottlenecks(df):
+    """
+    Predice cuellos de botella usando el modelo CatBoost
+    
+    Args:
+        df: DataFrame con features
+    
+    Returns:
+        DataFrame con columna 'bottleneck_probability' añadida
+    """
+    if len(df) == 0:
+        return df
+    
+    model, config = load_bottleneck_model()
+    
+    # Features esperadas por el modelo
+    categorical_features = [
+        'area', 'task_type', 'complexity_level', 
+        'resource_area', 'resource_role', 'experience_category',
+        'quarter', 'day_of_week'
+    ]
+    
+    numerical_features = [
+        'experience_years', 'current_load', 'availability',
+        'tasks_completed', 'performance_index', 'rework_rate',
+        'betweenness', 'degree_centrality', 'in_degree', 'out_degree', 'impact_count',
+        'project_progress', 'load_ratio', 'is_overloaded',
+        'week_of_year', 'month', 'project_size', 'complexity_numeric'
+    ]
+    
+    all_features = categorical_features + numerical_features
+    
+    # Preparar datos
+    X = df[all_features].copy()
+    
+    for col in categorical_features:
+        X[col] = X[col].fillna('Unknown').astype(str)
+    
+    for col in numerical_features:
+        median_val = X[col].median() if X[col].median() > 0 else 0.5
+        X[col] = X[col].fillna(median_val)
+    
+    # Predicción
+    predictions = model.predict(X)
+    probabilities = model.predict_proba(X)[:, 1]  # Probabilidad de clase "Bottleneck"
+    
+    df['is_bottleneck'] = predictions
+    df['bottleneck_probability'] = probabilities
     
     return df
 
 
 # ============================================================================
-# ENDPOINT 1: Resumen General de Process Mining
+# ENDPOINT PRINCIPAL: Análisis de Cuellos de Botella
 # ============================================================================
 
-@process_mining_bp.route('/summary', methods=['GET'])
-@process_mining_bp.route('/summary/<project_id>', methods=['GET'])
-def get_summary(project_id=None):
+@process_mining_bp.route('/analyze', methods=['GET', 'OPTIONS'])
+@process_mining_bp.route('/analyze/<project_id>', methods=['GET', 'OPTIONS'])
+def analyze_bottlenecks(project_id=None):
     """
-    GET /api/ml/process-mining/summary
-    GET /api/ml/process-mining/summary/{project_id}
+    GET /api/ml/process-mining/analyze
+    GET /api/ml/process-mining/analyze/{project_id}
     
-    Retorna resumen global de métricas y estado de modelos
-    """
-    try:
-        # Cargar JSON de resumen
-        summary = load_json_artifact('process_mining_summary.json')
-        
-        if not summary:
-            # Generar resumen básico si no existe archivo
-            df = get_process_mining_data(project_id)
-            
-            summary = {
-                'metadata': {
-                    'generated_at': datetime.utcnow().isoformat(),
-                    'model_version': '5.0_production',
-                    'project_id': project_id
-                },
-                'statistics': {
-                    'total_events': len(df),
-                    'total_cases': df['case_id'].nunique() if len(df) > 0 else 0,
-                    'total_activities': df['activity'].nunique() if len(df) > 0 else 0,
-                    'avg_throughput_days': 0
-                },
-                'ai_models': {
-                    'critical_chain_predictor': {
-                        'file': 'model_critical_chain_predictor.pkl',
-                        'status': 'loaded'
-                    },
-                    'domino_effect_predictor': {
-                        'file': 'model_domino_effect_predictor.pkl',
-                        'status': 'loaded'
-                    }
-                }
-            }
-        
-        return jsonify(summary), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# ============================================================================
-# ENDPOINT 2: Predictor de Cadenas Críticas
-# ============================================================================
-
-@process_mining_bp.route('/critical-chain', methods=['GET'])
-@process_mining_bp.route('/critical-chain/<project_id>', methods=['GET'])
-def get_critical_chain(project_id=None):
-    """
-    GET /api/ml/process-mining/critical-chain/{project_id}
+    Analiza tareas y predice cuellos de botella usando IA
     
-    Retorna análisis de cadena crítica con predicciones del modelo
+    Returns:
+        - summary: estadísticas generales
+        - bottlenecks: top tareas identificadas como cuellos de botella
+        - graph: datos del grafo de dependencias
+        - recommendations: recomendaciones del modelo
     """
+    # Manejar OPTIONS (preflight CORS)
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+    
     try:
+        print(f"\n🔍 Iniciando análisis de bottlenecks (project_id={project_id})...")
+        
         # Cargar datos
-        df = get_process_mining_data(project_id)
+        df = get_process_data(project_id)
+        print(f"   📊 Datos cargados: {len(df)} tareas")
         
         if len(df) == 0:
             return jsonify({
-                'message': 'No hay suficientes datos para análisis',
-                'tasks': [],
+                'message': 'No hay datos disponibles',
+                'summary': {
+                    'total_tasks': 0,
+                    'total_bottlenecks': 0,
+                    'bottleneck_rate': 0,
+                    'avg_bottleneck_probability': 0,
+                    'avg_delay_ratio': 0,
+                    'projects_analyzed': 0
+                },
+                'model_metrics': {
+                    'accuracy': 0.999,
+                    'precision': 0.998,
+                    'recall': 0.998,
+                    'f1_score': 0.998,
+                    'roc_auc': 0.999
+                },
+                'bottlenecks': [],
                 'graph': {'nodes': [], 'edges': []},
-                'metrics': {}
+                'recommendations': []
             }), 200
         
-        # Cargar modelo
-        model = load_model('model_critical_chain_predictor')
+        # Predecir bottlenecks
+        print(f"   🤖 Ejecutando predicción con modelo CatBoost...")
+        df = predict_bottlenecks(df)
+        print(f"   ✅ Predicción completada")
         
-        # Preparar features (mismo orden que training)
-        feature_cols = ['duration_est', 'betweenness', 'degree_centrality', 
-                       'in_degree', 'out_degree']
+        # Identificar top bottlenecks
+        bottlenecks_df = df[df['is_bottleneck'] == 1].nlargest(20, 'bottleneck_probability')
+        print(f"   🚧 Bottlenecks detectados: {len(bottlenecks_df)}")
         
-        # Encoding de categóricas
-        from sklearn.preprocessing import LabelEncoder
-        df_features = df.copy()
-        
-        for col in ['complexity', 'resource_area']:
-            if col in df_features.columns:
-                le = LabelEncoder()
-                df_features[col] = le.fit_transform(df_features[col].astype(str))
-                feature_cols.append(col)
-        
-        X = df_features[feature_cols].values
-        
-        # Predicción
-        critical_proba = model.predict_proba(X)[:, 1]
-        df['critical_probability'] = critical_proba
-        
-        # Top tareas críticas
-        df_sorted = df.nlargest(10, 'critical_probability')
-        
-        tasks_critical = []
-        for _, row in df_sorted.iterrows():
-            tasks_critical.append({
+        bottlenecks = []
+        for _, row in bottlenecks_df.iterrows():
+            bottlenecks.append({
                 'task_id': int(row['task_id']),
                 'activity': row['activity'],
-                'critical_probability': float(row['critical_probability']),
-                'betweenness': float(row['betweenness']),
+                'bottleneck_probability': float(row['bottleneck_probability']),
                 'delay_ratio': float(row['delay_ratio']),
+                'betweenness': float(row['betweenness']),
+                'impact_count': int(row['impact_count']),
                 'in_degree': int(row['in_degree']),
                 'out_degree': int(row['out_degree']),
-                'risk_level': 'Alto' if row['critical_probability'] > 0.7 else 'Medio' if row['critical_probability'] > 0.4 else 'Bajo'
+                'area': row['area'],
+                'complexity': row['complexity_level'],
+                'risk_level': 'Crítico' if row['bottleneck_probability'] > 0.8 else 
+                             'Alto' if row['bottleneck_probability'] > 0.6 else 'Medio'
             })
         
-        # Generar grafo para visualización
+        # Construir grafo para visualización
+        # Usar 'web_task_dependencies'
         deps_query = text("""
             SELECT predecessor_task_id, successor_task_id
             FROM web_task_dependencies
         """ + (f" WHERE project_id = '{project_id}'" if project_id else ""))
         
-        deps = pd.read_sql(deps_query, db.engine)
+        try:
+            deps = pd.read_sql(deps_query, db.engine)
+        except:
+            deps = pd.DataFrame(columns=['predecessor_task_id', 'successor_task_id'])
         
-        graph_data = {
-            'nodes': [
-                {
-                    'id': int(row['task_id']),
-                    'label': row['activity'][:30] + '...' if len(row['activity']) > 30 else row['activity'],
-                    'critical_probability': float(row['critical_probability']),
-                    'color': '#dc3545' if row['critical_probability'] > 0.7 else '#ffc107' if row['critical_probability'] > 0.4 else '#28a745'
-                }
-                for _, row in df.iterrows()
-            ],
-            'edges': [
-                {
-                    'from': int(row['predecessor_task_id']),
-                    'to': int(row['successor_task_id'])
-                }
-                for _, row in deps.iterrows()
-            ]
-        }
-        
-        # Métricas del modelo (desde JSON)
-        summary = load_json_artifact('process_mining_summary.json')
-        model_metrics = summary.get('ai_models', {}).get('critical_chain_predictor', {}) if summary else {}
-        
-        return jsonify({
-            'tasks': tasks_critical,
-            'graph': graph_data,
-            'metrics': {
-                'accuracy': model_metrics.get('accuracy', 0.88),
-                'precision': model_metrics.get('precision', 0.82),
-                'total_analyzed': len(df),
-                'critical_count': len([t for t in tasks_critical if t['critical_probability'] > 0.7])
-            }
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# ============================================================================
-# ENDPOINT 3: Simulador de Efecto Dominó
-# ============================================================================
-
-@process_mining_bp.route('/domino-effect', methods=['GET'])
-@process_mining_bp.route('/domino-effect/<project_id>', methods=['GET'])
-def get_domino_effect(project_id=None):
-    """
-    GET /api/ml/process-mining/domino-effect/{project_id}
-    
-    Retorna análisis de impacto en cadena
-    """
-    try:
-        df = get_process_mining_data(project_id)
-        
-        if len(df) == 0:
-            return jsonify({
-                'message': 'No hay datos para análisis',
-                'tasks': [],
-                'heatmap': []
-            }), 200
-        
-        # Cargar modelo
-        model = load_model('model_domino_effect_predictor')
-        
-        # Preparar features
-        feature_cols = ['duration_est', 'betweenness', 'degree_centrality',
-                       'in_degree', 'out_degree']
-        
-        from sklearn.preprocessing import LabelEncoder
-        df_features = df.copy()
-        
-        for col in ['complexity', 'resource_area']:
-            if col in df_features.columns:
-                le = LabelEncoder()
-                df_features[col] = le.fit_transform(df_features[col].astype(str))
-                feature_cols.append(col)
-        
-        X = df_features[feature_cols].values
-        
-        # Predicción de impacto
-        predicted_impact = model.predict(X)
-        df['predicted_impact'] = predicted_impact
-        
-        # Ordenar por impacto
-        df_sorted = df.nlargest(15, 'predicted_impact')
-        
-        tasks_impact = []
-        for _, row in df_sorted.iterrows():
-            tasks_impact.append({
-                'task_id': int(row['task_id']),
-                'activity': row['activity'],
-                'predicted_impact': float(row['predicted_impact']),
-                'delay_ratio': float(row['delay_ratio']),
-                'betweenness': float(row['betweenness']),
-                'impact_level': 'Crítico' if row['predicted_impact'] > 10 else 'Alto' if row['predicted_impact'] > 5 else 'Medio'
+        # Nodos del grafo (solo bottlenecks para mejor visualización)
+        graph_nodes = []
+        for _, row in bottlenecks_df.head(15).iterrows():
+            graph_nodes.append({
+                'id': int(row['task_id']),
+                'label': row['activity'][:40] + '...' if len(row['activity']) > 40 else row['activity'],
+                'probability': float(row['bottleneck_probability']),
+                'color': '#dc3545' if row['bottleneck_probability'] > 0.8 else 
+                        '#ffc107' if row['bottleneck_probability'] > 0.6 else '#28a745',
+                'size': 10 + int(row['bottleneck_probability'] * 20)
             })
         
-        # Heatmap data
-        heatmap_data = [
-            {
-                'activity': row['activity'][:40],
-                'impact_score': float(row['predicted_impact']),
-                'delay_ratio': float(row['delay_ratio']),
-                'color': '#dc3545' if row['predicted_impact'] > 10 else '#ffc107' if row['predicted_impact'] > 5 else '#28a745'
-            }
-            for _, row in df_sorted.iterrows()
-        ]
-        
-        # Métricas
-        summary = load_json_artifact('process_mining_summary.json')
-        model_metrics = summary.get('ai_models', {}).get('domino_effect_predictor', {}) if summary else {}
-        
-        return jsonify({
-            'tasks': tasks_impact,
-            'heatmap': heatmap_data,
-            'metrics': {
-                'mae': model_metrics.get('mae', 2.3),
-                'r2': model_metrics.get('r2', 0.68),
-                'avg_impact': float(df['predicted_impact'].mean()),
-                'max_impact': float(df['predicted_impact'].max())
-            }
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# ============================================================================
-# ENDPOINT 4: Simulación What-If (Escenarios Monte Carlo)
-# ============================================================================
-
-@process_mining_bp.route('/what-if', methods=['GET'])
-@process_mining_bp.route('/what-if/<project_id>', methods=['GET'])
-def get_what_if_scenarios(project_id=None):
-    """
-    GET /api/ml/process-mining/what-if/{project_id}
-    
-    Retorna mejores escenarios de optimización
-    """
-    try:
-        # Cargar configuración y resultados
-        what_if_config = load_json_artifact('what_if_config.json')
-        
-        if not what_if_config:
-            return jsonify({
-                'message': 'Configuración What-If no disponible',
-                'scenarios': []
-            }), 200
-        
-        # Leer CSV de mejores escenarios
-        csv_path = METRICS_PATH / 'best_optimization_scenarios.csv'
-        
-        if csv_path.exists():
-            scenarios_df = pd.read_csv(csv_path).head(10)
-            
-            scenarios = []
-            for _, row in scenarios_df.iterrows():
-                scenarios.append({
-                    'scenario_id': int(row['simulation_id']),
-                    'resource_boost': float(row['resource_boost']),
-                    'simulated_throughput': float(row['simulated_throughput']),
-                    'improvement_pct': float(row['improvement_pct']),
-                    'rank': int(row['simulation_id']) + 1
+        # Edges del grafo
+        bottleneck_ids = set(bottlenecks_df.head(15)['task_id'].values)
+        graph_edges = []
+        for _, row in deps.iterrows():
+            if row['predecessor_task_id'] in bottleneck_ids and row['successor_task_id'] in bottleneck_ids:
+                graph_edges.append({
+                    'from': int(row['predecessor_task_id']),
+                    'to': int(row['successor_task_id'])
                 })
-        else:
-            scenarios = []
         
-        # Configuración disponible
-        config = what_if_config.get('configuration_options', {})
-        simulation_results = what_if_config.get('simulation_results', {})
+        # Estadísticas
+        total_tasks = len(df)
+        total_bottlenecks = int(df['is_bottleneck'].sum())
+        avg_probability = float(df[df['is_bottleneck'] == 1]['bottleneck_probability'].mean()) if total_bottlenecks > 0 else 0
+        avg_delay = float(df[df['is_bottleneck'] == 1]['delay_ratio'].mean()) if total_bottlenecks > 0 else 0
         
-        return jsonify({
-            'scenarios': scenarios,
-            'configuration': {
-                'activities': config.get('activities', [])[:20],  # Top 20
-                'resource_range': config.get('resource_adjustment_range', {})
+        # Cargar recomendaciones
+        recommendations_data = load_json_artifact('recommendations_corregido.json')
+        recommendations = recommendations_data.get('recommendations', [])[:5] if recommendations_data else []
+        
+        # Cargar configuración del modelo
+        _, config = load_bottleneck_model()
+        model_performance = config.get('performance', {}) if config else {}
+        
+        print(f"   📦 Preparando respuesta JSON...")
+        
+        response_data = {
+            'summary': {
+                'total_tasks': total_tasks,
+                'total_bottlenecks': total_bottlenecks,
+                'bottleneck_rate': round(total_bottlenecks / total_tasks, 3) if total_tasks > 0 else 0,
+                'avg_bottleneck_probability': round(avg_probability, 3),
+                'avg_delay_ratio': round(avg_delay, 2),
+                'projects_analyzed': df['project_id'].nunique()
             },
-            'baseline': {
-                'throughput_days': simulation_results.get('baseline_throughput_days', 0),
-                'best_improvement': simulation_results.get('best_scenario', {}).get('improvement_pct', 0)
-            }
-        }), 200
+            'model_metrics': {
+                'accuracy': model_performance.get('accuracy', 0.999),
+                'precision': model_performance.get('precision', 0.998),
+                'recall': model_performance.get('recall', 0.998),
+                'f1_score': model_performance.get('f1_score', 0.998),
+                'roc_auc': model_performance.get('roc_auc', 0.999)
+            },
+            'bottlenecks': bottlenecks,
+            'graph': {
+                'nodes': graph_nodes,
+                'edges': graph_edges
+            },
+            'recommendations': recommendations
+        }
+        
+        print(f"   ✅ Análisis completado exitosamente\n")
+        return jsonify(response_data), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_trace = traceback.format_exc()
+        print(f"   ❌ ERROR en análisis:")
+        print(f"   {error_trace}")
+        return jsonify({
+            'error': str(e),
+            'trace': error_trace,
+            'message': 'Error al analizar cuellos de botella'
+        }), 500
 
 
 # ============================================================================
-# ENDPOINT 5: Mapa de Proceso (BPMN)
+# ENDPOINT: Información del Modelo
 # ============================================================================
 
-@process_mining_bp.route('/process-map', methods=['GET'])
-@process_mining_bp.route('/process-map/<project_id>', methods=['GET'])
-def get_process_map(project_id=None):
+@process_mining_bp.route('/model-info', methods=['GET'])
+def get_model_info():
     """
-    GET /api/ml/process-mining/process-map/{project_id}
+    GET /api/ml/process-mining/model-info
     
-    Retorna mapa BPMN del proceso
+    Retorna información y métricas del modelo bottleneck
     """
     try:
-        bpmn_map = load_json_artifact('bpmn_process_map.json')
-        delay_heatmap = load_json_artifact('delay_heatmap.json')
+        _, config = load_bottleneck_model()
+        metrics_data = load_json_artifact('metrics_corregido.json')
         
-        if not bpmn_map:
+        if config:
+            return jsonify(config), 200
+        elif metrics_data:
+            return jsonify(metrics_data), 200
+        else:
             return jsonify({
-                'message': 'Mapa de proceso no disponible',
-                'steps': []
-            }), 200
-        
-        # Si hay proyecto específico, filtrar
-        steps = bpmn_map.get('process_steps', [])
-        
-        return jsonify({
-            'metadata': bpmn_map.get('metadata', {}),
-            'steps': steps[:20],  # Top 20 pasos
-            'heatmap': delay_heatmap.get('activities', [])[:20] if delay_heatmap else []
-        }), 200
+                'error': 'Configuración del modelo no disponible'
+            }), 404
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 # ============================================================================
-# ENDPOINT 6: Obtener Imagen de Visualización
+# ENDPOINT: Visualizaciones
 # ============================================================================
 
 @process_mining_bp.route('/visualizations/<filename>', methods=['GET'])
@@ -512,11 +452,9 @@ def get_visualization(filename):
     GET /api/ml/process-mining/visualizations/{filename}
     
     Retorna imagen PNG de visualización
-    Ejemplos: critical_chain_graph.png, domino_effect_heatmap.png
+    Ejemplos: evaluation_metrics.png, comparacion_antes_despues.png
     """
     try:
-        from flask import send_file
-        
         img_path = METRICS_PATH / filename
         
         if not img_path.exists():
@@ -529,36 +467,75 @@ def get_visualization(filename):
 
 
 # ============================================================================
-# ENDPOINT 7: Exportar Análisis CSV
+# ENDPOINT: Recomendaciones
 # ============================================================================
 
-@process_mining_bp.route('/export/<export_type>', methods=['GET'])
-def export_analysis(export_type):
+@process_mining_bp.route('/recommendations', methods=['GET'])
+def get_recommendations():
     """
-    GET /api/ml/process-mining/export/{export_type}
+    GET /api/ml/process-mining/recommendations
     
-    Retorna CSV de análisis
-    Tipos: task_risk, optimization, activity_stats
+    Retorna recomendaciones generadas por el modelo
     """
     try:
-        from flask import send_file
+        recommendations_data = load_json_artifact('recommendations_corregido.json')
         
-        csv_mapping = {
-            'task_risk': 'task_risk_analysis_with_ia.csv',
-            'optimization': 'best_optimization_scenarios.csv',
-            'activity_stats': 'activity_statistics.csv',
-            'recommendations': 'optimization_recommendations.csv'
-        }
+        if recommendations_data:
+            return jsonify(recommendations_data), 200
+        else:
+            return jsonify({
+                'recommendations': [],
+                'message': 'No hay recomendaciones disponibles'
+            }), 200
         
-        if export_type not in csv_mapping:
-            return jsonify({'error': 'Tipo de exportación no válido'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# ENDPOINT: Estadísticas por Área
+# ============================================================================
+
+@process_mining_bp.route('/stats-by-area', methods=['GET'])
+@process_mining_bp.route('/stats-by-area/<project_id>', methods=['GET'])
+def get_stats_by_area(project_id=None):
+    """
+    GET /api/ml/process-mining/stats-by-area
+    GET /api/ml/process-mining/stats-by-area/{project_id}
+    
+    Retorna estadísticas de bottlenecks por área
+    """
+    try:
+        df = get_process_data(project_id)
         
-        csv_path = METRICS_PATH / csv_mapping[export_type]
+        if len(df) == 0:
+            return jsonify({'areas': []}), 200
         
-        if not csv_path.exists():
-            return jsonify({'error': 'Archivo no encontrado'}), 404
+        df = predict_bottlenecks(df)
         
-        return send_file(csv_path, mimetype='text/csv', as_attachment=True)
+        # Agrupar por área
+        area_stats = df.groupby('area').agg({
+            'task_id': 'count',
+            'is_bottleneck': 'sum',
+            'bottleneck_probability': 'mean',
+            'delay_ratio': 'mean'
+        }).reset_index()
+        
+        area_stats.columns = ['area', 'total_tasks', 'bottlenecks', 'avg_probability', 'avg_delay']
+        area_stats = area_stats.sort_values('bottlenecks', ascending=False)
+        
+        areas = []
+        for _, row in area_stats.iterrows():
+            areas.append({
+                'area': row['area'],
+                'total_tasks': int(row['total_tasks']),
+                'bottlenecks': int(row['bottlenecks']),
+                'bottleneck_rate': round(row['bottlenecks'] / row['total_tasks'], 3) if row['total_tasks'] > 0 else 0,
+                'avg_probability': round(row['avg_probability'], 3),
+                'avg_delay': round(row['avg_delay'], 2)
+            })
+        
+        return jsonify({'areas': areas}), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
