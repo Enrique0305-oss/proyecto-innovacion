@@ -35,6 +35,11 @@ def create_app(config_class=None):
     # Registrar blueprints (rutas)
     register_blueprints(app)
     
+    # Inicializar scheduler de entrenamientos (solo en producción/desarrollo, no en tests)
+    if not app.config.get('TESTING', False):
+        from app.scheduler import training_scheduler
+        training_scheduler.init_app(app)
+    
     # Crear carpeta de modelos ML si no existe
     import os
     models_path = app.config.get('ML_MODELS_PATH', app.config.get('MODELS_PATH'))

@@ -40,5 +40,8 @@ flask-marshmallow==0.15.0
 python-dateutil==2.8.2
 pytz==2023.3
 
+# Scheduler para entrenamientos automáticos
+APScheduler==3.10.4
+
 # Servidor de Producción
 gunicorn==21.2.0

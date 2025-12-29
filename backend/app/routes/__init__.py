@@ -20,6 +20,7 @@ def register_blueprints(app):
     from app.routes.process_mining_routes import process_mining_bp
     from app.routes.meeting_routes import meetings_bp
     from app.routes.training_schedule_routes import training_schedule_bp
+    from app.routes.training_routes import bp as training_bp  # Nuevo sistema de training
     
     # Prefijo base para todas las rutas de API
     api_prefix = '/api'
@@ -30,6 +31,7 @@ def register_blueprints(app):
     app.register_blueprint(areas_bp, url_prefix=f'{api_prefix}/areas')
     app.register_blueprint(ml_bp, url_prefix=f'{api_prefix}/ml')
     app.register_blueprint(ml_training_bp, url_prefix=f'{api_prefix}/ml')  # Rutas de entrenamiento
+    app.register_blueprint(training_bp)  # Training manager (ya tiene url_prefix)
     app.register_blueprint(users_bp, url_prefix=f'{api_prefix}/users')
     app.register_blueprint(persons_bp, url_prefix=f'{api_prefix}/persons')
     app.register_blueprint(project_bp, url_prefix=f'{api_prefix}')

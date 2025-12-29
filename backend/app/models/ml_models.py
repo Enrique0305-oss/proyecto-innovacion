@@ -39,6 +39,7 @@ class MLModel(db.Model):
     
     # Relaciones
     predictions = db.relationship('MLPrediction', backref='model', lazy=True)
+    training_jobs = db.relationship('MLTrainingJob', backref='model', lazy=True)
     
     def to_dict(self):
         """Convierte el modelo a diccionario"""
@@ -108,3 +109,99 @@ class MLPrediction(db.Model):
     
     def __repr__(self):
         return f'<MLPrediction {self.model_type} for {self.task_reference}>'
+
+
+class MLDataset(db.Model):
+    """Dataset subido para entrenamiento"""
+    __tablename__ = 'ml_datasets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    original_name = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(255), nullable=False)
+    file_type = db.Column(db.String(20), default='csv')
+    file_size_bytes = db.Column(db.BigInteger)
+    record_count = db.Column(db.Integer)
+    columns_count = db.Column(db.Integer)
+    columns_info = db.Column(db.JSON)
+    data_preview = db.Column(db.JSON)
+    status = db.Column(
+        db.Enum('uploaded', 'processing', 'processed', 'error', 'archived'),
+        default='uploaded'
+    )
+    processing_log = db.Column(db.Text)
+    uploaded_by = db.Column(db.Integer)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    processed_at = db.Column(db.DateTime)
+    
+    # Relaciones
+    training_jobs = db.relationship('MLTrainingJob', backref='dataset', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'original_name': self.original_name,
+            'file_path': self.file_path,
+            'file_type': self.file_type,
+            'file_size_bytes': self.file_size_bytes,
+            'record_count': self.record_count,
+            'columns_count': self.columns_count,
+            'columns_info': self.columns_info,
+            'data_preview': self.data_preview,
+            'status': self.status,
+            'uploaded_by': self.uploaded_by,
+            'uploaded_at': self.uploaded_at.isoformat() if self.uploaded_at else None,
+            'processed_at': self.processed_at.isoformat() if self.processed_at else None,
+        }
+    
+    def __repr__(self):
+        return f'<MLDataset {self.filename}>'
+
+
+class MLTrainingJob(db.Model):
+    """Job de entrenamiento de modelo"""
+    __tablename__ = 'ml_training_jobs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    model_id = db.Column(db.Integer, db.ForeignKey('ml_models.id'))
+    dataset_id = db.Column(db.Integer, db.ForeignKey('ml_datasets.id'))
+    job_name = db.Column(db.String(150))
+    status = db.Column(
+        db.Enum('pending', 'running', 'completed', 'failed', 'cancelled'),
+        default='pending'
+    )
+    progress = db.Column(db.Integer, default=0)
+    current_step = db.Column(db.String(100))
+    config = db.Column(db.JSON)
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    duration_seconds = db.Column(db.Integer)
+    metrics = db.Column(db.JSON)
+    error_message = db.Column(db.Text)
+    output_model_path = db.Column(db.String(255))
+    created_by = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'model_id': self.model_id,
+            'dataset_id': self.dataset_id,
+            'job_name': self.job_name,
+            'status': self.status,
+            'progress': self.progress,
+            'current_step': self.current_step,
+            'config': self.config,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'duration_seconds': self.duration_seconds,
+            'metrics': self.metrics,
+            'error_message': self.error_message,
+            'output_model_path': self.output_model_path,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+    
+    def __repr__(self):
+        return f'<MLTrainingJob #{self.id} {self.status}>'

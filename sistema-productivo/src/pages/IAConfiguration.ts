@@ -1,367 +1,588 @@
-import { Sidebar } from '../components/Sidebar';
-import { AIAssistant, initAIAssistant } from '../components/AIAssistant';
+/**
+ * Configuración de IA - Gestión de reentrenamiento de modelos
+ */
+import '../styles/ia-configuration.css';
+import { Sidebar, initSidebar } from '../components/Sidebar';
+import { API_URL } from '../utils/api';
+
+let models: any[] = [];
+let jobs: any[] = [];
+let schedules: any[] = [];
+let selectedModel: any = null;
+let pollingInterval: number | null = null;
 
 export function IAConfigurationPage(): string {
-  return `
-    <div class="dashboard-layout">
-      ${Sidebar('configuracion-ia')}
-      ${AIAssistant()}
-      
-      <main class="dashboard-main">
-        <header class="dashboard-header">
-          <div class="header-top">
-            <button class="btn-mobile-menu">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-            <h1 class="page-title">Sistema de Análisis y Productividad</h1>
-            <button class="btn-ai-assistant">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="currentColor"/>
-              </svg>
-              AI Assistant
-            </button>
-          </div>
-          <div class="header-subtitle">Processmart S.A.C.</div>
-        </header>
+    return `
+        <div class="dashboard-layout">
+            ${Sidebar('configuracion-ia')}
+            <main class="dashboard-main">
+                <div class="ia-config-container">
+                    <div class="ia-config-header">
+                        <h1>⚙️ Configuración de Inteligencia Artificial</h1>
+                        <p>Gestiona el reentrenamiento y programación de modelos de Machine Learning</p>
+                    </div>
 
-        <div class="dashboard-content">
-          <div class="config-header">
-            <div class="module-icon config">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="white" stroke-width="2">
-                <circle cx="20" cy="20" r="3"/>
-                <path d="M20 12v-4M20 32v-4M28 20h4M8 20H4M26.8 13.2l2.8-2.8M10.4 29.6l2.8-2.8M26.8 26.8l2.8 2.8M10.4 10.4l2.8 2.8"/>
-              </svg>
-            </div>
-            <div class="module-info">
-              <h2 class="module-title">Configuración de IA</h2>
-              <p class="module-description">Gestión de modelos y datasets del sistema</p>
-            </div>
-          </div>
+                    <div class="ia-config-tabs">
+                        <button class="tab-btn active" data-view="models">📊 Estado de Modelos</button>
+                        <button class="tab-btn" data-view="retrain">🔄 Reentrenamiento</button>
+                        <button class="tab-btn" data-view="schedules">⏰ Programaciones</button>
+                        <button class="tab-btn" data-view="history">📜 Historial</button>
+                    </div>
 
-          <!-- Stats Cards -->
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Modelos Activos</div>
-              <div class="stat-value">4</div>
-              <div class="stat-description">De 5 totales</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Precisión Promedio</div>
-              <div class="stat-value">91%</div>
-              <div class="stat-description">Todos los modelos</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Total Muestras</div>
-              <div class="stat-value">6,536</div>
-              <div class="stat-description">Entrenamiento</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Datasets</div>
-              <div class="stat-value">4</div>
-              <div class="stat-description">Archivos cargados</div>
-            </div>
-          </div>
-
-          <!-- AI Models Section -->
-          <div class="models-section">
-            <div class="section-header">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v6M12 17v6M23 12h-6M7 12H1M18.4 5.6l-4.2 4.2M9.8 14.2l-4.2 4.2M18.4 18.4l-4.2-4.2M9.8 9.8L5.6 5.6"/>
-              </svg>
-              <h3>Modelos de IA</h3>
-              <p>Estado y configuración de los modelos de machine learning</p>
-            </div>
-
-            <div class="models-list">
-              ${generateModelCard('Clasificación de Riesgo', 'Activo', 'Clasificación Multiclase', 'Random Forest', 94, '2024-11-15', 1250)}
-              ${generateModelCard('Predicción de Duración', 'Activo', 'Regresión', 'CatBoost Regressor', 92, '2024-11-10', 980)}
-              ${generateModelCard('Recomendación Persona-Tarea', 'Activo', 'Sistema de Recomendación', 'Collaborative Filtering', 89, '2024-11-12', 2100)}
-              ${generateModelCard('Desempeño Colaborador', 'Activo', 'Clasificación Multiclase', 'XGBoost', 91, '2024-11-08', 756)}
-              ${generateModelCard('Simulación de Flujo', 'Entrenando', 'Process Mining', 'LSTM + Process Mining', 88, '2024-11-01', 1450)}
-            </div>
-          </div>
-
-          <!-- Datasets Section -->
-          <div class="datasets-section">
-            <div class="section-header">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2">
-                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-                <polyline points="13 2 13 9 20 9"/>
-              </svg>
-              <h3>Datasets</h3>
-              <p>Archivos de datos para entrenamiento de modelos</p>
-            </div>
-            <button class="btn-primary" id="btnUploadDataset">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Subir Dataset
-            </button>
-
-            <div class="datasets-list">
-              ${generateDatasetCard('tareas_historicas.csv', '2.4 MB', 1250, '2024-11-15')}
-              ${generateDatasetCard('colaboradores_performance.csv', '856 KB', 756, '2024-11-10')}
-              ${generateDatasetCard('procesos_flujo.csv', '1.8 MB', 1450, '2024-11-01')}
-              ${generateDatasetCard('asignaciones_tareas.csv', '3.2 MB', 2100, '2024-11-12')}
-            </div>
-
-            <!-- Upload Section -->
-            <div class="upload-section">
-              <h4>Cargar Nuevo Dataset</h4>
-              <p class="upload-description">Sube archivos CSV o Excel para entrenar modelos</p>
-
-              <div class="file-upload">
-                <div class="upload-box" id="uploadBox">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                  <p class="upload-text">Seleccionar archivo <span>Sin archivos seleccionados</span></p>
-                  <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
-                  <button class="btn-upload" id="btnSelectFile">Cargar</button>
+                    <div class="ia-config-content">
+                        <div id="models-view" class="view-section active"></div>
+                        <div id="retrain-view" class="view-section"></div>
+                        <div id="schedules-view" class="view-section"></div>
+                        <div id="history-view" class="view-section"></div>
+                    </div>
                 </div>
-              </div>
-
-              <div class="dataset-requirements">
-                <h5>Requisitos del Dataset</h5>
-                <ul>
-                  <li>Formato: CSV o Excel (.xlsx)</li>
-                  <li>Tamaño máximo: 10 MB</li>
-                  <li>Debe incluir encabezados de columna</li>
-                  <li>Datos limpios sin valores nulos críticos</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <!-- System Status -->
-          <div class="system-status">
-            <div class="status-header">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              <h3>Estado del Sistema</h3>
-            </div>
-
-            <div class="status-grid">
-              <div class="status-card success">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="status-label">API Activa</div>
-              </div>
-              <div class="status-card success">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="status-label">Modelos OK</div>
-              </div>
-              <div class="status-card success">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="status-label">DB Conectada</div>
-              </div>
-              <div class="status-card success">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="status-label">Cache Activo</div>
-              </div>
-            </div>
-          </div>
+            </main>
         </div>
-      </main>
-    </div>
-  `;
+    `;
 }
 
-function generateModelCard(
-  name: string,
-  status: string,
-  type: string,
-  algorithm: string,
-  precision: number,
-  lastTrained: string,
-  samples: number
-): string {
-  const isActive = status === 'Activo';
-  const statusColor = isActive ? '#4caf50' : '#ff9800';
-  const statusBg = isActive ? '#4caf50' : '#ff9800';
-  const precisionColor = precision >= 90 ? '#4caf50' : precision >= 85 ? '#00bcd4' : '#ff9800';
-
-  return `
-    <div class="model-card">
-      <div class="model-header">
-        <div class="model-title">
-          <h4>${name}</h4>
-          <span class="status-badge" style="background: ${statusBg};">
-            ${isActive ? '✓' : '⟳'} ${status}
-          </span>
-        </div>
-        <div class="model-actions">
-          <button class="btn-icon-sm" title="Reentrenar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 4 23 10 17 10"/>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-            </svg>
-            Reentrenar
-          </button>
-          <button class="btn-icon-sm" title="Métricas">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="20" x2="18" y2="10"/>
-              <line x1="12" y1="20" x2="12" y2="4"/>
-              <line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>
-            Métricas
-          </button>
-        </div>
-      </div>
-
-      <div class="model-info">
-        <div class="info-row">
-          <span class="info-label">Tipo:</span>
-          <span class="info-value">${type}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Algoritmo:</span>
-          <span class="info-value">${algorithm}</span>
-        </div>
-      </div>
-
-      <div class="model-metrics">
-        <div class="metric-item">
-          <div class="metric-header">
-            <span>Precisión</span>
-            <span class="metric-value" style="color: ${precisionColor};">${precision}%</span>
-          </div>
-          <div class="metric-bar">
-            <div class="metric-fill" style="width: ${precision}%; background: ${precisionColor};"></div>
-          </div>
-        </div>
-
-        <div class="model-details">
-          <div class="detail-item">
-            <span class="detail-label">Último Entrenamiento</span>
-            <span class="detail-value">${lastTrained}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Muestras</span>
-            <span class="detail-value">${samples.toLocaleString()}</span>
-          </div>
-        </div>
-      </div>
-
-      ${!isActive ? '<div class="training-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff9800" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Modelo en proceso de reentrenamiento...</div>' : ''}
-    </div>
-  `;
+export function initIAConfiguration() {
+    initSidebar();
+    
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    // Tab switching
+    container.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.getAttribute('data-view');
+            switchView(view as string);
+        });
+    });
+    
+    // Inicializar vista de modelos
+    renderModelsView();
 }
 
-function generateDatasetCard(
-  filename: string,
-  size: string,
-  records: number,
-  uploaded: string
-): string {
-  return `
-    <div class="dataset-card">
-      <div class="dataset-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00bcd4" stroke-width="2">
-          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-          <polyline points="13 2 13 9 20 9"/>
-        </svg>
-      </div>
-      <div class="dataset-info">
-        <h5>${filename}</h5>
-        <p>${size} • ${records.toLocaleString()} registros • Cargado: ${uploaded}</p>
-      </div>
-      <div class="dataset-actions">
-        <button class="btn-text">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Descargar
-        </button>
-        <button class="btn-text">Ver Detalles</button>
-      </div>
-    </div>
-  `;
-}
+function switchView(view: string) {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    container.querySelector(`[data-view="${view}"]`)?.classList.add('active');
+    
+    container.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    container.querySelector(`#${view}-view`)?.classList.add('active');
 
-export function initIAConfiguration(): void {
-  // Initialize AI Assistant
-  initAIAssistant();
-
-  // File upload
-  const btnSelectFile = document.getElementById('btnSelectFile');
-  const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-  const uploadBox = document.getElementById('uploadBox');
-  const uploadText = uploadBox?.querySelector('.upload-text span');
-
-  btnSelectFile?.addEventListener('click', () => {
-    fileInput?.click();
-  });
-
-  fileInput?.addEventListener('change', (e) => {
-    const files = (e.target as HTMLInputElement).files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      if (uploadText) {
-        uploadText.textContent = file.name;
-      }
-      console.log('Archivo seleccionado:', file.name);
-      // Here you would handle the file upload
-      alert(`Archivo "${file.name}" listo para cargar`);
+    switch(view) {
+        case 'models': renderModelsView(); break;
+        case 'retrain': renderRetrainView(); break;
+        case 'schedules': renderSchedulesView(); break;
+        case 'history': renderHistoryView(); break;
     }
-  });
-
-  // Upload dataset button
-  const btnUploadDataset = document.getElementById('btnUploadDataset');
-  btnUploadDataset?.addEventListener('click', () => {
-    const uploadSection = document.querySelector('.upload-section');
-    uploadSection?.scrollIntoView({ behavior: 'smooth' });
-  });
-
-  // Mobile menu
-  const mobileToggle = document.querySelector('.btn-mobile-menu');
-  const sidebar = document.querySelector('.sidebar');
-  if (mobileToggle && sidebar) {
-    mobileToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('mobile-active');
-    });
-  }
-
-  // AI Assistant button
-  const aiButton = document.querySelector('.btn-ai-assistant');
-  if (aiButton) {
-    aiButton.addEventListener('click', () => {
-      const assistant = document.getElementById('aiAssistant');
-      if (assistant) {
-        assistant.classList.add('active');
-      }
-    });
-  }
-
-  // Logout
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('userEmail');
-      window.location.hash = '#login';
-    });
-  }
 }
+
+// MODELS VIEW
+function renderModelsView() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const view = container.querySelector('#models-view');
+    if (!view) return;
+    
+    view.innerHTML = `
+        <div class="stats-section">
+            <h3>📊 Datos Disponibles</h3>
+            <div id="stats-grid" class="loading">Cargando...</div>
+        </div>
+        <div id="models-grid" class="loading">Cargando modelos...</div>
+    `;
+    loadModels();
+    loadStats();
+}
+
+async function loadModels() {
+    try {
+        const res = await fetch(`${API_URL}/ml/training/models`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        models = await res.json();
+        displayModels();
+    } catch (err) {
+        console.error('Error loading models:', err);
+        const container = document.querySelector('.ia-config-container');
+        const grid = container?.querySelector('#models-grid');
+        if (grid) {
+            grid.innerHTML = '<div class="alert error">❌ Error al cargar modelos. Verifica que el backend esté corriendo.</div>';
+        }
+    }
+}
+
+async function loadStats() {
+    try {
+        const res = await fetch(`${API_URL}/ml/training/data-stats`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const stats = await res.json();
+        displayStats(stats);
+    } catch (err) {
+        console.error('Error loading stats:', err);
+        const container = document.querySelector('.ia-config-container');
+        const grid = container?.querySelector('#stats-grid');
+        if (grid) {
+            grid.innerHTML = '<div class="alert error">❌ Error al cargar estadísticas</div>';
+        }
+    }
+}
+
+function displayStats(stats: any) {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const grid = container.querySelector('#stats-grid');
+    if (!grid) return;
+    
+    const tasks = stats.tasks?.with_actual_hours || 0;
+    grid.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value">${tasks}</div>
+            <div class="stat-label">Tareas con horas reales</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">${stats.users || 0}</div>
+            <div class="stat-label">Usuarios activos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔮</div>
+            <div class="stat-value">${stats.predictions || 0}</div>
+            <div class="stat-label">Predicciones guardadas</div>
+        </div>
+    `;
+}
+
+function displayModels() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const grid = container.querySelector('#models-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = models.map(m => `
+        <div class="model-card ${m.needs_retraining ? 'needs-training' : ''}">
+            <div class="model-header">
+                <span class="status-badge ${m.status}">${m.status === 'activo' ? '🟢' : '🔴'}</span>
+                <h3>${m.name}</h3>
+                <span class="version">${m.version}</span>
+            </div>
+            <div class="model-metrics">
+                <div><strong>Precisión:</strong> ${m.precision?.toFixed(2) || 'N/A'}%</div>
+                <div><strong>Algoritmo:</strong> ${m.algorithm || 'N/A'}</div>
+                <div><strong>Muestras:</strong> ${m.samples_count || 0}</div>
+            </div>
+            ${m.days_since_training !== null ? `
+                <p class="training-date">Último entrenamiento: hace ${m.days_since_training} días</p>
+            ` : '<p class="training-date">Nunca entrenado</p>'}
+            ${m.needs_retraining ? '<div class="alert warning">⚠️ Reentrenamiento recomendado</div>' : ''}
+            <button class="btn btn-primary btn-sm" onclick="window.iaConfig.retrain(${m.id})">
+                🔄 Reentrenar
+            </button>
+        </div>
+    `).join('');
+}
+
+// RETRAIN VIEW
+function renderRetrainView() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const view = container.querySelector('#retrain-view');
+    if (!view) return;
+    
+    view.innerHTML = `
+        <h3>🔄 Reentrenamiento Manual</h3>
+        <div class="form-group">
+            <label>Modelo:</label>
+            <select id="model-select" class="form-control">
+                <option value="">-- Selecciona un modelo --</option>
+                ${models.map(m => `<option value="${m.id}">${m.name} (${m.type})</option>`).join('')}
+            </select>
+        </div>
+        <div id="retrain-config" style="display:none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Desde (opcional):</label>
+                    <input type="date" id="date-from" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Hasta (opcional):</label>
+                    <input type="date" id="date-to" class="form-control">
+                </div>
+            </div>
+            <div id="dataset-preview"></div>
+            <button id="gen-dataset-btn" class="btn btn-secondary">📊 Generar Dataset</button>
+            <button id="start-train-btn" class="btn btn-primary" disabled>🚀 Iniciar Entrenamiento</button>
+        </div>
+        <div id="training-progress" style="display:none;"></div>
+    `;
+
+    view.querySelector('#model-select')?.addEventListener('change', (e: any) => {
+        if (e.target.value) {
+            selectedModel = models.find(m => m.id === parseInt(e.target.value));
+            const config = view.querySelector('#retrain-config') as HTMLElement;
+            if (config) config.style.display = 'block';
+        }
+    });
+
+    view.querySelector('#gen-dataset-btn')?.addEventListener('click', generateDataset);
+    view.querySelector('#start-train-btn')?.addEventListener('click', startTraining);
+}
+
+async function generateDataset() {
+    if (!selectedModel) return;
+    
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const dateFrom = (container.querySelector('#date-from') as HTMLInputElement)?.value || '';
+    const dateTo = (container.querySelector('#date-to') as HTMLInputElement)?.value || '';
+
+    try {
+        const res = await fetch(`${API_URL}/ml/training/datasets/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                model_type: selectedModel.type,
+                date_from: dateFrom || null,
+                date_to: dateTo || null
+            })
+        });
+
+        const data = await res.json();
+        const preview = container.querySelector('#dataset-preview');
+        if (preview) {
+            preview.innerHTML = `
+                <div class="alert success">
+                    ✅ Dataset generado: ${data.dataset.record_count} registros
+                </div>
+            `;
+        }
+
+        const btn = container.querySelector('#start-train-btn') as HTMLButtonElement;
+        if (btn) {
+            btn.disabled = false;
+            btn.dataset.datasetId = data.dataset.id;
+        }
+    } catch (err: any) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function startTraining() {
+    if (!selectedModel) return;
+    
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const btn = container.querySelector('#start-train-btn') as HTMLButtonElement;
+    if (!btn) return;
+
+    try {
+        const res = await fetch(`${API_URL}/ml/training/jobs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                model_id: selectedModel.id,
+                dataset_id: btn.dataset.datasetId ? parseInt(btn.dataset.datasetId) : null
+            })
+        });
+
+        const data = await res.json();
+        showProgress(data.job.id);
+    } catch (err: any) {
+        alert('Error: ' + err.message);
+    }
+}
+
+function showProgress(jobId: number) {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const progress = container.querySelector('#training-progress') as HTMLElement;
+    if (!progress) return;
+    
+    progress.style.display = 'block';
+    progress.innerHTML = `
+        <div class="progress-card">
+            <h4>⏳ Job #${jobId} en progreso</h4>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+            </div>
+            <div id="progress-info">0% - Inicializando...</div>
+            <div id="progress-result"></div>
+        </div>
+    `;
+
+    pollingInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`${API_URL}/ml/training/jobs/${jobId}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            const job = await res.json();
+            
+            const fill = container.querySelector('#progress-fill') as HTMLElement;
+            const info = container.querySelector('#progress-info');
+            if (fill && info) {
+                fill.style.width = `${job.progress}%`;
+                info.textContent = `${job.progress}% - ${job.current_step || 'Procesando...'}`;
+            }
+
+            if (job.status === 'completed' || job.status === 'failed') {
+                if (pollingInterval) clearInterval(pollingInterval);
+                showResult(job);
+            }
+        } catch (err) {
+            console.error('Polling error:', err);
+        }
+    }, 2000);
+}
+
+function showResult(job: any) {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const result = container.querySelector('#progress-result');
+    if (!result) return;
+    
+    if (job.status === 'completed') {
+        const comp = job.metrics?.comparison;
+        result.innerHTML = `
+            <div class="alert ${comp?.should_replace ? 'success' : 'warning'}">
+                ${comp?.should_replace ? '✅' : '⚠️'} ${comp?.reason || 'Completado'}
+            </div>
+        `;
+    } else {
+        result.innerHTML = `<div class="alert error">❌ ${job.error_message}</div>`;
+    }
+}
+
+// SCHEDULES VIEW
+function renderSchedulesView() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const view = container.querySelector('#schedules-view');
+    if (!view) return;
+    
+    view.innerHTML = `
+        <div class="schedules-header">
+            <h3>⏰ Programaciones</h3>
+            <button id="new-schedule-btn" class="btn btn-primary">➕ Nueva</button>
+        </div>
+        <div id="schedules-list" class="loading">Cargando...</div>
+        <div id="schedule-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Nueva Programación</h3>
+                <div class="form-group">
+                    <label>Modelo:</label>
+                    <select id="sched-type" class="form-control">
+                        <option value="risk">Riesgo</option>
+                        <option value="duration">Duración</option>
+                        <option value="recommendation">Recomendación</option>
+                        <option value="simulation">Simulación</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Frecuencia:</label>
+                    <select id="sched-pattern" class="form-control">
+                        <option value="daily">Diaria</option>
+                        <option value="weekly">Semanal</option>
+                        <option value="monthly">Mensual</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hora:</label>
+                    <input type="time" id="sched-time" class="form-control" value="02:00">
+                </div>
+                <button id="save-sched-btn" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    `;
+
+    loadSchedules();
+
+    view.querySelector('#new-schedule-btn')?.addEventListener('click', () => {
+        const modal = view.querySelector('#schedule-modal') as HTMLElement;
+        if (modal) modal.style.display = 'flex';
+    });
+    
+    view.querySelector('.close')?.addEventListener('click', () => {
+        const modal = view.querySelector('#schedule-modal') as HTMLElement;
+        if (modal) modal.style.display = 'none';
+    });
+
+    view.querySelector('#save-sched-btn')?.addEventListener('click', saveSchedule);
+}
+
+async function loadSchedules() {
+    try {
+        const res = await fetch(`${API_URL}/ml/training/schedules`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        schedules = await res.json();
+        displaySchedules();
+    } catch (err) {
+        console.error('Error loading schedules:', err);
+        const container = document.querySelector('.ia-config-container');
+        const list = container?.querySelector('#schedules-list');
+        if (list) {
+            list.innerHTML = '<div class="alert error">❌ Error al cargar programaciones</div>';
+        }
+    }
+}
+
+function displaySchedules() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const list = container.querySelector('#schedules-list');
+    if (!list) return;
+    
+    if (schedules.length === 0) {
+        list.innerHTML = '<div class="empty">No hay programaciones</div>';
+        return;
+    }
+    list.innerHTML = schedules.map(s => `
+        <div class="schedule-card">
+            <h4>${s.model_type}</h4>
+            <p>📅 ${s.recurrence_pattern} a las ${s.scheduled_time}</p>
+            ${s.last_execution ? `<p>Última: ${new Date(s.last_execution).toLocaleString()}</p>` : ''}
+            <button class="btn btn-sm btn-danger" onclick="window.iaConfig.deleteSched(${s.id})">
+                🗑️ Eliminar
+            </button>
+        </div>
+    `).join('');
+}
+
+async function saveSchedule() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const type = (container.querySelector('#sched-type') as HTMLSelectElement)?.value;
+    const pattern = (container.querySelector('#sched-pattern') as HTMLSelectElement)?.value;
+    const time = (container.querySelector('#sched-time') as HTMLInputElement)?.value;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    try {
+        await fetch(`${API_URL}/ml/training/schedules`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                model_type: type,
+                scheduled_date: tomorrow.toISOString().split('T')[0],
+                scheduled_time: time,
+                is_recurring: true,
+                recurrence_pattern: pattern
+            })
+        });
+
+        const modal = container.querySelector('#schedule-modal') as HTMLElement;
+        if (modal) modal.style.display = 'none';
+        loadSchedules();
+    } catch (err) {
+        alert('Error guardando programación');
+    }
+}
+
+async function deleteSchedule(id: number) {
+    if (!confirm('¿Eliminar programación?')) return;
+    try {
+        await fetch(`${API_URL}/ml/training/schedules/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        loadSchedules();
+    } catch (err) {
+        alert('Error eliminando');
+    }
+}
+
+// HISTORY VIEW
+function renderHistoryView() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const view = container.querySelector('#history-view');
+    if (!view) return;
+    
+    view.innerHTML = `
+        <h3>📜 Historial de Entrenamientos</h3>
+        <div id="history-list" class="loading">Cargando...</div>
+    `;
+    loadHistory();
+}
+
+async function loadHistory() {
+    try {
+        const res = await fetch(`${API_URL}/ml/training/jobs?limit=20`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        jobs = await res.json();
+        displayHistory();
+    } catch (err) {
+        console.error('Error loading history:', err);
+        const container = document.querySelector('.ia-config-container');
+        const list = container?.querySelector('#history-list');
+        if (list) {
+            list.innerHTML = '<div class="alert error">❌ Error al cargar historial</div>';
+        }
+    }
+}
+
+function displayHistory() {
+    const container = document.querySelector('.ia-config-container');
+    if (!container) return;
+    
+    const list = container.querySelector('#history-list');
+    if (!list) return;
+    
+    if (jobs.length === 0) {
+        list.innerHTML = '<div class="empty">No hay entrenamientos</div>';
+        return;
+    }
+    list.innerHTML = jobs.map(j => `
+        <div class="job-card status-${j.status}">
+            <div class="job-header">
+                <span>#${j.id}</span>
+                <span class="status">${j.status}</span>
+            </div>
+            <h4>${j.job_name}</h4>
+            <p>${new Date(j.created_at).toLocaleString()}</p>
+            ${j.duration_seconds ? `<p>Duración: ${j.duration_seconds}s</p>` : ''}
+            ${j.error_message ? `<p class="error">${j.error_message}</p>` : ''}
+        </div>
+    `).join('');
+}
+
+// Global functions
+(window as any).iaConfig = {
+    retrain: (id: number) => {
+        selectedModel = models.find(m => m.id === id);
+        switchView('retrain');
+        const select = document.querySelector('#model-select') as HTMLSelectElement;
+        const config = document.querySelector('#retrain-config') as HTMLElement;
+        if (select && config) {
+            select.value = id.toString();
+            config.style.display = 'block';
+        }
+    },
+    deleteSched: deleteSchedule
+};
