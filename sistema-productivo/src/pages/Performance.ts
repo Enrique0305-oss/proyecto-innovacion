@@ -197,8 +197,8 @@ async function loadCollaborators(): Promise<void> {
     if (!response.ok) throw new Error('Error al cargar colaboradores');
 
     const data = await response.json();
-    console.log('📊 Datos recibidos del backend:', data);
-    console.log('📊 Total de usuarios:', data.users?.length || 0);
+    console.log(' Datos recibidos del backend:', data);
+    console.log(' Total de usuarios:', data.users?.length || 0);
     
     const tbody = document.getElementById('collaboratorsTableBody');
     
@@ -386,7 +386,7 @@ function displayHybridResults(userId: string, data: any): void {
     <div class="detail-content-grid">
       <!-- CAPA 1: Métricas SQL -->
       <div class="detail-section">
-        <h4>📊 CAPA 1: Métricas (SQL + Agregación)</h4>
+        <h4> CAPA 1: Métricas (SQL + Agregación)</h4>
         <p class="section-subtitle">Datos calculados desde la base de datos</p>
         
         <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px;">
@@ -471,7 +471,7 @@ function displayHybridResults(userId: string, data: any): void {
             <circle cx="10" cy="10" r="8" fill="#00bcd4"/>
             <path d="M10 6v4M10 13v1" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          🤖 CAPA 2: Predicción ML (CatBoost)
+           CAPA 2: Predicción ML (CatBoost)
         </h4>
         <p class="section-subtitle">Modelo XGBoost con AUC-ROC: 1.0</p>
 
@@ -487,15 +487,15 @@ function displayHybridResults(userId: string, data: any): void {
 
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
           <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
-            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;">⚠️ En Riesgo</div>
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;"> En Riesgo</div>
             <div style="font-size: 20px; font-weight: 700; color: #ff9800;">${prediccion.probabilidades.at_risk}%</div>
           </div>
           <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
-            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;">⭐ Alto Desemp.</div>
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;"> Alto Desemp.</div>
             <div style="font-size: 20px; font-weight: 700; color: #28a745;">${prediccion.probabilidades.high_performer}%</div>
           </div>
           <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
-            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;">🚨 Riesgo Renuncia</div>
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 5px;"> Riesgo Renuncia</div>
             <div style="font-size: 20px; font-weight: 700; color: #dc3545;">${prediccion.probabilidades.resignation_risk}%</div>
           </div>
         </div>
@@ -522,7 +522,7 @@ function displayHybridResults(userId: string, data: any): void {
 
     <!-- CAPA 3: Motor de Reglas -->
     <div class="detail-section" style="grid-column: 1 / -1;">
-      <h4>⚙️ CAPA 3: Motor de Recomendaciones (Rule-Based System)</h4>
+      <h4> CAPA 3: Motor de Recomendaciones (Rule-Based System)</h4>
       <p class="section-subtitle">Acciones sugeridas según reglas de negocio</p>
 
       ${recomendaciones.length === 0 ? `

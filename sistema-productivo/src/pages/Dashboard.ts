@@ -70,7 +70,7 @@ export function DashboardPage(): string {
             <div class="chart-card">
               <div class="chart-header">
                 <h3>Tareas por Área</h3>
-                <p class="chart-subtitle">Distribución de tareas por departamento</p>
+                <p class="chart-subtitle">Distribución de tareas por área</p>
               </div>
               <div class="chart-content">
                 <div class="bar-chart" id="areaChart">
@@ -156,28 +156,28 @@ export function DashboardPage(): string {
               </div>
               <div class="insights-list">
                 <div class="insight-item warning">
-                  <div class="insight-icon">⚠️</div>
+                  <div class="insight-icon"></div>
                   <div class="insight-content">
                     <div class="insight-title">Predicción de Riesgo</div>
                     <div class="insight-text">3 tareas con alto riesgo de retraso detectadas</div>
                   </div>
                 </div>
                 <div class="insight-item success">
-                  <div class="insight-icon">📈</div>
+                  <div class="insight-icon"></div>
                   <div class="insight-content">
                     <div class="insight-title">Oportunidad de Mejora</div>
                     <div class="insight-text">Reasignar tareas en Operaciones podría aumentar 15% la eficiencia</div>
                   </div>
                 </div>
                 <div class="insight-item danger">
-                  <div class="insight-icon">🎯</div>
+                  <div class="insight-icon"></div>
                   <div class="insight-content">
                     <div class="insight-title">Cuello de Botella</div>
                     <div class="insight-text">Proceso de aprobación identificado como punto crítico</div>
                   </div>
                 </div>
                 <div class="insight-item info">
-                  <div class="insight-icon">✨</div>
+                  <div class="insight-icon"></div>
                   <div class="insight-content">
                     <div class="insight-title">Recomendación Activa</div>
                     <div class="insight-text">Luis García ideal para 5 tareas prioritarias</div>

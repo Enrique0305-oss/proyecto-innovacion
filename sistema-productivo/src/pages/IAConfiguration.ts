@@ -18,15 +18,15 @@ export function IAConfigurationPage(): string {
             <main class="dashboard-main">
                 <div class="ia-config-container">
                     <div class="ia-config-header">
-                        <h1>⚙️ Configuración de Inteligencia Artificial</h1>
+                        <h1>Configuración de Inteligencia Artificial</h1>
                         <p>Gestiona el reentrenamiento y programación de modelos de Machine Learning</p>
                     </div>
 
                     <div class="ia-config-tabs">
-                        <button class="tab-btn active" data-view="models">📊 Estado de Modelos</button>
-                        <button class="tab-btn" data-view="retrain">🔄 Reentrenamiento</button>
-                        <button class="tab-btn" data-view="schedules">⏰ Programaciones</button>
-                        <button class="tab-btn" data-view="history">📜 Historial</button>
+                        <button class="tab-btn active" data-view="models">Estado de Modelos</button>
+                        <button class="tab-btn" data-view="retrain">Reentrenamiento</button>
+                        <button class="tab-btn" data-view="schedules">Programaciones</button>
+                        <button class="tab-btn" data-view="history">Historial</button>
                     </div>
 
                     <div class="ia-config-content">
@@ -87,10 +87,10 @@ function renderModelsView() {
     
     view.innerHTML = `
         <div class="stats-section">
-            <h3>📊 Datos Disponibles</h3>
-            <div id="stats-grid" class="loading">Cargando...</div>
+            <h3>Datos Disponibles</h3>
+            <div id="stats-grid"></div>
         </div>
-        <div id="models-grid" class="loading">Cargando modelos...</div>
+        <div id="models-grid"></div>
     `;
     loadModels();
     loadStats();
@@ -108,7 +108,7 @@ async function loadModels() {
         const container = document.querySelector('.ia-config-container');
         const grid = container?.querySelector('#models-grid');
         if (grid) {
-            grid.innerHTML = '<div class="alert error">❌ Error al cargar modelos. Verifica que el backend esté corriendo.</div>';
+            grid.innerHTML = '<div class="alert error">Error al cargar modelos. Verifica que el backend esté corriendo.</div>';
         }
     }
 }
@@ -125,7 +125,7 @@ async function loadStats() {
         const container = document.querySelector('.ia-config-container');
         const grid = container?.querySelector('#stats-grid');
         if (grid) {
-            grid.innerHTML = '<div class="alert error">❌ Error al cargar estadísticas</div>';
+            grid.innerHTML = '<div class="alert error">Error al cargar estadísticas</div>';
         }
     }
 }
@@ -140,17 +140,17 @@ function displayStats(stats: any) {
     const tasks = stats.tasks?.with_actual_hours || 0;
     grid.innerHTML = `
         <div class="stat-card">
-            <div class="stat-icon">📝</div>
+            <div class="stat-icon"></div>
             <div class="stat-value">${tasks}</div>
             <div class="stat-label">Tareas con horas reales</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon">👥</div>
+            <div class="stat-icon"></div>
             <div class="stat-value">${stats.users || 0}</div>
             <div class="stat-label">Usuarios activos</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon">🔮</div>
+            <div class="stat-icon"></div>
             <div class="stat-value">${stats.predictions || 0}</div>
             <div class="stat-label">Predicciones guardadas</div>
         </div>
@@ -167,7 +167,7 @@ function displayModels() {
     grid.innerHTML = models.map(m => `
         <div class="model-card ${m.needs_retraining ? 'needs-training' : ''}">
             <div class="model-header">
-                <span class="status-badge ${m.status}">${m.status === 'activo' ? '🟢' : '🔴'}</span>
+                <span class="status-badge ${m.status}">${m.status === 'activo' ? 'Activo' : 'Inactivo'}</span>
                 <h3>${m.name}</h3>
                 <span class="version">${m.version}</span>
             </div>
@@ -179,9 +179,9 @@ function displayModels() {
             ${m.days_since_training !== null ? `
                 <p class="training-date">Último entrenamiento: hace ${m.days_since_training} días</p>
             ` : '<p class="training-date">Nunca entrenado</p>'}
-            ${m.needs_retraining ? '<div class="alert warning">⚠️ Reentrenamiento recomendado</div>' : ''}
+            ${m.needs_retraining ? '<div class="alert warning">Reentrenamiento recomendado</div>' : ''}
             <button class="btn btn-primary btn-sm" onclick="window.iaConfig.retrain(${m.id})">
-                🔄 Reentrenar
+                Reentrenar
             </button>
         </div>
     `).join('');
@@ -196,7 +196,7 @@ function renderRetrainView() {
     if (!view) return;
     
     view.innerHTML = `
-        <h3>🔄 Reentrenamiento Manual</h3>
+        <h3>Reentrenamiento Manual</h3>
         <div class="form-group">
             <label>Modelo:</label>
             <select id="model-select" class="form-control">
@@ -216,8 +216,8 @@ function renderRetrainView() {
                 </div>
             </div>
             <div id="dataset-preview"></div>
-            <button id="gen-dataset-btn" class="btn btn-secondary">📊 Generar Dataset</button>
-            <button id="start-train-btn" class="btn btn-primary" disabled>🚀 Iniciar Entrenamiento</button>
+            <button id="gen-dataset-btn" class="btn btn-secondary">Generar Dataset</button>
+            <button id="start-train-btn" class="btn btn-primary" disabled>Iniciar Entrenamiento</button>
         </div>
         <div id="training-progress" style="display:none;"></div>
     `;
@@ -262,7 +262,7 @@ async function generateDataset() {
         if (preview) {
             preview.innerHTML = `
                 <div class="alert success">
-                    ✅ Dataset generado: ${data.dataset.record_count} registros
+                    Dataset generado: ${data.dataset.record_count} registros
                 </div>
             `;
         }
@@ -316,7 +316,7 @@ function showProgress(jobId: number) {
     progress.style.display = 'block';
     progress.innerHTML = `
         <div class="progress-card">
-            <h4>⏳ Job #${jobId} en progreso</h4>
+            <h4>Job #${jobId} en progreso</h4>
             <div class="progress-bar">
                 <div class="progress-fill" id="progress-fill" style="width:0%"></div>
             </div>
@@ -360,11 +360,11 @@ function showResult(job: any) {
         const comp = job.metrics?.comparison;
         result.innerHTML = `
             <div class="alert ${comp?.should_replace ? 'success' : 'warning'}">
-                ${comp?.should_replace ? '✅' : '⚠️'} ${comp?.reason || 'Completado'}
+                ${comp?.reason || 'Completado'}
             </div>
         `;
     } else {
-        result.innerHTML = `<div class="alert error">❌ ${job.error_message}</div>`;
+        result.innerHTML = `<div class="alert error">${job.error_message}</div>`;
     }
 }
 
@@ -378,10 +378,10 @@ function renderSchedulesView() {
     
     view.innerHTML = `
         <div class="schedules-header">
-            <h3>⏰ Programaciones</h3>
-            <button id="new-schedule-btn" class="btn btn-primary">➕ Nueva</button>
+            <h3>Programaciones</h3>
+            <button id="new-schedule-btn" class="btn btn-primary">Nueva Programación</button>
         </div>
-        <div id="schedules-list" class="loading">Cargando...</div>
+        <div id="schedules-list"></div>
         <div id="schedule-modal" class="modal" style="display:none;">
             <div class="modal-content">
                 <span class="close">&times;</span>
@@ -439,7 +439,7 @@ async function loadSchedules() {
         const container = document.querySelector('.ia-config-container');
         const list = container?.querySelector('#schedules-list');
         if (list) {
-            list.innerHTML = '<div class="alert error">❌ Error al cargar programaciones</div>';
+            list.innerHTML = '<div class="alert error">Error al cargar programaciones</div>';
         }
     }
 }
@@ -458,10 +458,10 @@ function displaySchedules() {
     list.innerHTML = schedules.map(s => `
         <div class="schedule-card">
             <h4>${s.model_type}</h4>
-            <p>📅 ${s.recurrence_pattern} a las ${s.scheduled_time}</p>
-            ${s.last_execution ? `<p>Última: ${new Date(s.last_execution).toLocaleString()}</p>` : ''}
+            <p>${s.recurrence_pattern} a las ${s.scheduled_time}</p>
+            ${s.last_execution ? `<p>Última ejecución: ${new Date(s.last_execution).toLocaleString()}</p>` : ''}
             <button class="btn btn-sm btn-danger" onclick="window.iaConfig.deleteSched(${s.id})">
-                🗑️ Eliminar
+                Eliminar
             </button>
         </div>
     `).join('');
@@ -524,8 +524,8 @@ function renderHistoryView() {
     if (!view) return;
     
     view.innerHTML = `
-        <h3>📜 Historial de Entrenamientos</h3>
-        <div id="history-list" class="loading">Cargando...</div>
+        <h3>Historial de Entrenamientos</h3>
+        <div id="history-list"></div>
     `;
     loadHistory();
 }
@@ -542,7 +542,7 @@ async function loadHistory() {
         const container = document.querySelector('.ia-config-container');
         const list = container?.querySelector('#history-list');
         if (list) {
-            list.innerHTML = '<div class="alert error">❌ Error al cargar historial</div>';
+            list.innerHTML = '<div class="alert error">Error al cargar historial</div>';
         }
     }
 }

@@ -199,8 +199,8 @@ function displayResults(
     <div class="duration-results" style="padding: 20px;">
       ${taskName || taskArea ? `
       <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; border-left: 4px solid #00bcd4; margin-bottom: 20px;">
-        ${taskName ? `<div style="font-size: 16px; font-weight: 600; color: #00838f; margin-bottom: 5px;">📋 ${taskName}</div>` : ''}
-        ${taskArea ? `<div style="font-size: 14px; color: #0097a7;">🏢 Área: <strong>${taskArea}</strong></div>` : ''}
+        ${taskName ? `<div style="font-size: 16px; font-weight: 600; color: #00838f; margin-bottom: 5px;"> ${taskName}</div>` : ''}
+        ${taskArea ? `<div style="font-size: 14px; color: #0097a7;"> Área: <strong>${taskArea}</strong></div>` : ''}
       </div>
       ` : ''}
       <!-- Cards de Resultado -->
@@ -229,7 +229,7 @@ function displayResults(
 
       <!-- Intervalo de Confianza -->
       <div style="background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #e0e0e0;">
-        <h4 style="margin: 0 0 8px 0; color: #495057; font-size: 16px;">📊 Intervalo de Confianza (80%)</h4>
+        <h4 style="margin: 0 0 8px 0; color: #495057; font-size: 16px;"> Intervalo de Confianza (80%)</h4>
         <p style="margin: 0 0 20px 0; color: #6c757d; font-size: 14px;">Rango esperado de duración según modelo CatBoost</p>
         
         <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
@@ -244,14 +244,14 @@ function displayResults(
 
         <div style="margin-top: 20px; padding: 15px; background: rgba(33, 150, 243, 0.1); border-radius: 8px; border-left: 4px solid #2196f3;">
           <p style="margin: 0; color: #1565c0; font-size: 14px;">
-            💡 Con 80% de confianza, la tarea tomará entre <strong>${minDuration.toFixed(1)} y ${maxDuration.toFixed(1)} días</strong>. Se recomienda planificar con <strong>${meanDuration.toFixed(1)} días</strong>.
+             Con 80% de confianza, la tarea tomará entre <strong>${minDuration.toFixed(1)} y ${maxDuration.toFixed(1)} días</strong>. Se recomienda planificar con <strong>${meanDuration.toFixed(1)} días</strong>.
           </p>
         </div>
       </div>
 
       ${factors.length > 0 ? `
       <div style="background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #e0e0e0;">
-        <h4 style="margin: 0 0 15px 0; color: #495057; font-size: 16px;">🎯 Factores que Afectan la Duración</h4>
+        <h4 style="margin: 0 0 15px 0; color: #495057; font-size: 16px;"> Factores que Afectan la Duración</h4>
         <ul style="margin: 0; padding: 0 0 0 20px; color: #6c757d; font-size: 14px; line-height: 2;">
           ${factors.map(factor => `<li>${factor}</li>`).join('')}
         </ul>
@@ -260,7 +260,7 @@ function displayResults(
 
       <!-- Información del Modelo -->
       <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e0e0e0;">
-        <h4 style="margin: 0 0 10px 0; color: #495057; font-size: 15px;">ℹ️ Información del Modelo</h4>
+        <h4 style="margin: 0 0 10px 0; color: #495057; font-size: 15px;"> Información del Modelo</h4>
         <p style="margin: 0; color: #6c757d; font-size: 14px; line-height: 1.6;">
           ${mode === 'personalizado' ? 'Predicción personalizada basada en las métricas del colaborador seleccionado.' : 'Predicción genérica basada en datos históricos del sistema.'}
         </p>
@@ -268,7 +268,7 @@ function displayResults(
 
       <!-- Recomendaciones -->
       <div style="background: #fff; padding: 25px; border-radius: 12px; border: 1px solid #e0e0e0;">
-        <h4 style="margin: 0 0 20px 0; color: #495057; font-size: 16px;">💡 Recomendaciones</h4>
+        <h4 style="margin: 0 0 20px 0; color: #495057; font-size: 16px;"> Recomendaciones</h4>
         
         <div style="display: flex; gap: 15px; margin-bottom: 15px; padding: 15px; background: rgba(0, 188, 212, 0.05); border-left: 4px solid #00bcd4; border-radius: 4px;">
           <div style="background: #00bcd4; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">1</div>

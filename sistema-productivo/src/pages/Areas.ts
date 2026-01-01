@@ -57,7 +57,7 @@ export function AreasPage(): string {
             </div>
             <div class="module-info">
               <h2 class="module-title">Gestión de Áreas</h2>
-              <p class="module-description">Administración de áreas y departamentos</p>
+              <p class="module-description">Administración de áreas </p>
             </div>
             ${canManageAreas() ? `
             <button class="btn-primary" id="btnNewArea">
@@ -75,7 +75,7 @@ export function AreasPage(): string {
             <div class="stat-card">
               <div class="stat-label">Total Áreas</div>
               <div class="stat-value" id="totalAreas">--</div>
-              <div class="stat-description">Departamentos activos</div>
+              <div class="stat-description">Áreas activas</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Áreas Activas</div>

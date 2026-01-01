@@ -209,7 +209,7 @@ function displayResults(risk: any, recommendations: any[], resultCard: HTMLEleme
       ` : ''}
 
       <!-- Tabla de Recomendaciones -->
-      <h3 style="margin: 0 0 20px 0; color: #495057; font-size: 18px;">🎯 Candidatos Recomendados (${recommendations.length})</h3>
+      <h3 style="margin: 0 0 20px 0; color: #495057; font-size: 18px;"> Candidatos Recomendados (${recommendations.length})</h3>
       
       ${recommendations.length > 0 ? `
       <div style="overflow-x: auto;">
@@ -229,7 +229,7 @@ function displayResults(risk: any, recommendations: any[], resultCard: HTMLEleme
               <tr style="border-bottom: 1px solid #e0e0e0; ${index === 0 ? 'background: rgba(102, 126, 234, 0.05);' : ''}">
                 <td style="padding: 15px;">
                   <div style="display: flex; align-items: center; gap: 10px;">
-                    ${index === 0 ? '<span style="font-size: 20px;">⭐</span>' : ''}
+                    ${index === 0 ? '<span style="font-size: 20px;"></span>' : ''}
                     <strong style="color: #495057;">${rec.person_name}</strong>
                   </div>
                 </td>
@@ -262,11 +262,11 @@ function displayResults(risk: any, recommendations: any[], resultCard: HTMLEleme
 
       <!-- Recomendaciones -->
       <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
-        <h4 style="margin: 0 0 15px 0; color: #495057; font-size: 16px;">💡 Recomendaciones</h4>
+        <h4 style="margin: 0 0 15px 0; color: #495057; font-size: 16px;"> Recomendaciones</h4>
         
         ${recommendations[0] ? `
         <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
-          <strong style="color: #667eea;">✅ Mejor candidato:</strong> 
+          <strong style="color: #667eea;"> Mejor candidato:</strong> 
           <span style="color: #495057;">${recommendations[0].person_name} (${recommendations[0].score.toFixed(0)}% match, ${recommendations[0].predicted_duration_days ? recommendations[0].predicted_duration_days.toFixed(1) + ' días estimados' : 'duración N/A'})</span>
         </div>
         ` : ''}
