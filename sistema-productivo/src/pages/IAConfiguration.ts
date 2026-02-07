@@ -90,8 +90,9 @@ function renderModelsView() {
             <h3>Datos Disponibles</h3>
             <div id="stats-grid"></div>
         </div>
-        <div id="models-grid"></div>
+        <div id="models-grid" style="display: grid !important; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important; gap: 20px !important; width: 100% !important;"></div>
     `;
+    
     loadModels();
     loadStats();
 }
@@ -161,28 +162,47 @@ function displayModels() {
     const container = document.querySelector('.ia-config-container');
     if (!container) return;
     
-    const grid = container.querySelector('#models-grid');
+    const grid = container.querySelector('#models-grid') as HTMLElement;
     if (!grid) return;
     
     grid.innerHTML = models.map(m => `
-        <div class="model-card ${m.needs_retraining ? 'needs-training' : ''}">
-            <div class="model-header">
-                <span class="status-badge ${m.status}">${m.status === 'activo' ? 'Activo' : 'Inactivo'}</span>
-                <h3>${m.name}</h3>
-                <span class="version">${m.version}</span>
+        <div class="model-card-horizontal ${m.needs_retraining ? 'needs-training' : ''}">
+            <div class="model-main-info">
+                <div class="model-title-section">
+                    <span class="status-indicator ${m.status}"></span>
+                    <div>
+                        <h3>${m.name}</h3>
+                        <span class="model-type">${m.type}</span>
+                    </div>
+                </div>
+                <span class="version-badge">${m.version}</span>
             </div>
-            <div class="model-metrics">
-                <div><strong>Precisión:</strong> ${m.precision?.toFixed(2) || 'N/A'}%</div>
-                <div><strong>Algoritmo:</strong> ${m.algorithm || 'N/A'}</div>
-                <div><strong>Muestras:</strong> ${m.samples_count || 0}</div>
+            
+            <div class="model-details-row">
+                <div class="detail-item">
+                    <span class="detail-label">Algoritmo</span>
+                    <span class="detail-value">${m.algorithm || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Precisión</span>
+                    <span class="detail-value">${m.precision?.toFixed(2) || 'N/A'}%</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Muestras</span>
+                    <span class="detail-value">${m.samples_count || 0}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Último entrenamiento</span>
+                    <span class="detail-value">${m.days_since_training !== null ? `Hace ${m.days_since_training} días` : 'Nunca'}</span>
+                </div>
             </div>
-            ${m.days_since_training !== null ? `
-                <p class="training-date">Último entrenamiento: hace ${m.days_since_training} días</p>
-            ` : '<p class="training-date">Nunca entrenado</p>'}
-            ${m.needs_retraining ? '<div class="alert warning">Reentrenamiento recomendado</div>' : ''}
-            <button class="btn btn-primary btn-sm" onclick="window.iaConfig.retrain(${m.id})">
-                Reentrenar
-            </button>
+            
+            <div class="model-actions">
+                ${m.needs_retraining ? '<span class="retrain-badge">Reentrenamiento recomendado</span>' : ''}
+                <button class="btn btn-primary btn-sm" onclick="window.iaConfig.retrain(${m.id})">
+                    Reentrenar Modelo
+                </button>
+            </div>
         </div>
     `).join('');
 }
