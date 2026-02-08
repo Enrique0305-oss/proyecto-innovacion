@@ -174,6 +174,7 @@ def create_task():
             assigned_to=data.get('assigned_to'),
             complexity_score=data.get('complexity_score'),
             estimated_hours=data.get('estimated_hours'),
+            project_id=data.get('project_id'),  # Agregar project_id
             created_by=None  # Sin usuario por ahora
         )
         
@@ -274,9 +275,25 @@ def update_task(id):
             task.priority = data['priority']
         if 'status' in data:
             task.status = data['status']
-            # Si se completa, registrar fecha
-            if data['status'] == 'completada' and not task.completed_at:
-                task.completed_at = datetime.utcnow()
+            
+            # Si se completa, calcular días calendario reales
+            if data['status'] == 'completada':
+                # Registrar fecha de completado si no existe
+                if not task.completed_at:
+                    task.completed_at = datetime.utcnow()
+                
+                # Calcular actual_hours (guardamos días calendario en este campo)
+                if task.actual_hours is None:
+                    # Usar start_date si existe, sino created_at
+                    start_time = task.start_date if task.start_date else task.created_at
+                    if start_time:
+                        time_diff = task.completed_at - start_time
+                        # Guardar días calendario (24 horas = 1 día)
+                        task.actual_hours = time_diff.total_seconds() / 86400  # 86400 segundos = 1 día
+            
+            # Si se inicia por primera vez, registrar start_date
+            if data['status'] == 'en_progreso' and not task.start_date:
+                task.start_date = datetime.utcnow()
         if 'area' in data:
             task.area = data['area']
         if 'assigned_to' in data:

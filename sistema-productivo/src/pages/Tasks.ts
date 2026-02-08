@@ -856,7 +856,7 @@ async function showProjectTasks(projectId: string) {
     
     // Obtener todas las tareas del proyecto
     const tasksResponse = await api.getTasks();
-    allTasks = (tasksResponse.tasks || []).filter((task: any) => task.project_id === projectId);
+    allTasks = (tasksResponse.tasks || []).filter((task: any) => String(task.project_id) === String(projectId));
     
     // Cambiar a vista de tareas
     const projectsView = document.getElementById('projectsView');
@@ -1122,7 +1122,8 @@ async function loadTasks() {
   
   try {
     const response = await api.getTasks();
-    allTasks = (response.tasks || []).filter((task: any) => task.project_id === currentProjectId);
+    // Filtrar tareas del proyecto actual (comparación suave para evitar problemas de tipo)
+    allTasks = (response.tasks || []).filter((task: any) => String(task.project_id) === String(currentProjectId));
     renderTasks(allTasks);
   } catch (error) {
     console.error('Error al cargar tareas:', error);
@@ -1178,9 +1179,10 @@ function renderTasks(tasks: any[]) {
     const riskClass = task.complexity_score >= 7 ? 'risk-high' : task.complexity_score >= 4 ? 'risk-medium' : 'risk-low';
     const riskLabel = task.complexity_score >= 7 ? 'Alto' : task.complexity_score >= 4 ? 'Medio' : 'Bajo';
     
-    // Convertir horas a días (8 horas = 1 día)
+    // Convertir horas a días para tiempo estimado (8 horas = 1 día laboral)
     const estimatedDays = task.estimated_hours ? (task.estimated_hours / 8).toFixed(1) : null;
-    const actualDays = task.actual_hours ? (task.actual_hours / 8).toFixed(1) : null;
+    // actual_hours contiene días calendario reales (no dividir)
+    const actualDays = task.actual_hours ? task.actual_hours.toFixed(1) : null;
     
     return `
       <tr data-task-id="${task.id}">
@@ -1195,7 +1197,15 @@ function renderTasks(tasks: any[]) {
         <td>${task.assigned_name || task.assigned_to || 'Sin asignar'}</td>
         <td>${estimatedDays ? estimatedDays + ' días' : '-'}</td>
         <td>${actualDays ? actualDays + ' días' : '-'}</td>
-        <td><span class="status-badge ${status.class}">${status.label}</span></td>
+        <td>
+          <select class="status-select ${status.class}" data-task-id="${task.id}" data-current-status="${task.status}">
+            <option value="pendiente" ${task.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+            <option value="en_progreso" ${task.status === 'en_progreso' ? 'selected' : ''}>En Progreso</option>
+            <option value="completada" ${task.status === 'completada' ? 'selected' : ''}>Completada</option>
+            <option value="retrasada" ${task.status === 'retrasada' ? 'selected' : ''}>Retrasada</option>
+            <option value="cancelada" ${task.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
+          </select>
+        </td>
         <td><span class="risk-badge ${riskClass}">${riskLabel}</span></td>
         <td class="actions-cell">
           <button class="btn-icon btn-view" data-task-id="${task.id}" title="Ver detalles">
@@ -1256,6 +1266,38 @@ function renderTasks(tasks: any[]) {
       });
     });
   }
+
+  // Event listeners para cambio de estado
+  document.querySelectorAll('.status-select').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const selectEl = e.currentTarget as HTMLSelectElement;
+      const taskId = selectEl.dataset.taskId;
+      const newStatus = selectEl.value;
+      const oldStatus = selectEl.dataset.currentStatus;
+      
+      try {
+        await api.updateTask(parseInt(taskId || '0'), { status: newStatus });
+        selectEl.dataset.currentStatus = newStatus;
+        
+        // Actualizar clase visual del select
+        selectEl.className = 'status-select';
+        if (newStatus === 'pendiente') selectEl.classList.add('status-pending');
+        else if (newStatus === 'en_progreso') selectEl.classList.add('status-progress');
+        else if (newStatus === 'completada') selectEl.classList.add('status-completed');
+        else if (newStatus === 'retrasada' || newStatus === 'cancelada') selectEl.classList.add('status-blocked');
+        
+        // Recargar tareas para actualizar actual_hours si se completó
+        if (newStatus === 'completada') {
+          await loadTasks();
+        }
+      } catch (error: any) {
+        console.error('Error al cambiar estado:', error);
+        alert(error.message || 'Error al cambiar el estado de la tarea');
+        // Revertir el select al estado anterior
+        selectEl.value = oldStatus || 'pendiente';
+      }
+    });
+  });
 }
 
 // Función para agregar event listeners a los botones de acción
