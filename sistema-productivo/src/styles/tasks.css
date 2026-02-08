@@ -576,7 +576,7 @@
 .detail-card {
   display: flex;
   gap: var(--spacing-md);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
@@ -594,14 +594,19 @@
 
 .detail-icon {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   border-radius: var(--border-radius);
   color: white;
+}
+
+.detail-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .detail-content {

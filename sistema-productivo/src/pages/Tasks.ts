@@ -1190,7 +1190,6 @@ function renderTasks(tasks: any[]) {
         <td class="task-name-cell">
           <div class="task-name">
             <strong>${task.title}</strong>
-            ${task.description ? `<span class="task-subtitle">${task.description.substring(0, 50)}${task.description.length > 50 ? '...' : ''}</span>` : ''}
           </div>
         </td>
         <td>${task.area || '-'}</td>
@@ -1389,12 +1388,17 @@ function showTaskDetails(task: any) {
   const detailActual = document.getElementById('detailActual');
 
   if (detailId) detailId.textContent = `#${task.id}`;
-  if (detailTitle) detailTitle.textContent = task.title;
-  if (detailArea) detailArea.textContent = task.area;
+  if (detailTitle) detailTitle.textContent = task.title || '-';
+  if (detailArea) detailArea.textContent = task.area || '-';
   if (detailDescription) detailDescription.textContent = task.description || 'Sin descripción';
-  if (detailAssigned) detailAssigned.textContent = task.assigned;
-  if (detailEstimated) detailEstimated.textContent = task.estimated;
-  if (detailActual) detailActual.textContent = task.actual;
+  if (detailAssigned) detailAssigned.textContent = task.assigned_name || task.assigned_to || 'Sin asignar';
+  
+  // Formatear tiempos en días
+  const estimatedDays = task.estimated_hours ? (task.estimated_hours / 8).toFixed(1) : null;
+  const actualDays = task.actual_hours ? task.actual_hours.toFixed(1) : null;
+  
+  if (detailEstimated) detailEstimated.textContent = estimatedDays ? `${estimatedDays} días` : '-';
+  if (detailActual) detailActual.textContent = actualDays ? `${actualDays} días` : '-';
   
   // Formatear estado con badge
   if (detailStatus) {
