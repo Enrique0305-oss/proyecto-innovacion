@@ -131,6 +131,7 @@ def recommend_person(task_data):
             
             scored_candidates.append({
                 'person_id': person.id,
+                'email': person.email,  # Agregar email para coincidir con el select del frontend
                 'name': person.full_name or 'Sin nombre',
                 'score': score,
                 'score_percentage': round(score * 100, 2),
@@ -440,6 +441,7 @@ def recommend_person_heuristic(task_data):
             
             scored_candidates.append({
                 'person_id': person.id,
+                'email': person.email,  # Agregar email para coincidir con el select del frontend
                 'name': person.full_name or 'Sin nombre',
                 'score': score / 100,  # Normalizar a 0-1
                 'score_percentage': round(score, 2),

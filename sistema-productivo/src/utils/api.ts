@@ -419,6 +419,33 @@ class ApiService {
 
     return response.json();
   }
+
+  /**
+   * Recomendar persona para tarea usando IA
+   */
+  async recommendPersonForTask(taskData: {
+    area: string;
+    title?: string;
+    task_type?: string;
+    complexity_level?: string;
+    duration_est?: number;
+    skills_required?: string[];
+    top_n?: number;
+  }) {
+    const response = await fetch(`${API_URL}/ml/recomendar-persona`, {
+      method: 'POST',
+      mode: 'cors',
+      headers: this.getHeaders(),
+      body: JSON.stringify(taskData),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Error al obtener recomendación');
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiService();

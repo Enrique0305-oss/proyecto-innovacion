@@ -237,7 +237,22 @@ export function TasksPage(): string {
                   <input type="number" id="taskEstimatedDays" placeholder="10" min="1" />
                 </div>
                 <div class="form-group">
-                  <label>Responsable</label>
+                  <label for="taskResponsible">
+                    Responsable
+                    <button type="button" class="btn-ai-recommendation" id="getAIRecommendationBtn" title="Obtener recomendación de IA">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                      </svg>
+                      Obtener Recomendación IA
+                    </button>
+                  </label>
+                  
+                  <!-- Panel de Recomendaciones IA -->
+                  <div id="aiRecommendationsPanel" class="ai-recommendations-panel" style="display: none;">
+                    <!-- Las recomendaciones se cargarán dinámicamente -->
+                  </div>
+                  
                   <select id="taskResponsible">
                     <option value="">Cargando usuarios...</option>
                   </select>
@@ -1486,6 +1501,208 @@ function resetTaskModal() {
 
   const form = document.getElementById('taskForm') as HTMLFormElement;
   form?.reset();
+  
+  // Limpiar panel de recomendaciones IA
+  const aiPanel = document.getElementById('aiRecommendationsPanel');
+  if (aiPanel) {
+    aiPanel.style.display = 'none';
+    aiPanel.innerHTML = '';
+  }
+}
+
+// Función para obtener recomendación de IA
+async function handleGetAIRecommendation() {
+  const titleInput = document.getElementById('taskTitle') as HTMLInputElement;
+  const areaSelect = document.getElementById('taskArea') as HTMLSelectElement;
+  const descriptionInput = document.getElementById('taskDescription') as HTMLTextAreaElement;
+  const estimatedDaysInput = document.getElementById('taskEstimatedDays') as HTMLInputElement;
+  
+  const title = titleInput?.value;
+  const area = areaSelect?.value;
+  const description = descriptionInput?.value || '';
+  const estimatedDays = estimatedDaysInput?.value ? parseFloat(estimatedDaysInput.value) : 0;
+  
+  // Validar que se haya seleccionado un área (mínimo requerido)
+  if (!area) {
+    alert('Por favor selecciona un área primero para obtener recomendaciones');
+    areaSelect?.focus();
+    return;
+  }
+  
+  const btn = document.getElementById('getAIRecommendationBtn') as HTMLButtonElement;
+  const aiPanel = document.getElementById('aiRecommendationsPanel');
+  
+  if (!btn || !aiPanel) return;
+  
+  // Mostrar estado de carga
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinning">
+      <path d="M21 12a9 9 0 11-6.219-8.56"/>
+    </svg>
+    Consultando IA...
+  `;
+  
+  try {
+    // Preparar datos para el modelo
+    const taskData = {
+      area: area,
+      title: title || '',
+      task_type: 'Desarrollo', // Por defecto
+      complexity_level: 'Media', // Por defecto
+      duration_est: estimatedDays || 10,
+      skills_required: [], // Podría extraerse del título/descripción en el futuro
+      top_n: 3 // Top 3 recomendaciones
+    };
+    
+    console.log('Solicitando recomendación con:', taskData);
+    
+    const response = await api.recommendPersonForTask(taskData);
+    
+    console.log('Recomendaciones recibidas:', response);
+    
+    // Mostrar recomendaciones
+    displayAIRecommendations(response.recommendations || []);
+    
+  } catch (error: any) {
+    console.error('Error al obtener recomendación:', error);
+    alert('Error al obtener recomendación de IA: ' + error.message);
+    aiPanel.style.display = 'none';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+// Función para mostrar las recomendaciones en el panel
+function displayAIRecommendations(recommendations: any[]) {
+  const aiPanel = document.getElementById('aiRecommendationsPanel');
+  if (!aiPanel) return;
+  
+  if (!recommendations || recommendations.length === 0) {
+    aiPanel.innerHTML = `
+      <div class="ai-no-recommendations">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p>No se encontraron recomendaciones para esta tarea.</p>
+        <p style="font-size: 0.9em; color: var(--text-secondary);">
+          Intenta seleccionar un área diferente o ajustar los parámetros.
+        </p>
+      </div>
+    `;
+    aiPanel.style.display = 'block';
+    return;
+  }
+  
+  aiPanel.innerHTML = `
+    <div class="ai-recommendations-header">
+      <svg class="ai-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <circle cx="15.5" cy="8.5" r="1.5"/>
+        <path d="M9 16h6"/>
+      </svg>
+      <h4>Recomendaciones IA</h4>
+      <span class="ai-count">${recommendations.length} candidatos</span>
+    </div>
+    <div class="ai-recommendations-list">
+      ${recommendations.map((rec, index) => `
+        <div class="recommendation-card ${index === 0 ? 'top-recommendation' : ''}">
+          <div class="rec-header">
+            <div class="rec-title">
+              <div class="rec-rank-badge rank-${index + 1}">${index + 1}</div>
+              <div class="rec-info">
+                <strong class="rec-name">${rec.name}</strong>
+                <span class="rec-area">${rec.area || 'Sin área'}</span>
+              </div>
+            </div>
+            <div class="rec-score-badge">
+              <span class="rec-score">${rec.score_percentage.toFixed(0)}%</span>
+              <span class="rec-label">Match</span>
+            </div>
+          </div>
+          
+          <div class="rec-stats">
+            <div class="rec-stat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+              </svg>
+              <span>${rec.experience_years || 0} años exp.</span>
+            </div>
+            <div class="rec-stat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <span>${rec.performance_index ? rec.performance_index.toFixed(0) : 0}% rendimiento</span>
+            </div>
+            <div class="rec-stat ${rec.current_workload <= 2 ? 'stat-good' : rec.current_workload >= 5 ? 'stat-warning' : ''}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              <span>${rec.availability}</span>
+            </div>
+          </div>
+          
+          ${rec.reasons && rec.reasons.length > 0 ? `
+            <div class="rec-reasons">
+              ${rec.reasons.slice(0, 3).map((reason: string) => `
+                <span class="reason-chip">${reason}</span>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          <button 
+            class="btn-select-recommendation" 
+            data-person-email="${rec.email}"
+            data-person-name="${rec.name}"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Seleccionar
+          </button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  aiPanel.style.display = 'block';
+  
+  // Agregar event listeners a los botones de selección
+  aiPanel.querySelectorAll('.btn-select-recommendation').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const button = e.currentTarget as HTMLElement;
+      const personEmail = button.dataset.personEmail;
+      const personName = button.dataset.personName;
+      
+      // Seleccionar en el dropdown
+      const responsibleSelect = document.getElementById('taskResponsible') as HTMLSelectElement;
+      if (responsibleSelect && personEmail) {
+        responsibleSelect.value = personEmail;
+        
+        // Ocultar panel de recomendaciones
+        aiPanel.style.display = 'none';
+        
+        // Mostrar confirmación visual
+        const notification = document.createElement('div');
+        notification.className = 'ai-selection-notification';
+        notification.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          ${personName} seleccionado
+        `;
+        button.parentElement?.appendChild(notification);
+        
+        setTimeout(() => notification.remove(), 2000);
+      }
+    });
+  });
 }
 
 // Función para cargar gerentes/administradores para el select de responsable
@@ -1920,6 +2137,12 @@ export function initTasks() {
       closeModal();
     }
   });
+
+  // Botón de recomendación IA
+  const getAIRecommendationBtn = document.getElementById('getAIRecommendationBtn');
+  if (getAIRecommendationBtn) {
+    getAIRecommendationBtn.addEventListener('click', handleGetAIRecommendation);
+  }
 
   // Modal de detalles handlers
   const detailsModal = document.getElementById('taskDetailsModal');
