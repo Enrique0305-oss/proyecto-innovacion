@@ -90,7 +90,7 @@ RANDOM_STATE = 42
 np.random.seed(RANDOM_STATE)
 
 # Directorios
-ARTIFACT_DIR = Path("artifacts/modelo4_fixed")
+ARTIFACT_DIR = Path("ml/models/attrition")
 REPORT_DIR = Path("reports/modelo4_fixed")
 ARTIFACT_DIR.mkdir(exist_ok=True, parents=True)
 REPORT_DIR.mkdir(exist_ok=True, parents=True)
@@ -100,7 +100,7 @@ HOST = os.getenv("MYSQL_HOST", "localhost")
 PORT = int(os.getenv("MYSQL_PORT", "3306"))
 DB = os.getenv("MYSQL_DB", "sb")
 USER = os.getenv("MYSQL_USER", "root")
-PASS = os.getenv("MYSQL_PASS", "12345")
+PASS = os.getenv("MYSQL_PASS", "")
 
 # ============================================================================
 # UTILIDADES

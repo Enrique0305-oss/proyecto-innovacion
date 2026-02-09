@@ -6,10 +6,7 @@ import { Sidebar, initSidebar } from '../components/Sidebar';
 import { API_URL } from '../utils/api';
 
 let models: any[] = [];
-let jobs: any[] = [];
-let schedules: any[] = [];
 let selectedModel: any = null;
-let pollingInterval: number | null = null;
 
 export function IAConfigurationPage(): string {
     return `
@@ -24,16 +21,12 @@ export function IAConfigurationPage(): string {
 
                     <div class="ia-config-tabs">
                         <button class="tab-btn active" data-view="models">Estado de Modelos</button>
-                        <button class="tab-btn" data-view="retrain">Reentrenamiento</button>
-                        <button class="tab-btn" data-view="schedules">Programaciones</button>
-                        <button class="tab-btn" data-view="history">Historial</button>
+                        <button class="tab-btn" data-view="retrain">Reentrenar Modelos</button>
                     </div>
 
                     <div class="ia-config-content">
                         <div id="models-view" class="view-section active"></div>
                         <div id="retrain-view" class="view-section"></div>
-                        <div id="schedules-view" class="view-section"></div>
-                        <div id="history-view" class="view-section"></div>
                     </div>
                 </div>
             </main>
@@ -49,9 +42,9 @@ export function initIAConfiguration() {
     
     // Tab switching
     container.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             const view = btn.getAttribute('data-view');
-            switchView(view as string);
+            await switchView(view as string);
         });
     });
     
@@ -59,7 +52,7 @@ export function initIAConfiguration() {
     renderModelsView();
 }
 
-function switchView(view: string) {
+async function switchView(view: string) {
     const container = document.querySelector('.ia-config-container');
     if (!container) return;
     
@@ -71,9 +64,7 @@ function switchView(view: string) {
 
     switch(view) {
         case 'models': renderModelsView(); break;
-        case 'retrain': renderRetrainView(); break;
-        case 'schedules': renderSchedulesView(); break;
-        case 'history': renderHistoryView(); break;
+        case 'retrain': await renderRetrainView(); break;
     }
 }
 
@@ -199,7 +190,7 @@ function displayModels() {
             
             <div class="model-actions">
                 ${m.needs_retraining ? '<span class="retrain-badge">Reentrenamiento recomendado</span>' : ''}
-                <button class="btn btn-primary btn-sm" onclick="window.iaConfig.retrain(${m.id})">
+                <button class="btn btn-primary btn-sm" onclick="window.iaConfig.retrain('${m.type}', '${m.name}')">
                     Reentrenar Modelo
                 </button>
             </div>
@@ -208,401 +199,372 @@ function displayModels() {
 }
 
 // RETRAIN VIEW
-function renderRetrainView() {
+async function renderRetrainView() {
     const container = document.querySelector('.ia-config-container');
     if (!container) return;
     
     const view = container.querySelector('#retrain-view');
     if (!view) return;
     
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Renderizar estructura inicial
     view.innerHTML = `
-        <h3>Reentrenamiento Manual</h3>
+        <h3>Reentrenamiento de Modelos</h3>
+        <p class="description">Ejecuta el entrenamiento inmediatamente y programa entrenamientos automáticos futuros.</p>
+        
         <div class="form-group">
-            <label>Modelo:</label>
+            <label>Modelo a entrenar:</label>
             <select id="model-select" class="form-control">
-                <option value="">-- Selecciona un modelo --</option>
-                ${models.map(m => `<option value="${m.id}">${m.name} (${m.type})</option>`).join('')}
+                <option value="">⏳ Cargando modelos...</option>
             </select>
         </div>
+        
         <div id="retrain-config" style="display:none;">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Desde (opcional):</label>
-                    <input type="date" id="date-from" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label>Hasta (opcional):</label>
-                    <input type="date" id="date-to" class="form-control">
-                </div>
+            <div class="form-group">
+                <label>Día de entrenamiento:</label>
+                <input type="date" id="training-date" class="form-control" value="${today}">
+                <small class="help-text">Si seleccionas hoy: entrena inmediatamente. Si seleccionas una fecha futura: solo programa. Los entrenamientos se repetirán en este día del mes según la frecuencia.</small>
             </div>
-            <div id="dataset-preview"></div>
-            <button id="gen-dataset-btn" class="btn btn-secondary">Generar Dataset</button>
-            <button id="start-train-btn" class="btn btn-primary" disabled>Iniciar Entrenamiento</button>
+            
+            <div class="form-group">
+                <label>Frecuencia de reentrenamiento automático:</label>
+                <select id="frequency-select" class="form-control">
+                    <option value="quarterly">Cada 3 meses</option>
+                    <option value="biannual">Cada 6 meses</option>
+                    <option value="annual">Cada año</option>
+                </select>
+                <small id="frequency-hint" class="help-text"></small>
+            </div>
+            
+            <button id="start-train-btn" class="btn btn-primary btn-lg">
+                🚀 Ejecutar Entrenamiento
+            </button>
+            
+            <div class="history-section">
+                <h4>📋 Historial de Entrenamientos</h4>
+                <div id="model-history-list"></div>
+            </div>
         </div>
-        <div id="training-progress" style="display:none;"></div>
+        
+        <div id="training-result" style="display:none;"></div>
     `;
 
+    // Event listeners
     view.querySelector('#model-select')?.addEventListener('change', (e: any) => {
         if (e.target.value) {
-            selectedModel = models.find(m => m.id === parseInt(e.target.value));
+            const option = e.target.options[e.target.selectedIndex];
+            selectedModel = {
+                type: e.target.value,
+                name: option.dataset.name
+            };
             const config = view.querySelector('#retrain-config') as HTMLElement;
             if (config) config.style.display = 'block';
+            updateFrequencyHint();
+            loadModelHistory(selectedModel.type);
         }
     });
-
-    view.querySelector('#gen-dataset-btn')?.addEventListener('click', generateDataset);
-    view.querySelector('#start-train-btn')?.addEventListener('click', startTraining);
-}
-
-async function generateDataset() {
-    if (!selectedModel) return;
     
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
+    view.querySelector('#training-date')?.addEventListener('change', updateFrequencyHint);
+    view.querySelector('#frequency-select')?.addEventListener('change', updateFrequencyHint);
+    view.querySelector('#start-train-btn')?.addEventListener('click', executeTraining);
     
-    const dateFrom = (container.querySelector('#date-from') as HTMLInputElement)?.value || '';
-    const dateTo = (container.querySelector('#date-to') as HTMLInputElement)?.value || '';
-
-    try {
-        const res = await fetch(`${API_URL}/ml/training/datasets/generate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                model_type: selectedModel.type,
-                date_from: dateFrom || null,
-                date_to: dateTo || null
-            })
-        });
-
-        const data = await res.json();
-        const preview = container.querySelector('#dataset-preview');
-        if (preview) {
-            preview.innerHTML = `
-                <div class="alert success">
-                    Dataset generado: ${data.dataset.record_count} registros
-                </div>
+    // Cargar modelos si no están cargados
+    if (models.length === 0) {
+        await loadModels();
+    }
+    
+    // Actualizar dropdown con modelos
+    const modelSelect = view.querySelector('#model-select') as HTMLSelectElement;
+    if (modelSelect) {
+        if (models.length > 0) {
+            modelSelect.innerHTML = `
+                <option value="">-- Selecciona un modelo --</option>
+                ${models.map(m => `<option value="${m.type}" data-name="${m.name}">${m.name}</option>`).join('')}
             `;
+        } else {
+            modelSelect.innerHTML = '<option value="">❌ Error al cargar modelos</option>';
         }
-
-        const btn = container.querySelector('#start-train-btn') as HTMLButtonElement;
-        if (btn) {
-            btn.disabled = false;
-            btn.dataset.datasetId = data.dataset.id;
-        }
-    } catch (err: any) {
-        alert('Error: ' + err.message);
     }
 }
 
-async function startTraining() {
-    if (!selectedModel) return;
+function updateFrequencyHint() {
+    const dateInput = document.querySelector('#training-date') as HTMLInputElement;
+    const frequencySelect = document.querySelector('#frequency-select') as HTMLSelectElement;
+    const hint = document.querySelector('#frequency-hint');
     
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
+    if (!dateInput || !frequencySelect || !hint) return;
     
-    const btn = container.querySelector('#start-train-btn') as HTMLButtonElement;
-    if (!btn) return;
+    const selectedDate = new Date(dateInput.value);
+    const day = selectedDate.getDate();
+    const monthName = selectedDate.toLocaleDateString('es', {month: 'long'});
+    const frequency = frequencySelect.value;
+    
+    const hints: Record<string, string> = {
+        'quarterly': `📅 El modelo se reentrenará automáticamente el día ${day} de cada 3 meses (ej: ${day}/02, ${day}/05, ${day}/08, ${day}/11)`,
+        'biannual': `📅 El modelo se reentrenará automáticamente el día ${day} de cada 6 meses (ej: ${day}/02, ${day}/08)`,
+        'annual': `📅 El modelo se reentrenará automáticamente el día ${day} de ${monthName} cada año`
+    };
+    
+    hint.textContent = hints[frequency] || '';
+}
 
-    try {
-        const res = await fetch(`${API_URL}/ml/training/jobs`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                model_id: selectedModel.id,
-                dataset_id: btn.dataset.datasetId ? parseInt(btn.dataset.datasetId) : null
-            })
-        });
-
-        const data = await res.json();
-        showProgress(data.job.id);
-    } catch (err: any) {
-        alert('Error: ' + err.message);
+async function executeTraining() {
+    const modelType = selectedModel?.type;
+    const modelName = selectedModel?.name;
+    const trainingDate = (document.querySelector('#training-date') as HTMLInputElement)?.value;
+    const frequency = (document.querySelector('#frequency-select') as HTMLSelectElement)?.value;
+    
+    if (!modelType || !trainingDate || !frequency) {
+        alert('Por favor completa todos los campos');
+        return;
     }
-}
-
-function showProgress(jobId: number) {
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
     
-    const progress = container.querySelector('#training-progress') as HTMLElement;
-    if (!progress) return;
+    const btn = document.querySelector('#start-train-btn') as HTMLButtonElement;
+    const resultDiv = document.querySelector('#training-result') as HTMLElement;
     
-    progress.style.display = 'block';
-    progress.innerHTML = `
-        <div class="progress-card">
-            <h4>Job #${jobId} en progreso</h4>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-fill" style="width:0%"></div>
-            </div>
-            <div id="progress-info">0% - Inicializando...</div>
-            <div id="progress-result"></div>
-        </div>
-    `;
-
-    pollingInterval = setInterval(async () => {
-        try {
-            const res = await fetch(`${API_URL}/ml/training/jobs/${jobId}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            const job = await res.json();
-            
-            const fill = container.querySelector('#progress-fill') as HTMLElement;
-            const info = container.querySelector('#progress-info');
-            if (fill && info) {
-                fill.style.width = `${job.progress}%`;
-                info.textContent = `${job.progress}% - ${job.current_step || 'Procesando...'}`;
-            }
-
-            if (job.status === 'completed' || job.status === 'failed') {
-                if (pollingInterval) clearInterval(pollingInterval);
-                showResult(job);
-            }
-        } catch (err) {
-            console.error('Polling error:', err);
-        }
-    }, 2000);
-}
-
-function showResult(job: any) {
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
+    // Determinar si es hoy o futuro
+    const selectedDate = new Date(trainingDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
     
-    const result = container.querySelector('#progress-result');
-    if (!result) return;
+    const isToday = selectedDate <= today;
     
-    if (job.status === 'completed') {
-        const comp = job.metrics?.comparison;
-        result.innerHTML = `
-            <div class="alert ${comp?.should_replace ? 'success' : 'warning'}">
-                ${comp?.reason || 'Completado'}
+    // Confirmar acción con mensaje apropiado
+    let confirmMsg = '';
+    if (isToday) {
+        confirmMsg = `¿Iniciar entrenamiento del modelo "${modelName}" AHORA?\n\nEl entrenamiento se ejecutará inmediatamente (puede tardar varios minutos).\nLuego se programarán entrenamientos automáticos según la frecuencia seleccionada.`;
+    } else {
+        const dateStr = selectedDate.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
+        confirmMsg = `¿Programar entrenamiento del modelo "${modelName}"?\n\nEl primer entrenamiento se ejecutará el ${dateStr}.\nLuego se repetirá automáticamente según la frecuencia seleccionada.\n\nNOTA: No se entrenará ahora, solo se programará.`;
+    }
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    // Deshabilitar botón
+    btn.disabled = true;
+    resultDiv.style.display = 'block';
+    
+    if (isToday) {
+        btn.textContent = '⏳ Entrenando modelo (puede tardar varios minutos)...';
+        resultDiv.innerHTML = `
+            <div class="alert info">
+                <div class="loading-spinner"></div>
+                <p><strong>Ejecutando entrenamiento...</strong></p>
+                <p>El modelo está siendo entrenado con los datos más recientes de la base de datos.</p>
+                <p>Esto puede tardar entre 5 y 15 minutos dependiendo del modelo.</p>
+                <p>Por favor, no cierres esta ventana.</p>
             </div>
         `;
     } else {
-        result.innerHTML = `<div class="alert error">${job.error_message}</div>`;
-    }
-}
-
-// SCHEDULES VIEW
-function renderSchedulesView() {
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
-    
-    const view = container.querySelector('#schedules-view');
-    if (!view) return;
-    
-    view.innerHTML = `
-        <div class="schedules-header">
-            <h3>Programaciones</h3>
-            <button id="new-schedule-btn" class="btn btn-primary">Nueva Programación</button>
-        </div>
-        <div id="schedules-list"></div>
-        <div id="schedule-modal" class="modal" style="display:none;">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h3>Nueva Programación</h3>
-                <div class="form-group">
-                    <label>Modelo:</label>
-                    <select id="sched-type" class="form-control">
-                        <option value="risk">Riesgo</option>
-                        <option value="duration">Duración</option>
-                        <option value="recommendation">Recomendación</option>
-                        <option value="simulation">Simulación</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Frecuencia:</label>
-                    <select id="sched-pattern" class="form-control">
-                        <option value="daily">Diaria</option>
-                        <option value="weekly">Semanal</option>
-                        <option value="monthly">Mensual</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Hora:</label>
-                    <input type="time" id="sched-time" class="form-control" value="02:00">
-                </div>
-                <button id="save-sched-btn" class="btn btn-primary">Guardar</button>
+        btn.textContent = '⏳ Programando entrenamiento...';
+        resultDiv.innerHTML = `
+            <div class="alert info">
+                <div class="loading-spinner"></div>
+                <p><strong>Programando entrenamiento futuro...</strong></p>
+                <p>El modelo se entrenará automáticamente en la fecha programada.</p>
             </div>
-        </div>
-    `;
-
-    loadSchedules();
-
-    view.querySelector('#new-schedule-btn')?.addEventListener('click', () => {
-        const modal = view.querySelector('#schedule-modal') as HTMLElement;
-        if (modal) modal.style.display = 'flex';
-    });
-    
-    view.querySelector('.close')?.addEventListener('click', () => {
-        const modal = view.querySelector('#schedule-modal') as HTMLElement;
-        if (modal) modal.style.display = 'none';
-    });
-
-    view.querySelector('#save-sched-btn')?.addEventListener('click', saveSchedule);
-}
-
-async function loadSchedules() {
-    try {
-        const res = await fetch(`${API_URL}/ml/training/schedules`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        schedules = await res.json();
-        displaySchedules();
-    } catch (err) {
-        console.error('Error loading schedules:', err);
-        const container = document.querySelector('.ia-config-container');
-        const list = container?.querySelector('#schedules-list');
-        if (list) {
-            list.innerHTML = '<div class="alert error">Error al cargar programaciones</div>';
-        }
+        `;
     }
-}
-
-function displaySchedules() {
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
     
-    const list = container.querySelector('#schedules-list');
-    if (!list) return;
-    
-    if (schedules.length === 0) {
-        list.innerHTML = '<div class="empty">No hay programaciones</div>';
-        return;
-    }
-    list.innerHTML = schedules.map(s => `
-        <div class="schedule-card">
-            <h4>${s.model_type}</h4>
-            <p>${s.recurrence_pattern} a las ${s.scheduled_time}</p>
-            ${s.last_execution ? `<p>Última ejecución: ${new Date(s.last_execution).toLocaleString()}</p>` : ''}
-            <button class="btn btn-sm btn-danger" onclick="window.iaConfig.deleteSched(${s.id})">
-                Eliminar
-            </button>
-        </div>
-    `).join('');
-}
-
-async function saveSchedule() {
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
-    
-    const type = (container.querySelector('#sched-type') as HTMLSelectElement)?.value;
-    const pattern = (container.querySelector('#sched-pattern') as HTMLSelectElement)?.value;
-    const time = (container.querySelector('#sched-time') as HTMLInputElement)?.value;
-
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     try {
-        await fetch(`${API_URL}/ml/training/schedules`, {
+        const response = await fetch(`${API_URL}/ml/training/execute`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
             body: JSON.stringify({
-                model_type: type,
-                scheduled_date: tomorrow.toISOString().split('T')[0],
-                scheduled_time: time,
-                is_recurring: true,
-                recurrence_pattern: pattern
+                model_type: modelType,
+                training_date: trainingDate,
+                frequency: frequency
             })
         });
-
-        const modal = container.querySelector('#schedule-modal') as HTMLElement;
-        if (modal) modal.style.display = 'none';
-        loadSchedules();
-    } catch (err) {
-        alert('Error guardando programación');
-    }
-}
-
-async function deleteSchedule(id: number) {
-    if (!confirm('¿Eliminar programación?')) return;
-    try {
-        await fetch(`${API_URL}/ml/training/schedules/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        loadSchedules();
-    } catch (err) {
-        alert('Error eliminando');
-    }
-}
-
-// HISTORY VIEW
-function renderHistoryView() {
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
-    
-    const view = container.querySelector('#history-view');
-    if (!view) return;
-    
-    view.innerHTML = `
-        <h3>Historial de Entrenamientos</h3>
-        <div id="history-list"></div>
-    `;
-    loadHistory();
-}
-
-async function loadHistory() {
-    try {
-        const res = await fetch(`${API_URL}/ml/training/jobs?limit=20`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        jobs = await res.json();
-        displayHistory();
-    } catch (err) {
-        console.error('Error loading history:', err);
-        const container = document.querySelector('.ia-config-container');
-        const list = container?.querySelector('#history-list');
-        if (list) {
-            list.innerHTML = '<div class="alert error">Error al cargar historial</div>';
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Diferenciar entre ejecución inmediata y programación futura
+            if (data.executed_now) {
+                // Se ejecutó ahora
+                resultDiv.innerHTML = `
+                    <div class="alert success">
+                        <h4>✅ Entrenamiento Completado Exitosamente</h4>
+                        <p><strong>Modelo:</strong> ${modelName}</p>
+                        <p><strong>Estado:</strong> ${data.message}</p>
+                        <p><strong>Próxima ejecución automática:</strong> ${data.next_execution}</p>
+                        <p><strong>ID del job programado:</strong> ${data.scheduled_job_id}</p>
+                    </div>
+                `;
+            } else {
+                // Solo se programó
+                resultDiv.innerHTML = `
+                    <div class="alert success">
+                        <h4>📅 Entrenamiento Programado</h4>
+                        <p><strong>Modelo:</strong> ${modelName}</p>
+                        <p><strong>Estado:</strong> ${data.message}</p>
+                        <p><strong>Primera ejecución:</strong> ${data.next_run || 'Programado'}</p>
+                        <p><strong>Frecuencia:</strong> ${data.next_execution}</p>
+                        <p><strong>ID del job:</strong> ${data.scheduled_job_id}</p>
+                        <p class="help-text">El entrenamiento se ejecutará automáticamente en la fecha programada.</p>
+                    </div>
+                `;
+            }
+            
+            // Solo recargar y cambiar vista si se ejecutó ahora
+            if (data.executed_now) {
+                // Recargar modelos para actualizar métricas
+                await loadModels();
+                
+                // Recargar historial del modelo
+                loadModelHistory(modelType);
+                
+                // Cambiar a vista de modelos después de 5 segundos
+                setTimeout(async () => {
+                    await switchView('models');
+                }, 5000);
+            } else {
+                // Solo recargar historial si fue programado
+                loadModelHistory(modelType);
+                
+                // Ocultar mensaje después de 8 segundos
+                setTimeout(() => {
+                    resultDiv.style.display = 'none';
+                }, 8000);
+            }
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert error">
+                    <h4>❌ Error en el Entrenamiento</h4>
+                    <p>${data.error || data.message}</p>
+                    <p>Por favor, revisa los logs del backend para más detalles.</p>
+                </div>
+            `;
         }
+    } catch (err: any) {
+        resultDiv.innerHTML = `
+            <div class="alert error">
+                <h4>❌ Error de Conexión</h4>
+                <p>No se pudo conectar con el servidor.</p>
+                <p>${err.message || err}</p>
+            </div>
+        `;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 Ejecutar Entrenamiento';
     }
 }
 
-function displayHistory() {
-    const container = document.querySelector('.ia-config-container');
-    if (!container) return;
+// ============================================================================
+// HISTORIAL DE ENTRENAMIENTOS
+// ============================================================================
+
+async function loadModelHistory(modelType: string) {
+    const historyList = document.querySelector('#model-history-list');
+    if (!historyList) return;
     
-    const list = container.querySelector('#history-list');
-    if (!list) return;
+    historyList.innerHTML = '<div class="loading">📊 Cargando historial...</div>';
+    
+    try {
+        const response = await fetch(`${API_URL}/ml/training/jobs?model_type=${modelType}&limit=10`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar historial');
+        }
+        
+        const jobs = await response.json();
+        displayModelHistory(jobs);
+    } catch (err) {
+        console.error('Error loading model history:', err);
+        historyList.innerHTML = '<div class="alert error">Error al cargar historial de entrenamientos</div>';
+    }
+}
+
+function displayModelHistory(jobs: any[]) {
+    const historyList = document.querySelector('#model-history-list');
+    if (!historyList) return;
     
     if (jobs.length === 0) {
-        list.innerHTML = '<div class="empty">No hay entrenamientos</div>';
+        historyList.innerHTML = '<div class="empty-state">📭 No hay entrenamientos registrados para este modelo</div>';
         return;
     }
-    list.innerHTML = jobs.map(j => `
-        <div class="job-card status-${j.status}">
-            <div class="job-header">
-                <span>#${j.id}</span>
-                <span class="status">${j.status}</span>
-            </div>
-            <h4>${j.job_name}</h4>
-            <p>${new Date(j.created_at).toLocaleString()}</p>
-            ${j.duration_seconds ? `<p>Duración: ${j.duration_seconds}s</p>` : ''}
-            ${j.error_message ? `<p class="error">${j.error_message}</p>` : ''}
-        </div>
-    `).join('');
+    
+    historyList.innerHTML = `
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Duración</th>
+                    <th>Resultado</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${jobs.map(job => {
+                    const date = new Date(job.created_at);
+                    const dateStr = date.toLocaleDateString('es', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    const statusClass = job.status === 'completed' ? 'success' : 
+                                       job.status === 'failed' ? 'error' : 
+                                       job.status === 'running' ? 'running' : 'pending';
+                    
+                    const statusIcon = job.status === 'completed' ? '✅' : 
+                                      job.status === 'failed' ? '❌' : 
+                                      job.status === 'running' ? '⏳' : '⏸️';
+                    
+                    const duration = job.duration_seconds ? 
+                        `${Math.floor(job.duration_seconds / 60)}m ${job.duration_seconds % 60}s` : 
+                        '-';
+                    
+                    const result = job.status === 'completed' ? 
+                        (job.metrics?.comparison?.reason || 'Completado') :
+                        job.status === 'failed' ? 
+                        (job.error_message || 'Error desconocido') : 
+                        '-';
+                    
+                    return `
+                        <tr class="history-row status-${statusClass}">
+                            <td>${dateStr}</td>
+                            <td><span class="status-badge ${statusClass}">${statusIcon} ${job.status}</span></td>
+                            <td>${duration}</td>
+                            <td class="result-cell">${result}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
 }
 
-// Global functions
+// ============================================================================
+// FUNCIONES GLOBALES
+// ============================================================================
+
+// Función global para acceso desde HTML
 (window as any).iaConfig = {
-    retrain: (id: number) => {
-        selectedModel = models.find(m => m.id === id);
-        switchView('retrain');
-        const select = document.querySelector('#model-select') as HTMLSelectElement;
-        const config = document.querySelector('#retrain-config') as HTMLElement;
-        if (select && config) {
-            select.value = id.toString();
-            config.style.display = 'block';
-        }
-    },
-    deleteSched: deleteSchedule
+    retrain: async (modelType: string, modelName: string) => {
+        selectedModel = { type: modelType, name: modelName };
+        await switchView('retrain');
+        
+        // Pre-seleccionar modelo
+        setTimeout(() => {
+            const select = document.querySelector('#model-select') as HTMLSelectElement;
+            const config = document.querySelector('#retrain-config') as HTMLElement;
+            if (select && config) {
+                select.value = modelType;
+                config.style.display = 'block';
+                updateFrequencyHint();
+                loadModelHistory(modelType);
+            }
+        }, 100);
+    }
 };

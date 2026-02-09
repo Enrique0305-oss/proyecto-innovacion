@@ -356,3 +356,130 @@ div#models-grid {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Schedule Configuration */
+.schedule-config-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.schedule-config-card h4 {
+  font-size: 16px;
+  margin: 0 0 16px 0;
+  color: #111827;
+  font-weight: 600;
+}
+
+.schedule-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schedule-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.schedule-row:last-child {
+  border-bottom: none;
+}
+
+.schedule-row .label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.schedule-row .value {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 600;
+}
+
+.loading-text, .error-text {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+/* Schedule Editor */
+.schedule-editor-card {
+  background: #fffbeb;
+  border: 1px solid #fde047;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.schedule-editor-card h4 {
+  font-size: 16px;
+  margin: 0 0 10px 0;
+  color: #854d0e;
+  font-weight: 600;
+}
+
+.warning-text {
+  background: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  border-left: 3px solid #fbbf24;
+  margin-bottom: 16px;
+  color: #92400e;
+  font-size: 13px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Action Section */
+.action-section {
+  margin: 25px 0;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.action-section .help-text {
+  margin-top: 10px;
+  color: #6b7280;
+}
+
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#start-train-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+#start-train-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.train-now-section .help-text {
+  margin-top: 12px;
+  color: #166534;
+  font-size: 13px;
+}

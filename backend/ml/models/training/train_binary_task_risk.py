@@ -49,10 +49,10 @@ import optuna
 HOST = os.getenv("MYSQL_HOST", "localhost")
 DB   = os.getenv("MYSQL_DB", "sb_production")  # Cambiado de "sb" a "sb_production"
 USER = os.getenv("MYSQL_USER", "root")
-PASS = os.getenv("MYSQL_PASS", "1234")
+PASS = os.getenv("MYSQL_PASS", "")
 PORT = int(os.getenv("MYSQL_PORT", "3306"))
 
-ARTIFACTS_DIR = 'artifacts/binary_task_risk'
+ARTIFACTS_DIR = 'ml/models/risk'
 os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
 def print_section(title):
@@ -60,7 +60,7 @@ def print_section(title):
     print(f"  {title}")
     print("="*70)
 
-print_section("🎯 CLASIFICADOR BINARIO DE RIESGO - SOLO FEATURES DE TAREA")
+print_section("CLASIFICADOR BINARIO DE RIESGO - SOLO FEATURES DE TAREA")
 
 # ============================================================================
 # 1. CARGAR DATOS
@@ -101,7 +101,7 @@ WHERE t.duration_est IS NOT NULL
 df = pd.read_sql(query_tasks, engine)
 engine.dispose()
 
-print(f"   ✅ Datos cargados: {len(df):,} tareas")
+print(f"   [OK] Datos cargados: {len(df):,} tareas")
 
 # ============================================================================
 # 2. CREAR TARGET BINARIO
@@ -199,7 +199,7 @@ numeric_features = [
 for col in numeric_features:
     df[col].fillna(df[col].median(), inplace=True)
 
-print(f"   ✅ Features generadas:")
+print(f"   [OK] Features generadas:")
 print(f"      Categóricas: {len(categorical_features)}")
 print(f"      Numéricas: {len(numeric_features)}")
 print(f"      Total: {len(categorical_features) + len(numeric_features)}")
@@ -258,7 +258,7 @@ for col in categorical_features:
     
 y_train_balanced = pd.Series(y_train_balanced, dtype=int)
 
-print(f"   ✅ SMOTE aplicado:")
+print(f"   [OK] SMOTE aplicado:")
 for risk_val in [0, 1]:
     count = (y_train_balanced == risk_val).sum()
     pct = count / len(y_train_balanced) * 100
@@ -308,7 +308,7 @@ def objective(trial):
 study = optuna.create_study(direction='maximize', sampler=optuna.samplers.TPESampler(seed=42))
 study.optimize(objective, n_trials=10, show_progress_bar=True)
 
-print(f"\n   ✅ Optimización completada")
+print(f"\n   [OK] Optimización completada")
 print(f"   Mejor AUC (CV): {study.best_value:.4f}")
 print(f"   Mejores parámetros:")
 for key, value in study.best_params.items():
@@ -330,7 +330,7 @@ best_params['cat_features'] = list(range(len(categorical_features)))
 model = CatBoostClassifier(**best_params)
 model.fit(X_train_balanced, y_train_balanced, verbose=100)
 
-print("\n   ✅ Modelo entrenado")
+print("\n   [OK] Modelo entrenado")
 
 # ============================================================================
 # 8. EVALUACIÓN
@@ -379,7 +379,7 @@ print("\n[9/9] Guardando modelo y artefactos...")
 # Modelo
 model_path = os.path.join(ARTIFACTS_DIR, 'model_binary_task_risk.cbm')
 model.save_model(model_path)
-print(f"   ✅ Modelo: {model_path}")
+print(f"   [OK] Modelo: {model_path}")
 
 # Columnas
 columns_info = {
@@ -392,7 +392,7 @@ columns_info = {
 columns_path = os.path.join(ARTIFACTS_DIR, 'columns_binary.json')
 with open(columns_path, 'w') as f:
     json.dump(columns_info, f, indent=2)
-print(f"   ✅ Columnas: {columns_path}")
+print(f"   [OK] Columnas: {columns_path}")
 
 # Métricas
 metrics = {
@@ -408,7 +408,7 @@ metrics = {
 metrics_path = os.path.join(ARTIFACTS_DIR, 'metrics_binary.json')
 with open(metrics_path, 'w') as f:
     json.dump(metrics, f, indent=2)
-print(f"   ✅ Métricas: {metrics_path}")
+print(f"   [OK] Métricas: {metrics_path}")
 
 # ============================================================================
 # 10. VISUALIZACIONES
@@ -427,7 +427,7 @@ plt.xlabel('Predicción')
 cm_path = os.path.join(ARTIFACTS_DIR, 'confusion_matrix.png')
 plt.savefig(cm_path, dpi=150, bbox_inches='tight')
 plt.close()
-print(f"   ✅ Matriz: {cm_path}")
+print(f"   [OK] Matriz: {cm_path}")
 
 # Curva ROC
 fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba)
@@ -444,7 +444,7 @@ plt.grid(alpha=0.3)
 roc_path = os.path.join(ARTIFACTS_DIR, 'roc_curve.png')
 plt.savefig(roc_path, dpi=150, bbox_inches='tight')
 plt.close()
-print(f"   ✅ ROC: {roc_path}")
+print(f"   [OK] ROC: {roc_path}")
 
 # Feature importance
 feature_importance = model.get_feature_importance()
@@ -464,11 +464,11 @@ plt.tight_layout()
 importance_path = os.path.join(ARTIFACTS_DIR, 'feature_importance.png')
 plt.savefig(importance_path, dpi=150, bbox_inches='tight')
 plt.close()
-print(f"   ✅ Importancia: {importance_path}")
+print(f"   [OK] Importancia: {importance_path}")
 
 importance_df.to_csv(os.path.join(ARTIFACTS_DIR, 'feature_importance.csv'), index=False)
 
-print_section("✅ ENTRENAMIENTO COMPLETADO")
+print_section("[SUCCESS] ENTRENAMIENTO COMPLETADO")
 print(f"Modelo: BAJO_RIESGO vs ALTO_RIESGO")
 print(f"Accuracy: {accuracy*100:.2f}%")
 print(f"ROC-AUC: {auc:.4f}")

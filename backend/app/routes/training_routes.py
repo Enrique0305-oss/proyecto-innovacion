@@ -199,15 +199,21 @@ def get_job_status(job_id):
 
 @bp.route('/jobs', methods=['GET'])
 def get_jobs():
-    """Listar todos los jobs"""
+    """Listar todos los jobs con filtros opcionales"""
     try:
         status_filter = request.args.get('status')
+        model_type_filter = request.args.get('model_type')
         limit = int(request.args.get('limit', 20))
         
         query = MLTrainingJob.query
         
         if status_filter:
             query = query.filter_by(status=status_filter)
+        
+        # Filtrar por tipo de modelo si se proporciona
+        if model_type_filter:
+            # Join con MLModel para filtrar por tipo
+            query = query.join(MLModel).filter(MLModel.type == model_type_filter)
         
         jobs = query.order_by(MLTrainingJob.created_at.desc()).limit(limit).all()
         
@@ -398,3 +404,154 @@ def _run_training_job(job_id):
             if job.started_at:
                 job.duration_seconds = int((job.completed_at - job.started_at).total_seconds())
             db.session.commit()
+
+
+@bp.route('/execute', methods=['POST'])
+def execute_training():
+    """
+    Ejecuta entrenamiento inmediato y programa reentrenamientos automáticos.
+    
+    Body:
+    {
+        "model_type": "risk" | "duration" | "recommendation" | "performance" | "simulation",
+        "training_date": "2026-02-08",
+        "frequency": "quarterly" | "biannual" | "annual"
+    }
+    """
+    from app.scheduler import training_scheduler
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        data = request.json
+        logger.info(f"📥 Recibido request de entrenamiento: {data}")
+        
+        model_type = data.get('model_type')
+        training_date = data.get('training_date')
+        frequency = data.get('frequency')
+        
+        # Validar parámetros requeridos
+        if not all([model_type, training_date, frequency]):
+            return jsonify({
+                'error': 'Parámetros requeridos: model_type, training_date, frequency'
+            }), 400
+        
+        # Validar model_type
+        valid_types = ['risk', 'duration', 'recommendation', 'performance', 'simulation']
+        if model_type not in valid_types:
+            return jsonify({
+                'error': f'model_type debe ser uno de: {", ".join(valid_types)}'
+            }), 400
+        
+        # Validar frequency
+        valid_frequencies = ['quarterly', 'biannual', 'annual']
+        if frequency not in valid_frequencies:
+            return jsonify({
+                'error': f'frequency debe ser uno de: {", ".join(valid_frequencies)}'
+            }), 400
+        
+        # Comparar fecha seleccionada con fecha actual
+        date_obj = datetime.strptime(training_date, '%Y-%m-%d')
+        today = datetime.now().date()
+        selected_date = date_obj.date()
+        
+        day = date_obj.day
+        frequency_descriptions = {
+            'quarterly': f'Día {day} de cada 3 meses',
+            'biannual': f'Día {day} de cada 6 meses',
+            'annual': f'Día {day} de cada año'
+        }
+        
+        # Determinar si se ejecuta ahora o solo se programa
+        execute_now = selected_date <= today
+        
+        if execute_now:
+            logger.info(f"▶️ Ejecutando entrenamiento inmediato: {model_type}")
+            
+            # Ejecutar entrenamiento inmediatamente (esto puede tardar varios minutos)
+            try:
+                success = training_scheduler.execute_training_script(model_type)
+            except Exception as e:
+                logger.error(f"❌ Excepción durante ejecución de script: {type(e).__name__}: {str(e)}")
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Error durante el entrenamiento: {str(e)}'
+                }), 500
+            
+            if not success:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Error durante el entrenamiento del modelo {model_type}. Revisa los logs del backend.'
+                }), 500
+            
+            # Programar próximos entrenamientos automáticos
+            job_id = training_scheduler.schedule_training_simple(model_type, training_date, frequency)
+            
+            logger.info(f"✅ Entrenamiento completado y programado: {model_type}")
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'Modelo {model_type} entrenado exitosamente',
+                'executed_now': True,
+                'scheduled_job_id': job_id,
+                'next_execution': frequency_descriptions.get(frequency, 'Programado')
+            }), 200
+        else:
+            # Fecha futura: solo programar, no ejecutar ahora
+            logger.info(f"📅 Programando entrenamiento futuro: {model_type} para {selected_date.strftime('%Y-%m-%d')}")
+            
+            job_id = training_scheduler.schedule_training_simple(model_type, training_date, frequency)
+            
+            # Obtener próxima ejecución del job
+            try:
+                job = training_scheduler.scheduler.get_job(job_id)
+                next_run = job.next_run_time.strftime('%Y-%m-%d %H:%M:%S') if job and job.next_run_time else 'Programado'
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo obtener info del job: {str(e)}")
+                next_run = 'Programado'
+            
+            logger.info(f"✅ Entrenamiento programado: {model_type} - Próxima ejecución: {next_run}")
+            
+            return jsonify({
+                'status': 'scheduled',
+                'message': f'Entrenamiento de {model_type} programado para {selected_date.strftime("%d/%m/%Y")}',
+                'executed_now': False,
+                'scheduled_job_id': job_id,
+                'next_run': next_run,
+                'next_execution': frequency_descriptions.get(frequency, 'Programado')
+            }), 200
+        
+    except ValueError as e:
+        logger.error(f"❌ Error de validación: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"❌ Error inesperado en execute_training: {str(e)}")
+        return jsonify({'error': f'Error interno: {str(e)}'}), 500
+
+
+@bp.route('/scheduled-jobs', methods=['GET'])
+def get_scheduled_jobs():
+    """Obtiene la lista de entrenamientos programados."""
+    from app.scheduler import training_scheduler
+    
+    try:
+        jobs = training_scheduler.get_all_jobs()
+        return jsonify(jobs), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/scheduled-jobs/<job_id>', methods=['DELETE'])
+def delete_scheduled_job(job_id):
+    """Elimina un entrenamiento programado."""
+    from app.scheduler import training_scheduler
+    
+    try:
+        success = training_scheduler.remove_job(job_id)
+        if success:
+            return jsonify({'message': f'Job {job_id} eliminado'}), 200
+        else:
+            return jsonify({'error': f'Job {job_id} no encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

@@ -8,6 +8,20 @@ from app.extensions import db
 from app.models.training_schedule import TrainingSchedule
 from app.models.ml_models import MLModel
 import requests
+import subprocess
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+# Mapeo de tipos de modelo a scripts de entrenamiento
+TRAINING_SCRIPTS = {
+    'risk': 'ml/models/training/train_binary_task_risk.py',
+    'duration': 'ml/models/training/train_catboost_regressor_numeric_only.py',
+    'recommendation': 'ml/models/training/train_catboost_recommender.py',
+    'performance': 'ml/models/training/train_performance_predictor_fixed.py',
+    'simulation': 'ml/models/training/train_bottleneck_predictor_FIXED.py'
+}
 
 
 class TrainingScheduler:
@@ -214,6 +228,145 @@ class TrainingScheduler:
         if self.scheduler.running:
             self.scheduler.shutdown()
             print("🛑 Training Scheduler detenido")
+    
+    
+    def execute_training_script(self, model_type: str) -> bool:
+        """
+        Ejecuta directamente el script de entrenamiento (sin usar BD ni jobs).
+        
+        Args:
+            model_type: Tipo de modelo ('risk', 'duration', 'recommendation', 'performance', 'simulation')
+        
+        Returns:
+            True si el entrenamiento fue exitoso, False en caso contrario
+        """
+        script_path = TRAINING_SCRIPTS.get(model_type)
+        
+        if not script_path:
+            logger.error(f"❌ Modelo '{model_type}' no encontrado")
+            return False
+        
+        logger.info(f"▶️ Ejecutando script: {script_path}")
+        
+        # Obtener directorio backend (un nivel arriba de app/)
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        full_script_path = os.path.join(backend_dir, script_path)
+        
+        if not os.path.exists(full_script_path):
+            logger.error(f"❌ Script no encontrado: {full_script_path}")
+            return False
+        
+        logger.info(f"📂 Ruta completa: {full_script_path}")
+        logger.info(f"📂 Directorio de trabajo: {backend_dir}")
+        
+        # Configurar variables de entorno para el script
+        env = os.environ.copy()
+        if self.app:
+            from config import Config
+            env['MYSQL_HOST'] = Config.DB_HOST
+            env['MYSQL_DB'] = Config.DB_NAME
+            env['MYSQL_USER'] = Config.DB_USER
+            env['MYSQL_PASS'] = Config.DB_PASSWORD
+            env['MYSQL_PORT'] = str(Config.DB_PORT)
+            logger.info(f"🔧 Variables configuradas: host={Config.DB_HOST}, db={Config.DB_NAME}, user={Config.DB_USER}")
+        
+        try:
+            result = subprocess.run(
+                ['python', full_script_path],
+                capture_output=True,
+                text=True,
+                timeout=3600,  # 1 hora máximo
+                cwd=backend_dir,  # Ejecutar desde backend/
+                env=env  # Pasar variables de entorno
+            )
+            
+            if result.returncode == 0:
+                logger.info(f"✅ Entrenamiento de '{model_type}' completado")
+                logger.info(f"📄 Output: {result.stdout[:500]}")  # Primeros 500 caracteres
+                return True
+            else:
+                logger.error(f"❌ Error en '{model_type}' (código {result.returncode})")
+                logger.error(f"📄 STDOUT: {result.stdout}")
+                logger.error(f"📄 STDERR: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.error(f"⏱️ Timeout: '{model_type}' excedió 1 hora")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Excepción en '{model_type}': {type(e).__name__}: {str(e)}")
+            import traceback
+            logger.error(f"📄 Traceback: {traceback.format_exc()}")
+            return False
+    
+    
+    def schedule_training_simple(self, model_type: str, training_date: str, frequency: str) -> str:
+        """
+        Programa entrenamiento recurrente usando scripts directos.
+        
+        Args:
+            model_type: Tipo de modelo
+            training_date: Fecha ISO (YYYY-MM-DD)
+            frequency: 'quarterly' | 'biannual' | 'annual'
+        
+        Returns:
+            ID del job programado
+        """
+        try:
+            date_obj = datetime.strptime(training_date, '%Y-%m-%d')
+        except ValueError:
+            raise ValueError(f"Formato de fecha inválido: {training_date}")
+        
+        day = date_obj.day
+        month = date_obj.month
+        
+        # Configurar trigger
+        if frequency == 'quarterly':
+            trigger = CronTrigger(day=day, month='*/3', hour=2, minute=0)
+        elif frequency == 'biannual':
+            trigger = CronTrigger(day=day, month='*/6', hour=2, minute=0)
+        elif frequency == 'annual':
+            trigger = CronTrigger(day=day, month=month, hour=2, minute=0)
+        else:
+            raise ValueError(f"Frecuencia inválida: {frequency}")
+        
+        job_id = f'retrain_{model_type}_scheduled'
+        
+        self.scheduler.add_job(
+            func=self.execute_training_script,
+            trigger=trigger,
+            args=[model_type],
+            id=job_id,
+            replace_existing=True,
+            name=f'Reentrenamiento: {model_type}'
+        )
+        
+        logger.info(f"📅 Programado: {model_type} - Día {day} - {frequency}")
+        return job_id
+    
+    
+    def get_all_jobs(self):
+        """Obtiene todos los jobs programados"""
+        jobs = []
+        for job in self.scheduler.get_jobs():
+            jobs.append({
+                'id': job.id,
+                'name': job.name,
+                'next_run': job.next_run_time.isoformat() if job.next_run_time else None,
+                'trigger': str(job.trigger)
+            })
+        return jobs
+    
+    
+    def remove_job(self, job_id: str) -> bool:
+        """Elimina un job programado"""
+        try:
+            self.scheduler.remove_job(job_id)
+            logger.info(f"🗑️ Job eliminado: {job_id}")
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️ Error eliminando job: {e}")
+            return False
 
 
 # Instancia global

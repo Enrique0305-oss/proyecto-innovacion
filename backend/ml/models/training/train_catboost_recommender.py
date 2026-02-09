@@ -71,11 +71,11 @@ import joblib
 HOST = os.getenv("MYSQL_HOST", "localhost")
 DB   = os.getenv("MYSQL_DB", "sb")
 USER = os.getenv("MYSQL_USER", "root")
-PASS = os.getenv("MYSQL_PASS", "1234")
+PASS = os.getenv("MYSQL_PASS", "")
 PORT = int(os.getenv("MYSQL_PORT", "3306"))
 
 # Directorios de salida
-ARTIFACT_DIR = Path("artifacts")
+ARTIFACT_DIR = Path("ml/models/recommender")
 REPORT_DIR   = Path("reports/recommender_analysis")
 ARTIFACT_DIR.mkdir(exist_ok=True, parents=True)
 REPORT_DIR.mkdir(exist_ok=True, parents=True)
