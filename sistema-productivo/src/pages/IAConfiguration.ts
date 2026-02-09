@@ -216,7 +216,7 @@ async function renderRetrainView() {
         <div class="form-group">
             <label>Modelo a entrenar:</label>
             <select id="model-select" class="form-control">
-                <option value="">⏳ Cargando modelos...</option>
+                <option value="">Cargando modelos...</option>
             </select>
         </div>
         
@@ -238,11 +238,20 @@ async function renderRetrainView() {
             </div>
             
             <button id="start-train-btn" class="btn btn-primary btn-lg">
-                🚀 Ejecutar Entrenamiento
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Ejecutar Entrenamiento
             </button>
             
             <div class="history-section">
-                <h4>📋 Historial de Entrenamientos</h4>
+                <h4>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; vertical-align: middle;">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                    Historial de Entrenamientos
+                </h4>
                 <div id="model-history-list"></div>
             </div>
         </div>
@@ -283,7 +292,7 @@ async function renderRetrainView() {
                 ${models.map(m => `<option value="${m.type}" data-name="${m.name}">${m.name}</option>`).join('')}
             `;
         } else {
-            modelSelect.innerHTML = '<option value="">❌ Error al cargar modelos</option>';
+            modelSelect.innerHTML = '<option value="">Error al cargar modelos</option>';
         }
     }
 }
@@ -300,13 +309,17 @@ function updateFrequencyHint() {
     const monthName = selectedDate.toLocaleDateString('es', {month: 'long'});
     const frequency = frequencySelect.value;
     
+    const calendarIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    
     const hints: Record<string, string> = {
-        'quarterly': `📅 El modelo se reentrenará automáticamente el día ${day} de cada 3 meses (ej: ${day}/02, ${day}/05, ${day}/08, ${day}/11)`,
-        'biannual': `📅 El modelo se reentrenará automáticamente el día ${day} de cada 6 meses (ej: ${day}/02, ${day}/08)`,
-        'annual': `📅 El modelo se reentrenará automáticamente el día ${day} de ${monthName} cada año`
+        'quarterly': `${calendarIcon}El modelo se reentrenará automáticamente el día ${day} de cada 3 meses (ej: ${day}/02, ${day}/05, ${day}/08, ${day}/11)`,
+        'biannual': `${calendarIcon}El modelo se reentrenará automáticamente el día ${day} de cada 6 meses (ej: ${day}/02, ${day}/08)`,
+        'annual': `${calendarIcon}El modelo se reentrenará automáticamente el día ${day} de ${monthName} cada año`
     };
     
-    hint.textContent = hints[frequency] || '';
+    if (hint instanceof HTMLElement) {
+        hint.innerHTML = hints[frequency] || '';
+    }
 }
 
 async function executeTraining() {
@@ -347,7 +360,12 @@ async function executeTraining() {
     resultDiv.style.display = 'block';
     
     if (isToday) {
-        btn.textContent = '⏳ Entrenando modelo (puede tardar varios minutos)...';
+        btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinning" style="margin-right: 6px;">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+            Entrenando modelo (puede tardar varios minutos)...
+        `;
         resultDiv.innerHTML = `
             <div class="alert info">
                 <div class="loading-spinner"></div>
@@ -358,7 +376,12 @@ async function executeTraining() {
             </div>
         `;
     } else {
-        btn.textContent = '⏳ Programando entrenamiento...';
+        btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinning" style="margin-right: 6px;">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+            Programando entrenamiento...
+        `;
         resultDiv.innerHTML = `
             <div class="alert info">
                 <div class="loading-spinner"></div>
@@ -390,7 +413,12 @@ async function executeTraining() {
                 // Se ejecutó ahora
                 resultDiv.innerHTML = `
                     <div class="alert success">
-                        <h4>✅ Entrenamiento Completado Exitosamente</h4>
+                        <h4>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Entrenamiento Completado Exitosamente
+                        </h4>
                         <p><strong>Modelo:</strong> ${modelName}</p>
                         <p><strong>Estado:</strong> ${data.message}</p>
                         <p><strong>Próxima ejecución automática:</strong> ${data.next_execution}</p>
@@ -401,7 +429,15 @@ async function executeTraining() {
                 // Solo se programó
                 resultDiv.innerHTML = `
                     <div class="alert success">
-                        <h4>📅 Entrenamiento Programado</h4>
+                        <h4>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            Entrenamiento Programado
+                        </h4>
                         <p><strong>Modelo:</strong> ${modelName}</p>
                         <p><strong>Estado:</strong> ${data.message}</p>
                         <p><strong>Primera ejecución:</strong> ${data.next_run || 'Programado'}</p>
@@ -436,7 +472,14 @@ async function executeTraining() {
         } else {
             resultDiv.innerHTML = `
                 <div class="alert error">
-                    <h4>❌ Error en el Entrenamiento</h4>
+                    <h4>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        Error en el Entrenamiento
+                    </h4>
                     <p>${data.error || data.message}</p>
                     <p>Por favor, revisa los logs del backend para más detalles.</p>
                 </div>
@@ -445,14 +488,26 @@ async function executeTraining() {
     } catch (err: any) {
         resultDiv.innerHTML = `
             <div class="alert error">
-                <h4>❌ Error de Conexión</h4>
+                <h4>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    Error de Conexión
+                </h4>
                 <p>No se pudo conectar con el servidor.</p>
                 <p>${err.message || err}</p>
             </div>
         `;
     } finally {
         btn.disabled = false;
-        btn.textContent = '🚀 Ejecutar Entrenamiento';
+        btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Ejecutar Entrenamiento
+        `;
     }
 }
 
@@ -464,7 +519,14 @@ async function loadModelHistory(modelType: string) {
     const historyList = document.querySelector('#model-history-list');
     if (!historyList) return;
     
-    historyList.innerHTML = '<div class="loading">📊 Cargando historial...</div>';
+    historyList.innerHTML = `
+        <div class="loading">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinning" style="margin-right: 6px;">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+            Cargando historial...
+        </div>
+    `;
     
     try {
         const response = await fetch(`${API_URL}/ml/training/jobs?model_type=${modelType}&limit=10`, {
@@ -488,7 +550,15 @@ function displayModelHistory(jobs: any[]) {
     if (!historyList) return;
     
     if (jobs.length === 0) {
-        historyList.innerHTML = '<div class="empty-state">📭 No hay entrenamientos registrados para este modelo</div>';
+        historyList.innerHTML = `
+            <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4;">
+                    <path d="M9 11l3 3L22 4"/>
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                </svg>
+                <p>No hay entrenamientos registrados para este modelo</p>
+            </div>
+        `;
         return;
     }
     
@@ -517,9 +587,13 @@ function displayModelHistory(jobs: any[]) {
                                        job.status === 'failed' ? 'error' : 
                                        job.status === 'running' ? 'running' : 'pending';
                     
-                    const statusIcon = job.status === 'completed' ? '✅' : 
-                                      job.status === 'failed' ? '❌' : 
-                                      job.status === 'running' ? '⏳' : '⏸️';
+                    const statusIcon = job.status === 'completed' ? 
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>' : 
+                                      job.status === 'failed' ? 
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' : 
+                                      job.status === 'running' ? 
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinning"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>' : 
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
                     
                     const duration = job.duration_seconds ? 
                         `${Math.floor(job.duration_seconds / 60)}m ${job.duration_seconds % 60}s` : 
@@ -534,7 +608,7 @@ function displayModelHistory(jobs: any[]) {
                     return `
                         <tr class="history-row status-${statusClass}">
                             <td>${dateStr}</td>
-                            <td><span class="status-badge ${statusClass}">${statusIcon} ${job.status}</span></td>
+                            <td><span class="status-badge ${statusClass}">${statusIcon} <span style="margin-left: 4px;">${job.status}</span></span></td>
                             <td>${duration}</td>
                             <td class="result-cell">${result}</td>
                         </tr>

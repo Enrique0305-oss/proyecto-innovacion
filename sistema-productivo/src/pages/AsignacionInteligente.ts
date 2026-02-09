@@ -197,8 +197,8 @@ function displayResults(risk: any, recommendations: any[], resultCard: HTMLEleme
         </div>
         <div style="background: linear-gradient(135deg, #00bcd4 0%, #00838f 100%); padding: 20px; border-radius: 12px; color: white; text-align: center;">
           <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">DURACIÓN ESTIMADA</div>
-          <div style="font-size: 24px; font-weight: 700; margin-bottom: 5px;">${recommendations[0].predicted_duration_days ? recommendations[0].predicted_duration_days.toFixed(1) : 'N/A'}</div>
-          <div style="font-size: 14px; opacity: 0.9;">días</div>
+          <div style="font-size: 24px; font-weight: 700; margin-bottom: 5px;">${recommendations[0].predicted_duration_days ? Math.round(recommendations[0].predicted_duration_days) : 'N/A'}</div>
+          <div style="font-size: 14px; opacity: 0.9;">${recommendations[0].predicted_duration_days && Math.round(recommendations[0].predicted_duration_days) === 1 ? 'día' : 'días'}</div>
         </div>
         <div style="background: linear-gradient(135deg, ${riskLevel === 'ALTO' ? '#f44336 0%, #c62828' : riskLevel === 'MEDIO' ? '#ff9800 0%, #e65100' : '#4caf50 0%, #2e7d32'} 100%); padding: 20px; border-radius: 12px; color: white; text-align: center;">
           <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">NIVEL DE RIESGO</div>
@@ -240,7 +240,10 @@ function displayResults(risk: any, recommendations: any[], resultCard: HTMLEleme
                 </td>
                 <td style="padding: 15px; text-align: center;">
                   <strong style="color: #667eea; font-size: 16px;">
-                    ${rec.predicted_duration_days ? rec.predicted_duration_days.toFixed(1) + ' días' : 'N/A'}
+                    ${rec.predicted_duration_days ? (() => {
+                      const days = Math.round(rec.predicted_duration_days);
+                      return days === 1 ? '1 día' : `${days} días`;
+                    })() : 'N/A'}
                   </strong>
                 </td>
                 <td style="padding: 15px; text-align: center; color: #6c757d;">
@@ -267,7 +270,10 @@ function displayResults(risk: any, recommendations: any[], resultCard: HTMLEleme
         ${recommendations[0] ? `
         <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
           <strong style="color: #667eea;"> Mejor candidato:</strong> 
-          <span style="color: #495057;">${recommendations[0].person_name} (${recommendations[0].score.toFixed(0)}% match, ${recommendations[0].predicted_duration_days ? recommendations[0].predicted_duration_days.toFixed(1) + ' días estimados' : 'duración N/A'})</span>
+          <span style="color: #495057;">${recommendations[0].person_name} (${recommendations[0].score.toFixed(0)}% match, ${recommendations[0].predicted_duration_days ? (() => {
+            const days = Math.round(recommendations[0].predicted_duration_days);
+            return days === 1 ? '1 día estimado' : `${days} días estimados`;
+          })() : 'duración N/A'})</span>
         </div>
         ` : ''}
         

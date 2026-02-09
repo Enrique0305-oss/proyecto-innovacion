@@ -1196,8 +1196,21 @@ function renderTasks(tasks: any[]) {
     
     // Convertir horas a días para tiempo estimado (8 horas = 1 día laboral)
     const estimatedDays = task.estimated_hours ? (task.estimated_hours / 8).toFixed(1) : null;
-    // actual_hours contiene días calendario reales (no dividir)
-    const actualDays = task.actual_hours ? task.actual_hours.toFixed(1) : null;
+    
+    // Formatear tiempo real de forma intuitiva
+    let actualTimeDisplay = '-';
+    if (task.actual_hours) {
+        const days = task.actual_hours;
+        if (days < 1) {
+            // Menos de 1 día: mostrar en horas
+            const hours = Math.round(days * 24);
+            actualTimeDisplay = hours === 1 ? '1 hora' : `${hours} horas`;
+        } else {
+            // 1 día o más: mostrar en días enteros
+            const roundedDays = Math.round(days);
+            actualTimeDisplay = roundedDays === 1 ? '1 día' : `${roundedDays} días`;
+        }
+    }
     
     return `
       <tr data-task-id="${task.id}">
@@ -1210,7 +1223,7 @@ function renderTasks(tasks: any[]) {
         <td>${task.area || '-'}</td>
         <td>${task.assigned_name || task.assigned_to || 'Sin asignar'}</td>
         <td>${estimatedDays ? estimatedDays + ' días' : '-'}</td>
-        <td>${actualDays ? actualDays + ' días' : '-'}</td>
+        <td>${actualTimeDisplay}</td>
         <td>
           <select class="status-select ${status.class}" data-task-id="${task.id}" data-current-status="${task.status}">
             <option value="pendiente" ${task.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
@@ -1410,10 +1423,24 @@ function showTaskDetails(task: any) {
   
   // Formatear tiempos en días
   const estimatedDays = task.estimated_hours ? (task.estimated_hours / 8).toFixed(1) : null;
-  const actualDays = task.actual_hours ? task.actual_hours.toFixed(1) : null;
+  
+  // Formatear tiempo real de forma intuitiva
+  let actualTimeText = '-';
+  if (task.actual_hours) {
+    const days = task.actual_hours;
+    if (days < 1) {
+      // Menos de 1 día: mostrar en horas
+      const hours = Math.round(days * 24);
+      actualTimeText = hours === 1 ? '1 hora' : `${hours} horas`;
+    } else {
+      // 1 día o más: mostrar en días enteros
+      const roundedDays = Math.round(days);
+      actualTimeText = roundedDays === 1 ? '1 día' : `${roundedDays} días`;
+    }
+  }
   
   if (detailEstimated) detailEstimated.textContent = estimatedDays ? `${estimatedDays} días` : '-';
-  if (detailActual) detailActual.textContent = actualDays ? `${actualDays} días` : '-';
+  if (detailActual) detailActual.textContent = actualTimeText;
   
   // Formatear estado con badge
   if (detailStatus) {

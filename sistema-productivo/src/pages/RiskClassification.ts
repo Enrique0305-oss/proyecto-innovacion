@@ -250,15 +250,6 @@ export function initRiskClassification() {
               <span class="risk-badge-small risk-high">Alto Riesgo</span>
             </div>
           </div>
-            </div>
-            <div class="risk-bar-item">
-              <span class="risk-bar-label">${(probAlto * 100).toFixed(1)}%</span>
-              <div class="risk-bar">
-                <div class="risk-bar-fill risk-high" style="width: ${(probAlto * 100).toFixed(0)}%"></div>
-              </div>
-              <span class="risk-badge-small risk-high">Alto Riesgo</span>
-            </div>
-          </div>
 
           <div class="shap-section">
             <h4>Factores de Riesgo Identificados</h4>

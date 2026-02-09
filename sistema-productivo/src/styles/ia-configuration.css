@@ -356,3 +356,7 @@ div#models-grid {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+/* SVG spinning animation */
+.spinning {
+  animation: spin 1s linear infinite;
+}

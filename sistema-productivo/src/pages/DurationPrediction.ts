@@ -215,14 +215,14 @@ function displayResults(
         <!-- Predicción IA -->
         <div style="background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(0, 188, 212, 0.2) 100%); padding: 20px; border-radius: 12px; text-align: center; border: 2px solid #00bcd4;">
           <h4 style="margin: 0 0 10px 0; color: #00bcd4; font-size: 14px; font-weight: 600;">Predicción IA (CatBoost)</h4>
-          <div style="font-size: 36px; font-weight: 700; color: #00bcd4; margin: 10px 0;">${predictedDuration.toFixed(1)} días</div>
+          <div style="font-size: 36px; font-weight: 700; color: #00bcd4; margin: 10px 0;">${Math.round(predictedDuration)} ${Math.round(predictedDuration) === 1 ? 'día' : 'días'}</div>
           <p style="margin: 0; color: #00838f; font-size: 13px;">Duración estimada real</p>
         </div>
 
         <!-- Diferencia -->
         <div style="background: ${difference > 0 ? 'rgba(255, 152, 0, 0.1)' : 'rgba(76, 175, 80, 0.1)'}; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid ${difference > 0 ? '#ff9800' : '#4caf50'};">
           <h4 style="margin: 0 0 10px 0; color: ${difference > 0 ? '#ff9800' : '#4caf50'}; font-size: 14px; font-weight: 500;">Diferencia</h4>
-          <div style="font-size: 32px; font-weight: 700; color: ${difference > 0 ? '#ff9800' : '#4caf50'}; margin: 10px 0;">${difference > 0 ? '+' : ''}${difference.toFixed(1)} días</div>
+          <div style="font-size: 32px; font-weight: 700; color: ${difference > 0 ? '#ff9800' : '#4caf50'}; margin: 10px 0;">${difference > 0 ? '+' : ''}${Math.round(difference)} ${Math.abs(Math.round(difference)) === 1 ? 'día' : 'días'}</div>
           <p style="margin: 0; color: ${difference > 0 ? '#e65100' : '#2e7d32'}; font-size: 13px;">(${percentDiff}% ${difference > 0 ? 'más tiempo' : 'menos tiempo'})</p>
         </div>
       </div>
@@ -233,9 +233,9 @@ function displayResults(
         <p style="margin: 0 0 20px 0; color: #6c757d; font-size: 14px;">Rango esperado de duración según modelo CatBoost</p>
         
         <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
-          <span><strong>Mínimo:</strong> ${minDuration.toFixed(1)} días</span>
-          <span><strong>Promedio:</strong> ${meanDuration.toFixed(1)} días</span>
-          <span><strong>Máximo:</strong> ${maxDuration.toFixed(1)} días</span>
+          <span><strong>Mínimo:</strong> ${Math.round(minDuration)} ${Math.round(minDuration) === 1 ? 'día' : 'días'}</span>
+          <span><strong>Promedio:</strong> ${Math.round(meanDuration)} ${Math.round(meanDuration) === 1 ? 'día' : 'días'}</span>
+          <span><strong>Máximo:</strong> ${Math.round(maxDuration)} ${Math.round(maxDuration) === 1 ? 'día' : 'días'}</span>
         </div>
         
         <div style="height: 30px; background: linear-gradient(90deg, #4caf50 0%, #00bcd4 50%, #ff9800 100%); border-radius: 15px; position: relative;">
@@ -244,7 +244,7 @@ function displayResults(
 
         <div style="margin-top: 20px; padding: 15px; background: rgba(33, 150, 243, 0.1); border-radius: 8px; border-left: 4px solid #2196f3;">
           <p style="margin: 0; color: #1565c0; font-size: 14px;">
-             Con 80% de confianza, la tarea tomará entre <strong>${minDuration.toFixed(1)} y ${maxDuration.toFixed(1)} días</strong>. Se recomienda planificar con <strong>${meanDuration.toFixed(1)} días</strong>.
+             Con 80% de confianza, la tarea tomará entre <strong>${Math.round(minDuration)} y ${Math.round(maxDuration)} días</strong>. Se recomienda planificar con <strong>${Math.round(meanDuration)} ${Math.round(meanDuration) === 1 ? 'día' : 'días'}</strong>.
           </p>
         </div>
       </div>
@@ -272,7 +272,7 @@ function displayResults(
         
         <div style="display: flex; gap: 15px; margin-bottom: 15px; padding: 15px; background: rgba(0, 188, 212, 0.05); border-left: 4px solid #00bcd4; border-radius: 4px;">
           <div style="background: #00bcd4; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">1</div>
-          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Ajustar cronograma:</strong> Considerar ${meanDuration.toFixed(1)} días en lugar de ${estimatedTime} días${difference > 2 ? ' <span style="color: #ff9800;">(diferencia significativa)</span>' : ''}.</p>
+          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Ajustar cronograma:</strong> Considerar ${Math.round(meanDuration)} ${Math.round(meanDuration) === 1 ? 'día' : 'días'} en lugar de ${estimatedTime} días${difference > 2 ? ' <span style="color: #ff9800;">(diferencia significativa)</span>' : ''}.</p>
         </div>
 
         ${difference > 3 ? `
@@ -284,7 +284,7 @@ function displayResults(
 
         <div style="display: flex; gap: 15px; margin-bottom: ${mode === 'genérico' ? '15px' : '0'}; padding: 15px; background: rgba(33, 150, 243, 0.05); border-left: 4px solid #2196f3; border-radius: 4px;">
           <div style="background: #2196f3; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">${difference > 3 ? '3' : '2'}</div>
-          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Monitoreo:</strong> Establecer checkpoints cada ${Math.ceil(meanDuration / 3)} días para validar el progreso real.</p>
+          <p style="margin: 0; color: #495057; font-size: 14px;"><strong>Monitoreo:</strong> Establecer checkpoints cada ${Math.ceil(meanDuration / 3)} ${Math.ceil(meanDuration / 3) === 1 ? 'día' : 'días'} para validar el progreso real.</p>
         </div>
 
         ${mode === 'genérico' ? `
