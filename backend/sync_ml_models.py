@@ -111,7 +111,7 @@ def sync_models():
             model_dir = os.path.join(models_base_path, folder_name)
             
             if not os.path.exists(model_dir):
-                print(f"⚠️  Carpeta no existe: {folder_name}")
+                print(f"  Carpeta no existe: {folder_name}")
                 skipped_count += 1
                 continue
             
@@ -119,11 +119,11 @@ def sync_models():
             info = get_model_file_info(model_dir)
             
             if not info['model_file']:
-                print(f"⚠️  No se encontró archivo PKL/CBM en: {folder_name}")
+                print(f"  No se encontró archivo PKL/CBM en: {folder_name}")
                 skipped_count += 1
                 continue
             
-            print(f"\n📁 Procesando: {folder_name}")
+            print(f"\n Procesando: {folder_name}")
             print(f"   Archivo: {os.path.basename(info['model_file'])}")
             print(f"   Fecha del archivo: {info['file_date'].strftime('%Y-%m-%d %H:%M:%S')}")
             
@@ -138,7 +138,7 @@ def sync_models():
             
             if existing_model:
                 # Actualizar modelo existente
-                print(f"   ✏️  Actualizando modelo existente (ID: {existing_model.id})")
+                print(f"     Actualizando modelo existente (ID: {existing_model.id})")
                 
                 existing_model.model_path = info['model_file']
                 existing_model.last_trained = info['file_date']
@@ -169,7 +169,7 @@ def sync_models():
                 
             else:
                 # Crear nuevo modelo
-                print(f"   ➕ Creando nuevo registro")
+                print(f"    Creando nuevo registro")
                 
                 new_model = MLModel(
                     name=config['name'],
@@ -212,16 +212,16 @@ def sync_models():
             print("\n" + "="*70)
             print("RESUMEN DE SINCRONIZACIÓN")
             print("="*70)
-            print(f"✅ Modelos procesados: {synced_count}")
-            print(f"➕ Nuevos creados: {created_count}")
-            print(f"✏️  Actualizados: {updated_count}")
-            print(f"⚠️  Omitidos: {skipped_count}")
+            print(f" Modelos procesados: {synced_count}")
+            print(f" Nuevos creados: {created_count}")
+            print(f" Actualizados: {updated_count}")
+            print(f" Omitidos: {skipped_count}")
             print("="*70 + "\n")
-            print("✅ Sincronización completada exitosamente\n")
+            print(" Sincronización completada exitosamente\n")
             
         except Exception as e:
             db.session.rollback()
-            print(f"\n❌ Error al guardar en BD: {e}\n")
+            print(f"\n Error al guardar en BD: {e}\n")
             return False
         
         # Mostrar modelos en BD
@@ -247,6 +247,6 @@ def sync_models():
 
 
 if __name__ == '__main__':
-    print("\n🔄 Iniciando sincronización de modelos ML...\n")
+    print("\n Iniciando sincronización de modelos ML...\n")
     success = sync_models()
     sys.exit(0 if success else 1)

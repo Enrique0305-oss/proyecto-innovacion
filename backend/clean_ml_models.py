@@ -22,7 +22,7 @@ def clean_ml_models():
         
         # Mostrar registros actuales
         all_models = MLModel.query.order_by(MLModel.id).all()
-        print(f"📊 Registros actuales: {len(all_models)}\n")
+        print(f" Total de modelos: {len(all_models)}\n")
         
         for model in all_models:
             print(f"ID {model.id}: {model.name} ({model.type})")
@@ -30,7 +30,7 @@ def clean_ml_models():
             print()
         
         # Eliminar registros 1-5 (datos de prueba)
-        print("\n🗑️  Eliminando registros de prueba (IDs 1-5)...\n")
+        print("\n  Eliminando registros de prueba (IDs 1-5)...\n")
         
         deleted_count = 0
         for model_id in range(1, 6):
@@ -41,10 +41,10 @@ def clean_ml_models():
                 deleted_count += 1
         
         db.session.commit()
-        print(f"\n✅ {deleted_count} registros eliminados\n")
+        print(f"\n {deleted_count} registros eliminados\n")
         
         # Reiniciar AUTO_INCREMENT
-        print("🔄 Reiniciando AUTO_INCREMENT...\n")
+        print(" Reiniciando AUTO_INCREMENT...\n")
         
         # Obtener IDs actuales
         remaining_models = MLModel.query.order_by(MLModel.id).all()
@@ -85,7 +85,7 @@ def clean_ml_models():
             
             db.session.commit()
             
-            print("✅ AUTO_INCREMENT reiniciado\n")
+            print(" AUTO_INCREMENT reiniciado\n")
         
         # Mostrar resultado final
         print("\n" + "="*70)
@@ -93,7 +93,7 @@ def clean_ml_models():
         print("="*70 + "\n")
         
         final_models = MLModel.query.order_by(MLModel.id).all()
-        print(f"📊 Total de modelos: {len(final_models)}\n")
+        print(f" Total de modelos: {len(final_models)}\n")
         
         for model in final_models:
             print(f"ID {model.id}: {model.name}")
@@ -103,7 +103,7 @@ def clean_ml_models():
             print()
         
         print("="*70)
-        print("✅ Limpieza completada exitosamente")
+        print(" Limpieza completada exitosamente")
         print("="*70 + "\n")
 
 

@@ -14,13 +14,13 @@ app = create_app()
 
 with app.app_context():
     print("\n" + "="*60)
-    print("🚀 INICIALIZANDO BASE DE DATOS")
+    print(" INICIALIZANDO BASE DE DATOS")
     print("="*60)
     
     # ==========================================
     # 1. CREAR ROLES
     # ==========================================
-    print("\n📋 Creando roles...")
+    print("\n Creando roles...")
     
     roles_data = [
         {
@@ -85,16 +85,16 @@ with app.app_context():
         if not existing_role:
             role = Role(**role_data)
             db.session.add(role)
-            print(f"  ✅ Rol creado: {role_data['display_name']}")
+            print(f"   Rol creado: {role_data['display_name']}")
         else:
-            print(f"  ℹ️  Rol ya existe: {role_data['display_name']}")
+            print(f"    Rol ya existe: {role_data['display_name']}")
     
     db.session.commit()
     
     # ==========================================
     # 2. CREAR USUARIOS
     # ==========================================
-    print("\n👥 Creando usuarios...")
+    print("\n Creando usuarios...")
     
     # Obtener roles
     super_admin_role = Role.query.filter_by(name='super_admin').first()
@@ -140,9 +140,9 @@ with app.app_context():
             user = WebUser(**user_data)
             user.set_password(password)
             db.session.add(user)
-            print(f"  ✅ Usuario creado: {user_data['email']} (contraseña: {password})")
+            print(f"   Usuario creado: {user_data['email']} (contraseña: {password})")
         else:
-            print(f"  ℹ️  Usuario ya existe: {user_data['email']}")
+            print(f"    Usuario ya existe: {user_data['email']}")
     
     db.session.commit()
     
@@ -150,15 +150,15 @@ with app.app_context():
     # 3. RESUMEN
     # ==========================================
     print("\n" + "="*60)
-    print("📊 RESUMEN")
+    print(" RESUMEN")
     print("="*60)
     print(f"  Roles creados: {Role.query.count()}")
     print(f"  Usuarios creados: {WebUser.query.count()}")
-    print("\n🔐 CREDENCIALES DE ACCESO:")
+    print("\n CREDENCIALES DE ACCESO:")
     print("  Super Admin:  admin@processmart.com / admin123")
     print("  Gerente:      gerente@processmart.com / gerente123")
     print("  Supervisor:   supervisor@processmart.com / supervisor123")
     print("  Colaborador:  usuario@processmart.com / usuario123")
     print("="*60)
-    print("✅ ¡Base de datos inicializada correctamente!")
+    print(" ¡Base de datos inicializada correctamente!")
     print("="*60 + "\n")

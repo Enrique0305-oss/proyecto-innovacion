@@ -48,10 +48,10 @@ def check_and_execute_schedules():
             
             # Ejecutar si estamos dentro de los 5 minutos posteriores a la hora programada
             if 0 <= time_diff <= 5:
-                print(f"⏰ Ejecutando: {schedule.model_type} - {schedule.scheduled_time}")
+                print(f" Ejecutando: {schedule.model_type} - {schedule.scheduled_time}")
                 execute_training(schedule)
             else:
-                print(f"⏳ Pendiente: {schedule.model_type} - {schedule.scheduled_time}")
+                print(f" Pendiente: {schedule.model_type} - {schedule.scheduled_time}")
 
 def execute_training(schedule: TrainingSchedule):
     """Ejecuta el reentrenamiento de un modelo específico"""
@@ -69,7 +69,7 @@ def execute_training(schedule: TrainingSchedule):
             try:
                 params = json.loads(schedule.parameters)
             except json.JSONDecodeError:
-                print(f"   ⚠️  Advertencia: Parámetros JSON inválidos, usando valores por defecto")
+                print(f"     Advertencia: Parámetros JSON inválidos, usando valores por defecto")
         
         # Ejecutar el entrenamiento según el tipo de modelo
         result = None
@@ -88,7 +88,7 @@ def execute_training(schedule: TrainingSchedule):
         schedule.status = 'completado'
         schedule.execution_result = str(result)
         
-        print(f"   ✅ Completado exitosamente")
+        print(f"    Completado exitosamente")
         print(f"   Resultado: {result}\n")
         
         # Si es recurrente, programar la siguiente ejecución
@@ -99,7 +99,7 @@ def execute_training(schedule: TrainingSchedule):
         # Marcar como fallido
         schedule.status = 'fallido'
         schedule.execution_result = f"Error: {str(e)}"
-        print(f"   ❌ Error: {str(e)}\n")
+        print(f"    Error: {str(e)}\n")
     
     finally:
         db.session.commit()
@@ -129,10 +129,10 @@ def schedule_next_execution(schedule: TrainingSchedule):
         schedule.status = 'programado'
         db.session.commit()
         
-        print(f"   🔄 Próxima ejecución programada para: {schedule.scheduled_date} {schedule.scheduled_time}")
+        print(f"    Próxima ejecución programada para: {schedule.scheduled_date} {schedule.scheduled_time}")
         
     except Exception as e:
-        print(f"   ⚠️  Error al programar siguiente ejecución: {str(e)}")
+        print(f"    Error al programar siguiente ejecución: {str(e)}")
 
 def run_scheduler(interval_minutes=5):
     """
@@ -141,7 +141,7 @@ def run_scheduler(interval_minutes=5):
     Args:
         interval_minutes: Intervalo en minutos entre verificaciones
     """
-    print(f"\n🤖 Iniciando servicio de reentrenamiento automático")
+    print(f"\n Iniciando servicio de reentrenamiento automático")
     print(f"Intervalo de verificación: {interval_minutes} minutos")
     print(f"Presiona Ctrl+C para detener\n")
     
@@ -150,11 +150,11 @@ def run_scheduler(interval_minutes=5):
             check_and_execute_schedules()
             
             # Esperar hasta la próxima verificación
-            print(f"⏰ Próxima verificación en {interval_minutes} minutos...")
+            print(f" Próxima verificación en {interval_minutes} minutos...")
             time.sleep(interval_minutes * 60)
             
     except KeyboardInterrupt:
-        print("\n\n🛑 Servicio detenido por el usuario")
+        print("\n\n Servicio detenido por el usuario")
 
 if __name__ == "__main__":
     import argparse

@@ -39,10 +39,10 @@ with app.app_context():
         
         # Ver contenido
         count = db.session.execute(text(f"SELECT COUNT(*) FROM {table}")).fetchone()[0]
-        print(f"\n📊 Registros: {count}")
+        print(f"\n Registros: {count}")
         
         if count > 0:
-            print("\n🔍 Datos:")
+            print("\n Datos:")
             rows = db.session.execute(text(f"SELECT * FROM {table} LIMIT 3")).fetchall()
             for row in rows:
                 print(f"   {dict(row._mapping)}")

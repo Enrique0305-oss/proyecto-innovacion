@@ -44,13 +44,13 @@ with engine.connect() as conn:
         try:
             result = conn.execute(text(config['query']))
             count = result.scalar()
-            status = "✅ PUEDE ENTRENAR" if count >= config['minimo'] else "❌ INSUFICIENTE"
+            status = " PUEDE ENTRENAR" if count >= config['minimo'] else " INSUFICIENTE"
             print(f"  Requisito: {config['descripcion']}")
             print(f"  Registros encontrados: {count}")
             print(f"  Mínimo necesario: {config['minimo']}")
             print(f"  Estado: {status}")
         except Exception as e:
-            print(f"  ❌ ERROR: {str(e)[:100]}")
+            print(f"   ERROR: {str(e)[:100]}")
 
 print("\n" + "="*70)
 print("RESUMEN")

@@ -1817,9 +1817,9 @@ async function loadManagersForProject() {
     const response = await api.getUsers();
     const users = response.users || [];
     
-    // Filtrar solo gerentes y super_admin
+    // Filtrar solo supervisores como responsables de proyecto
     const managers = users.filter((user: any) => 
-      user.role?.name === 'gerente' || user.role?.name === 'super_admin'
+      user.role?.name === 'supervisor'
     );
     
     const managerSelect = document.getElementById('projectManager') as HTMLSelectElement;

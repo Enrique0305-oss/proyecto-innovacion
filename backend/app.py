@@ -18,7 +18,7 @@ if __name__ == "__main__":
     
     print(f"""
     ╔═══════════════════════════════════════════════════╗
-    ║   🚀 BACKEND FLASK - SISTEMA DE PRODUCTIVIDAD   ║
+    ║    BACKEND FLASK - SISTEMA DE PRODUCTIVIDAD   ║
     ║                                                   ║
     ║   Entorno: {os.getenv('FLASK_ENV', 'development').upper():<38} ║
     ║   Puerto:  {port:<38}  ║
