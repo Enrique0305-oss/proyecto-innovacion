@@ -118,12 +118,6 @@ export function Sidebar(activePage: string = 'dashboard'): string {
               <path d="M10 3v2M10 15v2M17 10h-2M5 10H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           `, isActive('configuracion-ia'))}
-          ${navItem('reentrenamiento', '#reentrenamiento-ia', 'Reentrenamiento IA', `
-            <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M17 10c0 3.9-3.1 7-7 7m0 0l-3-3m3 3l3-3M3 10c0-3.9 3.1-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="10" cy="10" r="2" fill="currentColor"/>
-            </svg>
-          `, isActive('reentrenamiento-ia'))}
         </div>
       </nav>
 

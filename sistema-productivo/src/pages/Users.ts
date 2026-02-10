@@ -20,6 +20,81 @@ function canManageUsers(): boolean {
   return getUserRole() === 'super_admin';
 }
 
+// Variable para almacenar el usuario a eliminar
+let userToDelete: { id: number; name: string } | null = null;
+
+// Función para mostrar modal de confirmación de eliminación
+function showConfirmDeleteModal(userId: number, userName: string) {
+  userToDelete = { id: userId, name: userName };
+  
+  const modal = document.getElementById('modalConfirmDelete');
+  const messageEl = document.getElementById('modalConfirmDeleteMessage');
+  
+  if (messageEl) {
+    messageEl.textContent = `¿Estás seguro de que deseas desactivar al usuario "${userName}"?`;
+  }
+  
+  if (modal) {
+    modal.classList.add('active');
+    const dashboardLayout = document.querySelector('.dashboard-layout');
+    dashboardLayout?.classList.add('blur-background');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeConfirmDeleteModal() {
+  const modal = document.getElementById('modalConfirmDelete');
+  if (modal) {
+    modal.classList.remove('active');
+    const dashboardLayout = document.querySelector('.dashboard-layout');
+    dashboardLayout?.classList.remove('blur-background');
+    document.body.style.overflow = '';
+  }
+  userToDelete = null;
+}
+
+// Función para obtener los filtros actuales
+function getCurrentFilters(): { role?: string; status?: string; search?: string } {
+  const filters: { role?: string; status?: string; search?: string } = {};
+  
+  const roleFilter = document.getElementById('roleFilter') as HTMLSelectElement;
+  const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  
+  if (roleFilter?.value) filters.role = roleFilter.value;
+  if (statusFilter?.value) filters.status = statusFilter.value;
+  if (searchInput?.value) filters.search = searchInput.value;
+  
+  return filters;
+}
+
+// Función para mostrar modal de éxito
+function showSuccessModal(title: string, message: string) {
+  const modal = document.getElementById('modalSuccess');
+  const titleEl = document.getElementById('modalSuccessTitle');
+  const messageEl = document.getElementById('modalSuccessMessage');
+  
+  if (titleEl) titleEl.textContent = title;
+  if (messageEl) messageEl.textContent = message;
+  
+  if (modal) {
+    modal.classList.add('active');
+    const dashboardLayout = document.querySelector('.dashboard-layout');
+    dashboardLayout?.classList.add('blur-background');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeSuccessModal() {
+  const modal = document.getElementById('modalSuccess');
+  if (modal) {
+    modal.classList.remove('active');
+    const dashboardLayout = document.querySelector('.dashboard-layout');
+    dashboardLayout?.classList.remove('blur-background');
+    document.body.style.overflow = '';
+  }
+}
+
 export function UsersPage(): string {
   return `
     <div class="dashboard-layout">
@@ -279,20 +354,93 @@ export function UsersPage(): string {
         </div>
       </div>
     </div>
+
+    <!-- Modal: Confirmación de Eliminación -->
+    <div class="modal" id="modalConfirmDelete" style="z-index: 10000;">
+      <div class="modal-overlay" id="modalConfirmDeleteOverlay" style="background: rgba(0, 0, 0, 0.7);"></div>
+      <div class="modal-content" style="max-width: 450px; text-align: center;">
+        <div class="modal-body" style="padding: 40px 30px;">
+          <div style="width: 70px; height: 70px; margin: 0 auto 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 1.5rem;">¿Desactivar Usuario?</h3>
+          <p id="modalConfirmDeleteMessage" style="margin: 0 0 30px 0; color: #666; line-height: 1.6;">¿Estás seguro de que deseas desactivar este usuario?</p>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button id="btnCancelDelete" class="btn-secondary" style="min-width: 120px; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #f0f0f0; border: none; color: #333;">
+              Cancelar
+            </button>
+            <button id="btnConfirmDelete" class="btn-primary" style="min-width: 120px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; color: white;">
+              Desactivar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Éxito -->
+    <div class="modal" id="modalSuccess" style="z-index: 10000;">
+      <div class="modal-overlay" id="modalSuccessOverlay" style="background: rgba(0, 0, 0, 0.7);"></div>
+      <div class="modal-content" style="max-width: 450px; text-align: center;">
+        <div class="modal-body" style="padding: 40px 30px;">
+          <div style="width: 70px; height: 70px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h3 id="modalSuccessTitle" style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 1.5rem;">¡Éxito!</h3>
+          <p id="modalSuccessMessage" style="margin: 0 0 30px 0; color: #666; line-height: 1.6;">Operación completada correctamente</p>
+          <div style="display: flex; justify-content: center;">
+            <button id="btnAcceptSuccess" class="btn-primary" style="min-width: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s;">
+              Aceptar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
 // Función para cargar usuarios desde el API
-async function loadUsers() {
+async function loadUsers(filters: { role?: string; status?: string; search?: string } = {}) {
   try {
     const response = await api.getUsers();
-    const users = response.users || [];
+    let users = response.users || [];
     
-    // Actualizar estadísticas
-    const totalUsers = users.length;
-    const activeUsers = users.filter((u: any) => u.status === 'active').length;
-    const adminUsers = users.filter((u: any) => u.role?.name === 'admin').length;
-    const supervisorUsers = users.filter((u: any) => u.role?.name === 'supervisor').length;
+    // Aplicar filtros
+    if (filters.role) {
+      users = users.filter((u: any) => u.role?.name === filters.role);
+    }
+    
+    if (filters.status) {
+      const statusValue = filters.status === 'activo' ? 'active' : 'inactive';
+      users = users.filter((u: any) => u.status === statusValue);
+    }
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      users = users.filter((u: any) => 
+        u.full_name?.toLowerCase().includes(searchLower) ||
+        u.email?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Ordenar: Activos primero, luego inactivos
+    users.sort((a: any, b: any) => {
+      if (a.status === 'active' && b.status !== 'active') return -1;
+      if (a.status !== 'active' && b.status === 'active') return 1;
+      return 0;
+    });
+    
+    // Actualizar estadísticas (con datos sin filtrar)
+    const allUsers = response.users || [];
+    const totalUsers = allUsers.length;
+    const activeUsers = allUsers.filter((u: any) => u.status === 'active').length;
+    const adminUsers = allUsers.filter((u: any) => u.role?.name === 'admin').length;
+    const supervisorUsers = allUsers.filter((u: any) => u.role?.name === 'supervisor').length;
     
     const totalEl = document.getElementById('totalUsers');
     const activeEl = document.getElementById('activeUsers');
@@ -304,7 +452,7 @@ async function loadUsers() {
     if (activeEl) activeEl.textContent = activeUsers.toString();
     if (adminEl) adminEl.textContent = adminUsers.toString();
     if (supervisorEl) supervisorEl.textContent = supervisorUsers.toString();
-    if (countEl) countEl.textContent = `Total: ${totalUsers} usuarios`;
+    if (countEl) countEl.textContent = `Total: ${users.length} usuarios${users.length !== totalUsers ? ` (${totalUsers} total)` : ''}`;
     
     // Renderizar tabla
     const container = document.getElementById('usersTableContainer');
@@ -437,9 +585,7 @@ function attachUserActionListeners() {
       const userId = btn.dataset.id;
       const userName = btn.dataset.name;
       
-      if (confirm(`¿Estás seguro de que deseas desactivar al usuario ${userName}?`)) {
-        await deleteUser(parseInt(userId!));
-      }
+      showConfirmDeleteModal(parseInt(userId!), userName!);
     });
   });
 }
@@ -473,8 +619,11 @@ function closeEditModal() {
 async function deleteUser(userId: number) {
   try {
     await api.deleteUser(userId);
-    alert('Usuario desactivado exitosamente');
-    loadUsers(); // Recargar la lista
+    closeConfirmDeleteModal();
+    showSuccessModal('¡Usuario Desactivado!', 'El usuario se ha desactivado exitosamente');
+    setTimeout(() => {
+      loadUsers(getCurrentFilters()); // Recargar la lista con filtros actuales
+    }, 1500);
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
     alert('Error al desactivar usuario: ' + (error as Error).message);
@@ -681,10 +830,12 @@ export function initUsers(): void {
         throw new Error(error.error || 'Error al crear usuario');
       }
 
-      alert(`Usuario ${userName} creado exitosamente`);
+      showSuccessModal('¡Usuario Creado!', `El usuario "${userName}" se ha creado exitosamente`);
       closeModal();
       form.reset();
-      window.location.reload();
+      setTimeout(() => {
+        loadUsers(getCurrentFilters());
+      }, 1500);
     } catch (error) {
       console.error('Error al crear usuario:', error);
       alert('Error al crear el usuario: ' + (error as Error).message);
@@ -697,25 +848,16 @@ export function initUsers(): void {
 
   // Search functionality
   const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-  searchInput?.addEventListener('input', (e) => {
-    const searchTerm = (e.target as HTMLInputElement).value.toLowerCase();
-    console.log('Buscar:', searchTerm);
-    // Implement search logic
-  });
-
-  // Filter functionality
   const roleFilter = document.getElementById('roleFilter') as HTMLSelectElement;
   const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
-
-  roleFilter?.addEventListener('change', (e) => {
-    console.log('Filtrar por rol:', (e.target as HTMLSelectElement).value);
-    // Implement filter logic
-  });
-
-  statusFilter?.addEventListener('change', (e) => {
-    console.log('Filtrar por estado:', (e.target as HTMLSelectElement).value);
-    // Implement filter logic
-  });
+  
+  const applyFilters = () => {
+    loadUsers(getCurrentFilters());
+  };
+  
+  searchInput?.addEventListener('input', applyFilters);
+  roleFilter?.addEventListener('change', applyFilters);
+  statusFilter?.addEventListener('change', applyFilters);
 
   // Mobile menu
   const mobileToggle = document.querySelector('.btn-mobile-menu');
@@ -774,10 +916,12 @@ export function initUsers(): void {
         status: userStatus ? 'active' : 'inactive'
       });
 
-      alert('Usuario actualizado exitosamente');
+      showSuccessModal('¡Usuario Actualizado!', `El usuario "${userName}" se ha actualizado exitosamente`);
       closeEditModal();
-      // Recargar la página para reflejar los cambios
-      window.location.reload();
+      setTimeout(() => {
+        // Recargar la lista con filtros actuales
+        loadUsers(getCurrentFilters());
+      }, 1500);
     } catch (error) {
       console.error('Error al actualizar usuario:', error);
       alert('Error al actualizar el usuario: ' + (error as Error).message);
@@ -789,6 +933,26 @@ export function initUsers(): void {
       }
     }
   });
+
+  // Event listeners para modal de confirmación de eliminación
+  const btnCancelDelete = document.getElementById('btnCancelDelete');
+  const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+  const modalConfirmDeleteOverlay = document.getElementById('modalConfirmDeleteOverlay');
+  
+  btnCancelDelete?.addEventListener('click', closeConfirmDeleteModal);
+  btnConfirmDelete?.addEventListener('click', async () => {
+    if (userToDelete) {
+      await deleteUser(userToDelete.id);
+    }
+  });
+  modalConfirmDeleteOverlay?.addEventListener('click', closeConfirmDeleteModal);
+
+  // Event listeners para modal de éxito
+  const btnAcceptSuccess = document.getElementById('btnAcceptSuccess');
+  const modalSuccessOverlay = document.getElementById('modalSuccessOverlay');
+  
+  btnAcceptSuccess?.addEventListener('click', closeSuccessModal);
+  modalSuccessOverlay?.addEventListener('click', closeSuccessModal);
 
   // Logout
   const logoutBtn = document.getElementById('logoutBtn');

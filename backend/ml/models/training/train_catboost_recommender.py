@@ -98,7 +98,7 @@ def save_json(data, filepath):
     """Guarda datos en formato JSON."""
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"   💾 Guardado: {filepath}")
+    print(f"    Guardado: {filepath}")
 
 def calculate_ranking_metrics(y_true, y_pred_proba, task_ids, top_k=5):
     """
@@ -169,7 +169,7 @@ def calculate_ranking_metrics(y_true, y_pred_proba, task_ids, top_k=5):
 # CARGA Y PREPARACIÓN DE DATOS
 # ============================================================================
 
-print_section("🚀 ENTRENAMIENTO CATBOOST RECOMMENDER - MODELO 3")
+print_section(" ENTRENAMIENTO CATBOOST RECOMMENDER - MODELO 3")
 
 print("\n[1/12] Conectando a MySQL y cargando datos...")
 
@@ -184,9 +184,9 @@ try:
         query={"charset": "utf8mb4"}
     )
     engine = create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 10})
-    print(f"   ✅ Conectado a MySQL en {HOST}:{PORT}/{DB}")
+    print(f"   Conectado a MySQL en {HOST}:{PORT}/{DB}")
 except Exception as e:
-    raise RuntimeError(f"❌ Error creando conexión a MySQL: {type(e).__name__}: {e}")
+    raise RuntimeError(f" Error creando conexión a MySQL: {type(e).__name__}: {e}")
 
 # ============================================================================
 # QUERY SQL SIN DATA LEAKAGE
@@ -256,9 +256,9 @@ query = text("""
 
 try:
     df = pd.read_sql(query, engine)
-    print(f"   📊 Total pares (persona, tarea) cargados: {len(df):,}")
+    print(f"    Total pares (persona, tarea) cargados: {len(df):,}")
 except Exception as e:
-    raise RuntimeError(f"❌ Error ejecutando consulta SQL: {type(e).__name__}: {e}")
+    raise RuntimeError(f" Error ejecutando consulta SQL: {type(e).__name__}: {e}")
 finally:
     engine.dispose()
 
@@ -266,25 +266,25 @@ finally:
 # AUDITORÍA PRELIMINAR - DETECCIÓN DE DATA LEAKAGE
 # ============================================================================
 
-print_section("🔍 AUDITORÍA DE DATA LEAKAGE", char="-")
+print_section(" AUDITORÍA DE DATA LEAKAGE", char="-")
 
 print("\n[3/12] Verificando que NO usamos features prohibidas...")
 
 # Features que causan data leakage
 PROHIBITED_FEATURES = {
-    'duration_real',           # ❌ Es resultado de la tarea
-    'person_avg_delay_ratio',  # ❌ Calculado con duration_real futuro
-    'task_success_rate',       # ❌ Calculado con duration_real futuro
-    'load_ratio',              # ⚠️  Podría incluir carga de tareas futuras
+    'duration_real',           #  Es resultado de la tarea
+    'person_avg_delay_ratio',  #  Calculado con duration_real futuro
+    'task_success_rate',       #  Calculado con duration_real futuro
+    'load_ratio',              #   Podría incluir carga de tareas futuras
 }
 
 # Verificar que no existen en el DataFrame
 prohibited_found = [col for col in PROHIBITED_FEATURES if col in df.columns]
 if prohibited_found:
-    print(f"   ⚠️  ADVERTENCIA: Features prohibidas encontradas: {prohibited_found}")
-    print(f"   ⚠️  Estas NO se usarán como features de entrenamiento")
+    print(f"   ADVERTENCIA: Features prohibidas encontradas: {prohibited_found}")
+    print(f"   Estas NO se usarán como features de entrenamiento")
 else:
-    print(f"   ✅ VERIFICADO: Ninguna feature prohibida en el dataset")
+    print(f"    VERIFICADO: Ninguna feature prohibida en el dataset")
 
 # Features válidas para entrenamiento
 VALID_FEATURES = [
@@ -297,7 +297,7 @@ VALID_FEATURES = [
     'performance_index_imputed', 'rework_rate_imputed',
 ]
 
-print(f"\n   ✅ Features válidas identificadas: {len(VALID_FEATURES)}")
+print(f"\n    Features válidas identificadas: {len(VALID_FEATURES)}")
 for feature in VALID_FEATURES:
     print(f"      • {feature}")
 
@@ -351,11 +351,11 @@ INTERACTION_FEATURES = [
 
 ALL_FEATURES = VALID_FEATURES + INTERACTION_FEATURES
 
-print(f"   ✅ Features de interacción creadas: {len(INTERACTION_FEATURES)}")
+print(f"    Features de interacción creadas: {len(INTERACTION_FEATURES)}")
 for feature in INTERACTION_FEATURES:
     print(f"      • {feature}")
 
-print(f"\n   📊 Total features para entrenamiento: {len(ALL_FEATURES)}")
+print(f"\n    Total features para entrenamiento: {len(ALL_FEATURES)}")
 
 # ============================================================================
 # PREPARACIÓN DEL TARGET
@@ -366,7 +366,7 @@ print("\n[5/12] Preparando variable objetivo (completed_on_time_alt)...")
 # Filtrar solo filas con target válido
 df_clean = df[df['success_label'].notna()].copy()
 
-print(f"   📊 Filas después de filtrar target válido: {len(df_clean):,}")
+print(f"    Filas después de filtrar target válido: {len(df_clean):,}")
 
 # Distribución de clases
 class_dist = df_clean['success_label'].value_counts()
@@ -374,7 +374,7 @@ class_0 = class_dist.get(0, 0)
 class_1 = class_dist.get(1, 0)
 total = len(df_clean)
 
-print(f"\n   📊 Distribución de clases:")
+print(f"\n    Distribución de clases:")
 print(f"      • Clase 0 (NO a tiempo): {class_0:,} ({class_0/total*100:.1f}%)")
 print(f"      • Clase 1 (SÍ a tiempo):  {class_1:,} ({class_1/total*100:.1f}%)")
 
@@ -407,15 +407,15 @@ binary_cols = [
     'match_area', 'match_role_type'
 ]
 
-print(f"   ✅ Features categóricas: {len(categorical_cols)}")
+print(f"    Features categóricas: {len(categorical_cols)}")
 for col in categorical_cols:
     print(f"      • {col}")
 
-print(f"\n   ✅ Features numéricas: {len(numeric_cols)}")
+print(f"\n    Features numéricas: {len(numeric_cols)}")
 for col in numeric_cols:
     print(f"      • {col}")
 
-print(f"\n   ✅ Features binarias: {len(binary_cols)}")
+print(f"\n    Features binarias: {len(binary_cols)}")
 for col in binary_cols:
     print(f"      • {col}")
 
@@ -446,9 +446,9 @@ X = df_clean[ALL_FEATURES].copy()
 y = df_clean['success_label'].copy()
 task_ids = df_clean['task_id'].copy()
 
-print(f"   📊 Shape de X: {X.shape}")
-print(f"   📊 Shape de y: {y.shape}")
-print(f"   📊 Tareas únicas: {task_ids.nunique():,}")
+print(f"    Shape de X: {X.shape}")
+print(f"    Shape de y: {y.shape}")
+print(f"    Tareas únicas: {task_ids.nunique():,}")
 
 # Convertir categóricas a string
 for col in categorical_cols:
@@ -459,10 +459,10 @@ for col in numeric_cols:
     if X[col].isna().any():
         median_val = X[col].median()
         X[col] = X[col].fillna(median_val)
-        print(f"   🔧 Imputados {X[col].isna().sum()} NaN en '{col}' con mediana {median_val:.2f}")
+        print(f"    Imputados {X[col].isna().sum()} NaN en '{col}' con mediana {median_val:.2f}")
 
 # Split estratificado
-print("\n   📊 Creando split train/test estratificado...")
+print("\n    Creando split train/test estratificado...")
 
 X_train, X_test, y_train, y_test, task_ids_train, task_ids_test = train_test_split(
     X, y, task_ids,
@@ -471,17 +471,17 @@ X_train, X_test, y_train, y_test, task_ids_train, task_ids_test = train_test_spl
     stratify=y
 )
 
-print(f"   📊 Train: {len(X_train):,} pares")
-print(f"   📊 Test:  {len(X_test):,} pares")
-print(f"   📊 Tareas train: {task_ids_train.nunique():,}")
-print(f"   📊 Tareas test:  {task_ids_test.nunique():,}")
+print(f"    Train: {len(X_train):,} pares")
+print(f"    Test:  {len(X_test):,} pares")
+print(f"    Tareas train: {task_ids_train.nunique():,}")
+print(f"    Tareas test:  {task_ids_test.nunique():,}")
 
 # Verificar distribución en train/test
-print(f"\n   📊 Distribución train:")
+print(f"\n    Distribución train:")
 print(f"      • Clase 0: {(y_train == 0).sum():,} ({(y_train == 0).sum()/len(y_train)*100:.1f}%)")
 print(f"      • Clase 1: {(y_train == 1).sum():,} ({(y_train == 1).sum()/len(y_train)*100:.1f}%)")
 
-print(f"\n   📊 Distribución test:")
+print(f"\n    Distribución test:")
 print(f"      • Clase 0: {(y_test == 0).sum():,} ({(y_test == 0).sum()/len(y_test)*100:.1f}%)")
 print(f"      • Clase 1: {(y_test == 1).sum():,} ({(y_test == 1).sum()/len(y_test)*100:.1f}%)")
 
@@ -489,14 +489,14 @@ print(f"      • Clase 1: {(y_test == 1).sum():,} ({(y_test == 1).sum()/len(y_t
 # ENTRENAMIENTO DEL MODELO
 # ============================================================================
 
-print_section("🚀 ENTRENAMIENTO DEL MODELO CATBOOST", char="-")
+print_section(" ENTRENAMIENTO DEL MODELO CATBOOST", char="-")
 
 print("\n[8/12] Entrenando CatBoostClassifier para recomendación...")
 
 # Índices de features categóricas
 cat_features_idx = [X_train.columns.get_loc(col) for col in categorical_cols]
 
-print(f"   🔧 Índices de features categóricas: {cat_features_idx}")
+print(f"    Índices de features categóricas: {cat_features_idx}")
 
 # Configuración del modelo
 model = CatBoostClassifier(
@@ -512,7 +512,7 @@ model = CatBoostClassifier(
     eval_metric='AUC'
 )
 
-print(f"   🔧 Hiperparámetros:")
+print(f"    Hiperparámetros:")
 print(f"      • iterations: 1000")
 print(f"      • learning_rate: 0.05")
 print(f"      • depth: 6")
@@ -520,7 +520,7 @@ print(f"      • auto_class_weights: Balanced")
 print(f"      • early_stopping_rounds: 50")
 
 # Entrenar
-print(f"\n   🚀 Entrenando modelo...")
+print(f"\n    Entrenando modelo...")
 
 model.fit(
     X_train, y_train,
@@ -528,8 +528,8 @@ model.fit(
     verbose=False
 )
 
-print(f"   ✅ Modelo entrenado exitosamente")
-print(f"   📊 Iteraciones finales: {model.get_best_iteration()}")
+print(f"    Modelo entrenado exitosamente")
+print(f"    Iteraciones finales: {model.get_best_iteration()}")
 
 # ============================================================================
 # EVALUACIÓN EN TEST SET
@@ -549,7 +549,7 @@ recall = recall_score(y_test, y_pred, zero_division=0)
 f1 = f1_score(y_test, y_pred, zero_division=0)
 avg_precision = average_precision_score(y_test, y_pred_proba)
 
-print(f"\n   📈 Métricas de clasificación:")
+print(f"\n    Métricas de clasificación:")
 print(f"      • ROC-AUC:         {roc_auc:.4f}")
 print(f"      • Accuracy:        {accuracy:.4f}")
 print(f"      • Precision:       {precision:.4f}")
@@ -558,7 +558,7 @@ print(f"      • F1-Score:        {f1:.4f}")
 print(f"      • Avg Precision:   {avg_precision:.4f}")
 
 # Métricas de ranking
-print(f"\n   📈 Calculando métricas de ranking (Accuracy@k, MRR)...")
+print(f"\n    Calculando métricas de ranking (Accuracy@k, MRR)...")
 ranking_metrics = calculate_ranking_metrics(
     y_test.values, 
     y_pred_proba, 
@@ -566,7 +566,7 @@ ranking_metrics = calculate_ranking_metrics(
     top_k=5
 )
 
-print(f"\n   📈 Métricas de ranking:")
+print(f"\n    Métricas de ranking:")
 print(f"      • Accuracy@1:      {ranking_metrics['accuracy_at_1']:.2f}%")
 print(f"      • Accuracy@3:      {ranking_metrics['accuracy_at_3']:.2f}%")
 print(f"      • Accuracy@5:      {ranking_metrics['accuracy_at_5']:.2f}%")
@@ -589,7 +589,7 @@ cv_scores = cross_val_score(
     n_jobs=-1
 )
 
-print(f"\n   📈 ROC-AUC en validación cruzada:")
+print(f"\n    ROC-AUC en validación cruzada:")
 print(f"      • Promedio: {cv_scores.mean():.4f}")
 print(f"      • Std Dev:  {cv_scores.std():.4f}")
 print(f"      • Scores:   {[f'{s:.4f}' for s in cv_scores]}")
@@ -608,13 +608,13 @@ importance_df = pd.DataFrame({
     'importance': feature_importances
 }).sort_values('importance', ascending=False)
 
-print(f"\n   📊 Top 10 features más importantes:")
+print(f"\n    Top 10 features más importantes:")
 for idx, row in importance_df.head(10).iterrows():
     print(f"      {idx+1}. {row['feature']:<30} {row['importance']:>6.2f}%")
 
 # Guardar feature importance
 importance_df.to_csv(REPORT_DIR / "feature_importance.csv", index=False)
-print(f"\n   💾 Feature importance guardado: {REPORT_DIR / 'feature_importance.csv'}")
+print(f"\n    Feature importance guardado: {REPORT_DIR / 'feature_importance.csv'}")
 
 # Gráfico de feature importance
 plt.figure(figsize=(10, 8))
@@ -628,7 +628,7 @@ plt.gca().invert_yaxis()
 plt.tight_layout()
 plt.savefig(REPORT_DIR / "feature_importance.png", dpi=300, bbox_inches='tight')
 plt.close()
-print(f"   📊 Gráfico guardado: {REPORT_DIR / 'feature_importance.png'}")
+print(f"    Gráfico guardado: {REPORT_DIR / 'feature_importance.png'}")
 
 # ============================================================================
 # GUARDAR MODELO Y MÉTRICAS
@@ -639,7 +639,7 @@ print("\n[12/12] Guardando modelo y métricas...")
 # Guardar modelo
 model_path = ARTIFACT_DIR / "model_catboost_recommender.pkl"
 joblib.dump(model, model_path)
-print(f"   💾 Modelo guardado: {model_path}")
+print(f"    Modelo guardado: {model_path}")
 
 # Guardar métricas
 metrics_data = {
@@ -709,7 +709,7 @@ save_json(metrics_data, ARTIFACT_DIR / "recommender_metrics.json")
 # CLASIFICACIÓN Y RANKING DE RESULTADOS POSITIVOS
 # ============================================================================
 
-print(f"\n[9.5/12] 🎯 Clasificando POSITIVOS y NEGATIVOS...")
+print(f"\n[9.5/12]  Clasificando POSITIVOS y NEGATIVOS...")
 
 def classify_and_rank_by_task(y_true, y_pred_proba, task_ids, X_test_df, 
                                prob_threshold=0.5):
@@ -799,29 +799,29 @@ tareas_con_positivos = sum(1 for r in ranking_results if r['num_positivos'] > 0)
 promedio_positivos_por_tarea = np.mean([r['num_positivos'] for r in ranking_results])
 promedio_porcentaje_positivos = np.mean([r['porcentaje_positivos'] for r in ranking_results])
 
-print(f"\n   📊 Resultados de Clasificación:")
+print(f"\n    Resultados de Clasificación:")
 print(f"      • Total de tareas: {total_tareas}")
 print(f"      • Tareas con POSITIVOS: {tareas_con_positivos} ({tareas_con_positivos/total_tareas*100:.1f}%)")
 print(f"      • Promedio de POSITIVOS por tarea: {promedio_positivos_por_tarea:.1f}")
 print(f"      • Porcentaje promedio de POSITIVOS: {promedio_porcentaje_positivos:.1f}%")
 
 # Mostrar ejemplos
-print(f"\n   📋 Ejemplos de rankings POSITIVOS (primeras 3 tareas):")
+print(f"\n    Ejemplos de rankings POSITIVOS (primeras 3 tareas):")
 for i, resultado in enumerate(ranking_results[:3], 1):
-    print(f"\n      📌 Task #{resultado['task_id']}:")
+    print(f"\n       Task #{resultado['task_id']}:")
     print(f"         • Total candidatos: {resultado['total_candidatos']}")
     print(f"         • POSITIVOS: {resultado['num_positivos']} ({resultado['porcentaje_positivos']}%)")
     print(f"         • NEGATIVOS: {resultado['num_negativos']}")
     print(f"         • Ranking de POSITIVOS (de mejor a peor):")
     for rec in resultado['positivos_rankeados'][:5]:
-        marca = "✅" if rec['es_correcto_real'] else "❌"
+        marca = "" if rec['es_correcto_real'] else "❌"
         print(f"            #{rec['ranking_position']} - Persona {rec['person_id']:>4} ({rec['role']:>12}) - {rec['prob_exito']:.1%} {marca}")
 
 # ============================================================================
 # EXPORTAR RANKINGS A JSON Y CSV
 # ============================================================================
 
-print(f"\n[10/12] 💾 Exportando rankings de POSITIVOS...")
+print(f"\n[10/12]  Exportando rankings de POSITIVOS...")
 
 # ===== GUARDAR JSON COMPLETO =====
 ranking_json_output = {
@@ -836,7 +836,7 @@ ranking_json_output = {
 
 ranking_json_path = REPORT_DIR / "ranking_positivos_detallado.json"
 save_json(ranking_json_output, ranking_json_path)
-print(f"   ✅ JSON guardado: {ranking_json_path}")
+print(f"    JSON guardado: {ranking_json_path}")
 
 # ===== GUARDAR CSV RESUMEN =====
 csv_data = []
@@ -859,7 +859,7 @@ if csv_data:
     csv_df = pd.DataFrame(csv_data)
     csv_path = REPORT_DIR / "ranking_positivos.csv"
     csv_df.to_csv(csv_path, index=False)
-    print(f"   ✅ CSV guardado: {csv_path}")
+    print(f"    CSV guardado: {csv_path}")
 
 # ===== GUARDAS PREDICCIONES CLASIFICADAS =====
 predictions_output = full_predictions_df[[
@@ -869,13 +869,13 @@ predictions_output = full_predictions_df[[
 
 predictions_csv_path = REPORT_DIR / "predicciones_clasificadas.csv"
 predictions_output.to_csv(predictions_csv_path, index=False)
-print(f"   ✅ Predicciones clasificadas: {predictions_csv_path}")
+print(f"    Predicciones clasificadas: {predictions_csv_path}")
 
 # ============================================================================
 # VISUALIZACIONES
 # ============================================================================
 
-print(f"\n[11/12] 📊 Generando visualizaciones...")
+print(f"\n[11/12]  Generando visualizaciones...")
 
 # 1. ROC Curve
 fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
@@ -890,7 +890,7 @@ plt.grid(alpha=0.3)
 plt.tight_layout()
 plt.savefig(REPORT_DIR / "roc_curve.png", dpi=300, bbox_inches='tight')
 plt.close()
-print(f"   📊 ROC Curve guardada")
+print(f"    ROC Curve guardada")
 
 # 1.5. Gráfico: POSITIVOS vs NEGATIVOS por Tarea
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
@@ -948,7 +948,7 @@ ax4.legend()
 plt.tight_layout()
 plt.savefig(REPORT_DIR / "clasificacion_positivos_negativos.png", dpi=300, bbox_inches='tight')
 plt.close()
-print(f"   📊 Gráfico de clasificación guardado")
+print(f"    Gráfico de clasificación guardado")
 
 # 2. Precision-Recall Curve
 precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_pred_proba)
@@ -962,7 +962,7 @@ plt.grid(alpha=0.3)
 plt.tight_layout()
 plt.savefig(REPORT_DIR / "precision_recall_curve.png", dpi=300, bbox_inches='tight')
 plt.close()
-print(f"   📊 Precision-Recall Curve guardada")
+print(f"    Precision-Recall Curve guardada")
 
 # 3. Confusion Matrix
 cm = confusion_matrix(y_test, y_pred)
@@ -974,7 +974,7 @@ plt.title('Matriz de Confusión - Modelo 3', fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.savefig(REPORT_DIR / "confusion_matrix.png", dpi=300, bbox_inches='tight')
 plt.close()
-print(f"   📊 Confusion Matrix guardada")
+print(f"    Confusion Matrix guardada")
 
 # 4. Distribución de probabilidades predichas
 plt.figure(figsize=(10, 6))
@@ -988,16 +988,16 @@ plt.grid(alpha=0.3)
 plt.tight_layout()
 plt.savefig(REPORT_DIR / "probability_distribution.png", dpi=300, bbox_inches='tight')
 plt.close()
-print(f"   📊 Distribución de probabilidades guardada")
+print(f"    Distribución de probabilidades guardada")
 
 # ============================================================================
 # REPORTE FINAL
 # ============================================================================
 
-print_section("✅ ENTRENAMIENTO COMPLETADO", char="=")
+print_section(" ENTRENAMIENTO COMPLETADO", char="=")
 
 print(f"""
-📁 Archivos generados:
+ Archivos generados:
 
 Modelo entrenado:
    • {model_path}
@@ -1007,12 +1007,12 @@ Configuración y métricas:
    • {ARTIFACT_DIR / 'recommender_metrics.json'}
 
 Rankings de POSITIVOS ({REPORT_DIR}):
-   • ranking_positivos_detallado.json  (🔥 Principales - Rankings completos)
-   • ranking_positivos.csv             (🔥 Principales - POSITIVOS rankeados)
+   • ranking_positivos_detallado.json  (Principales - Rankings completos)
+   • ranking_positivos.csv             (Principales - POSITIVOS rankeados)
    • predicciones_clasificadas.csv     (Todas las predicciones: POSITIVOS vs NEGATIVOS)
 
 Visualizaciones ({REPORT_DIR}):
-   • clasificacion_positivos_negativos.png  (🔥 Principales - Gráficos de clasificación)
+   • clasificacion_positivos_negativos.png  (Principales - Gráficos de clasificación)
    • feature_importance.png
    • feature_importance.csv
    • roc_curve.png
@@ -1020,9 +1020,9 @@ Visualizaciones ({REPORT_DIR}):
    • confusion_matrix.png
    • probability_distribution.png
 
-📊 Resumen de Resultados:
+ Resumen de Resultados:
 
-✨ ANÁLISIS DE POSITIVOS vs NEGATIVOS (Umbral: 0.5):
+ ANÁLISIS DE POSITIVOS vs NEGATIVOS (Umbral: 0.5):
    • POSITIVOS (prob >= 0.5):  {clasificaciones.get('POSITIVO', 0):>6} predicciones ({clasificaciones.get('POSITIVO', 0)/len(full_predictions_df)*100:.1f}%)
    • NEGATIVOS (prob < 0.5):   {clasificaciones.get('NEGATIVO', 0):>6} predicciones ({clasificaciones.get('NEGATIVO', 0)/len(full_predictions_df)*100:.1f}%)
    
@@ -1030,45 +1030,45 @@ Visualizaciones ({REPORT_DIR}):
    • Promedio POSITIVOS/tarea: {promedio_positivos_por_tarea:.1f} personas
    • Porcentaje promedio:      {promedio_porcentaje_positivos:.1f}% de candidatos son POSITIVOS
 
-🎯 Métricas de Clasificación:
+ Métricas de Clasificación:
    • ROC-AUC:    {roc_auc:.4f}
    • Precision:  {precision:.4f}
    • Recall:     {recall:.4f}
    • F1-Score:   {f1:.4f}
 
-🎯 Métricas de Ranking (Sistema de Recomendación):
+ Métricas de Ranking (Sistema de Recomendación):
    • Accuracy@1: {ranking_metrics['accuracy_at_1']:.2f}% (primera recomendación correcta)
    • Accuracy@3: {ranking_metrics['accuracy_at_3']:.2f}% (top-3 contiene mejor opción)
    • Accuracy@5: {ranking_metrics['accuracy_at_5']:.2f}% (top-5 contiene mejor opción)
    • MRR:        {ranking_metrics['mrr']:.4f} (posición promedio de mejor persona)
 
-🎯 Validación Cruzada:
+ Validación Cruzada:
    • ROC-AUC (5-fold CV): {cv_scores.mean():.4f} ± {cv_scores.std():.4f}
 
-🎯 Top 3 Features Más Importantes:
+ Top 3 Features Más Importantes:
    1. {importance_df.iloc[0]['feature']}: {importance_df.iloc[0]['importance']:.2f}%
    2. {importance_df.iloc[1]['feature']}: {importance_df.iloc[1]['importance']:.2f}%
    3. {importance_df.iloc[2]['feature']}: {importance_df.iloc[2]['importance']:.2f}%
 
-✅ Auditoría de Data Leakage:
+ Auditoría de Data Leakage:
    • Features prohibidas usadas: NO
    • Solo features pre-asignación: SÍ
    • Validación temporal: APROBADA
 
-🎯 Interpretación:
+ Interpretación:
    - El modelo predice correctamente en {ranking_metrics['accuracy_at_5']:.0f}% de casos 
      (persona óptima está en top-5 recomendaciones)
    - ROC-AUC de {roc_auc:.3f} indica buena capacidad de discriminación
    - MRR de {ranking_metrics['mrr']:.3f} significa que en promedio la mejor persona 
      aparece en posición {1/ranking_metrics['mrr']:.1f}
 
-💡 Próximos pasos:
+ Próximos pasos:
    1. Probar modelo con nuevas tareas (inference)
    2. Implementar clase RecomendadorAsignacion
    3. Integrar con Modelos 1 y 2 en sistema completo
    4. Análisis de casos donde el modelo falla
 
-🔗 Uso en producción:
+ Uso en producción:
    
    import joblib
    import pandas as pd
@@ -1088,5 +1088,5 @@ Visualizaciones ({REPORT_DIR}):
 """)
 
 print("\n" + "=" * 80)
-print("🎉 ¡Modelo 3 (Recomendador) entrenado exitosamente SIN data leakage!")
+print("¡Modelo 3 (Recomendador) entrenado exitosamente SIN data leakage!")
 print("=" * 80 + "\n")

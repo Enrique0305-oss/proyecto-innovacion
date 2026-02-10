@@ -4,16 +4,16 @@ MODELO 4 CORREGIDO: PREDICCIÓN DE RIESGO DE RENUNCIA (CLASIFICACIÓN BINARIA)
 ═══════════════════════════════════════════════════════════════════════════════
 
 CORRECCIÓN DE DATA LEAKAGE:
-    ❌ ANTES: Target calculado CON features de entrenamiento (performance_index, 
+     ANTES: Target calculado CON features de entrenamiento (performance_index, 
               rework_rate, success_rate)
-    ✅ AHORA: Target = resigned (columna EXTERNA de BD, dato independiente)
+     AHORA: Target = resigned (columna EXTERNA de BD, dato independiente)
 
 OBJETIVO:
     Predecir si un colaborador renunciará para apoyar:
-    - 🎯 Retención proactiva de talento
-    - 📊 Identificación temprana de riesgo
-    - 💼 Optimización de asignaciones
-    - 🔄 Planificación de sucesión
+    -  Retención proactiva de talento
+    -  Identificación temprana de riesgo
+    -  Optimización de asignaciones
+    -  Planificación de sucesión
 
 CLASIFICACIÓN BINARIA:
     - 0: NO renunció (resigned = 0)
@@ -25,17 +25,17 @@ ALGORITMOS:
     - CatBoost: Robusto con categorías
 
 FEATURES PERMITIDAS (sin leakage):
-    ✅ experience_years: Años de experiencia
-    ✅ current_load / availability: Ratio de carga
-    ✅ total_tasks: Total de tareas históricas
-    ✅ avg_delay_ratio: Promedio de retrasos históricos
-    ✅ avg_task_complexity: Complejidad promedio
-    ✅ absences: Número de ausencias (dato histórico)
-    ✅ area, role: Contexto profesional
+     experience_years: Años de experiencia
+     current_load / availability: Ratio de carga
+     total_tasks: Total de tareas históricas
+     avg_delay_ratio: Promedio de retrasos históricos
+     avg_task_complexity: Complejidad promedio
+     absences: Número de ausencias (dato histórico)
+     area, role: Contexto profesional
     
-    ❌ performance_index: REMOVIDO (correlacionado con resigned)
-    ❌ rework_rate: REMOVIDO (correlacionado con resigned)
-    ❌ success_rate: REMOVIDO (calculado de tareas, correlacionado)
+     performance_index: REMOVIDO (correlacionado con resigned)
+     rework_rate: REMOVIDO (correlacionado con resigned)
+     success_rate: REMOVIDO (calculado de tareas, correlacionado)
 
 VALIDACIÓN:
     - Train/Test split: 80/20 estratificado
@@ -114,13 +114,13 @@ def print_section(title, char="=", width=80):
 def save_json(data, filepath):
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"   💾 Guardado: {filepath}")
+    print(f"    Guardado: {filepath}")
 
 # ============================================================================
 # CARGA DE DATOS
 # ============================================================================
 
-print_section("🚀 MODELO 4 CORREGIDO: PREDICCIÓN DE RENUNCIA (SIN DATA LEAKAGE)")
+print_section(" MODELO 4 CORREGIDO: PREDICCIÓN DE RENUNCIA (SIN DATA LEAKAGE)")
 
 print("\n[1/10] Conectando a MySQL...")
 
@@ -135,9 +135,9 @@ try:
         query={"charset": "utf8mb4"}
     )
     engine = create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 10})
-    print(f"   ✅ Conectado a MySQL en {HOST}:{PORT}/{DB}")
+    print(f"    Conectado a MySQL en {HOST}:{PORT}/{DB}")
 except Exception as e:
-    raise RuntimeError(f"❌ Error: {type(e).__name__}: {e}")
+    raise RuntimeError(f" Error: {type(e).__name__}: {e}")
 
 # ============================================================================
 # QUERY SQL - TARGET EXTERNO (resigned)
@@ -204,10 +204,10 @@ query = text("""
 
 try:
     df = pd.read_sql(query, engine)
-    print(f"   📊 Total colaboradores: {len(df):,}")
-    print(f"   👥 Personas únicas: {df['person_id'].nunique():,}")
+    print(f"    Total colaboradores: {len(df):,}")
+    print(f"    Personas únicas: {df['person_id'].nunique():,}")
 except Exception as e:
-    raise RuntimeError(f"❌ Error: {type(e).__name__}: {e}")
+    raise RuntimeError(f" Error: {type(e).__name__}: {e}")
 finally:
     engine.dispose()
 
@@ -219,16 +219,16 @@ print("\n[3/10] Validando TARGET (resigned) - Sin Data Leakage...")
 
 # Verificar distribución
 resigned_counts = df['resigned'].value_counts()
-print(f"\n   📊 Distribución del target:")
+print(f"\n    Distribución del target:")
 for label, count in resigned_counts.items():
     pct = 100 * count / len(df)
     status = "NO renunció" if label == 0 else "SÍ renunció"
     print(f"      {status} ({label}): {count:,} ({pct:.2f}%)")
 
 # Verificar que no hay leakage (target es independiente)
-print(f"\n   ✅ Target 'resigned' es columna EXTERNA de BD")
-print(f"   ✅ NO se calcula usando features de entrenamiento")
-print(f"   ✅ Dato histórico INDEPENDIENTE")
+print(f"\n    Target 'resigned' es columna EXTERNA de BD")
+print(f"    NO se calcula usando features de entrenamiento")
+print(f"    Dato histórico INDEPENDIENTE")
 
 # ============================================================================
 # LIMPIEZA Y PREPARACIÓN
@@ -266,8 +266,8 @@ feature_cols = numeric_features + ['person_area_encoded', 'role_encoded']
 X = df[feature_cols].copy()
 y = df['resigned'].copy()
 
-print(f"   📊 Features: {len(feature_cols)}")
-print(f"   📋 Muestras: {len(X):,}")
+print(f"    Features: {len(feature_cols)}")
+print(f"    Muestras: {len(X):,}")
 
 # ============================================================================
 # SPLIT ESTRATIFICADO
@@ -282,8 +282,8 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 
-print(f"   🔹 Train: {len(X_train):,} muestras")
-print(f"   🔹 Test:  {len(X_test):,} muestras")
+print(f"    Train: {len(X_train):,} muestras")
+print(f"    Test:  {len(X_test):,} muestras")
 
 # ============================================================================
 # MANEJO DE DESBALANCE CON SMOTE
@@ -292,7 +292,7 @@ print(f"   🔹 Test:  {len(X_test):,} muestras")
 print("\n[6/10] Balanceando clases con SMOTE...")
 
 resigned_train = y_train.value_counts()
-print(f"   📊 Antes de SMOTE:")
+print(f"    Antes de SMOTE:")
 for label, count in resigned_train.items():
     print(f"      Clase {label}: {count:,}")
 
@@ -300,7 +300,7 @@ smote = SMOTE(random_state=RANDOM_STATE)
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
 resigned_balanced = pd.Series(y_train_balanced).value_counts()
-print(f"\n   📊 Después de SMOTE:")
+print(f"\n    Después de SMOTE:")
 for label, count in resigned_balanced.items():
     print(f"      Clase {label}: {count:,}")
 
@@ -337,7 +337,7 @@ acc_xgb = accuracy_score(y_test, y_pred_xgb)
 f1_xgb = f1_score(y_test, y_pred_xgb, average='binary')
 auc_xgb = roc_auc_score(y_test, y_proba_xgb)
 
-print(f"\n   📊 XGBoost - Resultados:")
+print(f"\n    XGBoost - Resultados:")
 print(f"      Accuracy: {acc_xgb:.4f}")
 print(f"      F1-Score: {f1_xgb:.4f}")
 print(f"      AUC-ROC:  {auc_xgb:.4f}")
@@ -372,7 +372,7 @@ acc_lgb = accuracy_score(y_test, y_pred_lgb)
 f1_lgb = f1_score(y_test, y_pred_lgb, average='binary')
 auc_lgb = roc_auc_score(y_test, y_proba_lgb)
 
-print(f"\n   📊 LightGBM - Resultados:")
+print(f"\n    LightGBM - Resultados:")
 print(f"      Accuracy: {acc_lgb:.4f}")
 print(f"      F1-Score: {f1_lgb:.4f}")
 print(f"      AUC-ROC:  {auc_lgb:.4f}")
@@ -407,7 +407,7 @@ acc_cat = accuracy_score(y_test, y_pred_cat)
 f1_cat = f1_score(y_test, y_pred_cat, average='binary')
 auc_cat = roc_auc_score(y_test, y_proba_cat)
 
-print(f"\n   📊 CatBoost - Resultados:")
+print(f"\n    CatBoost - Resultados:")
 print(f"      Accuracy: {acc_cat:.4f}")
 print(f"      F1-Score: {f1_cat:.4f}")
 print(f"      AUC-ROC:  {auc_cat:.4f}")
@@ -469,14 +469,14 @@ for idx, (model_name, y_pred) in enumerate([
 
 plt.tight_layout()
 plt.savefig(REPORT_DIR / 'confusion_matrices.png', dpi=300, bbox_inches='tight')
-print(f"   📊 Gráfico: {REPORT_DIR / 'confusion_matrices.png'}")
+print(f"    Gráfico: {REPORT_DIR / 'confusion_matrices.png'}")
 
-print_section("✅ MODELO 4 CORREGIDO - COMPLETADO SIN DATA LEAKAGE")
-print(f"\n🎯 Mejor modelo: {'XGBoost' if auc_xgb >= max(auc_lgb, auc_cat) else 'LightGBM' if auc_lgb >= auc_cat else 'CatBoost'}")
-print(f"📊 Reporte: {REPORT_DIR / 'modelo4_fixed_results.json'}")
-print(f"\n✅ VALIDACIÓN:")
-print(f"   ✓ Target = resigned (columna EXTERNA)")
-print(f"   ✓ Features NO incluyen performance_index, rework_rate, success_rate")
-print(f"   ✓ Sin correlación directa entre features y target")
-print(f"   ✓ Accuracy razonable ({max(acc_xgb, acc_lgb, acc_cat):.2%}), no 99%")
-print(f"   ✓ SMOTE aplicado para balancear clases")
+print_section(" MODELO 4 CORREGIDO - COMPLETADO SIN DATA LEAKAGE")
+print(f"\n Mejor modelo: {'XGBoost' if auc_xgb >= max(auc_lgb, auc_cat) else 'LightGBM' if auc_lgb >= auc_cat else 'CatBoost'}")
+print(f" Reporte: {REPORT_DIR / 'modelo4_fixed_results.json'}")
+print(f"\n VALIDACIÓN:")
+print(f"    Target = resigned (columna EXTERNA)")
+print(f"    Features NO incluyen performance_index, rework_rate, success_rate")
+print(f"    Sin correlación directa entre features y target")
+print(f"    Accuracy razonable ({max(acc_xgb, acc_lgb, acc_cat):.2%}), no 99%")
+print(f"    SMOTE aplicado para balancear clases")

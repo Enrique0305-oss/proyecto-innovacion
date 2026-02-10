@@ -5,14 +5,14 @@
 MODELO PARA PREDICCIÓN EN SISTEMA WEB (antes de asignar personas)
 
 CARACTERÍSTICAS:
-✅ Solo usa features de la TAREA (tabla tasks)
-✅ NO usa datos de persona ni asignaciones
-✅ Sin data leakage - solo info disponible al CREAR la tarea
-✅ 2 clases de riesgo: BAJO_RIESGO, ALTO_RIESGO
+ Solo usa features de la TAREA (tabla tasks)
+ NO usa datos de persona ni asignaciones
+ Sin data leakage - solo info disponible al CREAR la tarea
+ 2 clases de riesgo: BAJO_RIESGO, ALTO_RIESGO
 
 TARGET (risk_binary):
-- 0 (✅ BAJO_RIESGO): Delay <= percentil 70
-- 1 (⚠️ ALTO_RIESGO): Delay > percentil 70
+- 0 ( BAJO_RIESGO): Delay <= percentil 70
+- 1 ( ALTO_RIESGO): Delay > percentil 70
 
 Autor: Sistema de Gestión de Tareas
 Fecha: 1/12/2025

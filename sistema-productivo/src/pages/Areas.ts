@@ -278,6 +278,46 @@ export function AreasPage(): string {
         </div>
       </div>
     </div>
+
+    <!-- Modal: Confirmación de Eliminación -->
+    <div class="modal" id="modalConfirmDelete" style="display: none;">
+      <div class="modal-overlay"></div>
+      <div class="modal-content modal-small" style="max-width: 450px;">
+        <div class="modal-body" style="padding: 30px;">
+          <div style="width: 70px; height: 70px; margin: 0 auto 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 22px; margin-bottom: 12px; color: #1a202c; text-align: center;">¿Estás seguro?</h3>
+          <p style="color: #718096; margin-bottom: 8px; text-align: center;" id="confirmMessage">¿Deseas eliminar el área?</p>
+          <p style="color: #e53e3e; font-size: 14px; margin-bottom: 24px; text-align: center;">Esta acción desactivará el área.</p>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn-secondary" id="btnCancelDelete" style="flex: 1; padding: 12px;">Cancelar</button>
+            <button class="btn-danger" id="btnConfirmDelete" style="flex: 1; padding: 12px; background: #e53e3e;">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Éxito -->
+    <div class="modal" id="modalSuccess" style="display: none;">
+      <div class="modal-overlay"></div>
+      <div class="modal-content modal-small" style="max-width: 400px; text-align: center;">
+        <div class="modal-body" style="padding: 40px 30px;">
+          <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 24px; margin-bottom: 12px; color: #1a202c;" id="successTitle">¡Éxito!</h3>
+          <p style="color: #718096; margin-bottom: 30px;" id="successMessage">Operación realizada correctamente</p>
+          <button class="btn-primary" id="btnCloseSuccess" style="width: 100%; padding: 12px;">Aceptar</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -406,28 +446,36 @@ function generateAreaCard(
 
 async function loadSupervisors() {
   try {
-    const response = await api.getPeople();
-    const people = response.persons || [];
+    const response = await api.getUsers();
+    const users = response.users || [];
+    
+    // Filtrar solo usuarios con rol de supervisor
+    const supervisors = users.filter((user: any) => user.role?.name === 'supervisor');
     
     const supervisorSelect = document.getElementById('areaSupervisor') as HTMLSelectElement;
     if (supervisorSelect) {
       // Mantener la opción por defecto
       supervisorSelect.innerHTML = '<option value="">Seleccionar supervisor</option>';
       
-      // Agregar personas como opciones
-      people.forEach((person: any) => {
+      // Agregar supervisores como opciones
+      supervisors.forEach((supervisor: any) => {
         const option = document.createElement('option');
-        option.value = person.person_id;
-        option.textContent = `${person.person_id} - ${person.role || 'Sin rol'}`;
+        option.value = supervisor.person_id;
+        option.textContent = supervisor.full_name || supervisor.email;
         supervisorSelect.appendChild(option);
       });
+      
+      // Si no hay supervisores, mostrar mensaje
+      if (supervisors.length === 0) {
+        supervisorSelect.innerHTML = '<option value="">No hay supervisores disponibles</option>';
+      }
     }
   } catch (error) {
     console.error('Error al cargar supervisores:', error);
     // Si falla, dejamos las opciones por defecto vacías
     const supervisorSelect = document.getElementById('areaSupervisor') as HTMLSelectElement;
     if (supervisorSelect) {
-      supervisorSelect.innerHTML = '<option value="">No se pudieron cargar supervisores</option>';
+      supervisorSelect.innerHTML = '<option value="">Error al cargar supervisores</option>';
     }
   }
 }
@@ -530,9 +578,7 @@ function attachAreaActionListeners() {
       const id = parseInt(btn.dataset.id!);
       const name = btn.dataset.name!;
       
-      if (confirm(`¿Estás seguro de que deseas eliminar el área "${name}"?\n\nEsta acción desactivará el área.`)) {
-        await deleteArea(id);
-      }
+      showConfirmDeleteModal(id, name);
     });
   });
 }
@@ -606,6 +652,34 @@ function openDetailsModal(name: string, employees: string, tasks: string, effici
   }
 }
 
+// Variable para almacenar el ID del área a eliminar
+let areaToDelete: { id: number, name: string } | null = null;
+
+// Función para mostrar modal de éxito
+function showSuccessModal(title: string, message: string) {
+  const modal = document.getElementById('modalSuccess');
+  const titleEl = document.getElementById('successTitle');
+  const messageEl = document.getElementById('successMessage');
+  
+  if (modal && titleEl && messageEl) {
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    modal.style.display = 'flex';
+  }
+}
+
+// Función para mostrar modal de confirmación de eliminación
+function showConfirmDeleteModal(id: number, name: string) {
+  areaToDelete = { id, name };
+  const modal = document.getElementById('modalConfirmDelete');
+  const messageEl = document.getElementById('confirmMessage');
+  
+  if (modal && messageEl) {
+    messageEl.textContent = `¿Deseas eliminar el área "${name}"?`;
+    modal.style.display = 'flex';
+  }
+}
+
 // Función para abrir modal de edición
 function openEditAreaModal(id: number, name: string, description: string, _supervisor: string) {
   const modal = document.getElementById('modalNewArea');
@@ -632,7 +706,7 @@ function openEditAreaModal(id: number, name: string, description: string, _super
 async function deleteArea(areaId: number) {
   try {
     await api.deleteArea(areaId);
-    alert('Área eliminada exitosamente');
+    showSuccessModal('¡Área Eliminada!', 'El área se ha eliminado exitosamente');
     loadAreas();
   } catch (error) {
     console.error('Error al eliminar área:', error);
@@ -709,6 +783,49 @@ export function initAreas(): void {
     }
   });
 
+  // Event listeners para el modal de éxito
+  const btnCloseSuccess = document.getElementById('btnCloseSuccess');
+  const modalSuccess = document.getElementById('modalSuccess');
+  
+  btnCloseSuccess?.addEventListener('click', () => {
+    if (modalSuccess) {
+      modalSuccess.style.display = 'none';
+    }
+  });
+
+  modalSuccess?.addEventListener('click', (e) => {
+    if (e.target === modalSuccess || (e.target as HTMLElement).classList.contains('modal-overlay')) {
+      modalSuccess.style.display = 'none';
+    }
+  });
+
+  // Event listeners para el modal de confirmación de eliminación
+  const btnCancelDelete = document.getElementById('btnCancelDelete');
+  const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+  const modalConfirmDelete = document.getElementById('modalConfirmDelete');
+  
+  btnCancelDelete?.addEventListener('click', () => {
+    if (modalConfirmDelete) {
+      modalConfirmDelete.style.display = 'none';
+      areaToDelete = null;
+    }
+  });
+
+  btnConfirmDelete?.addEventListener('click', async () => {
+    if (areaToDelete && modalConfirmDelete) {
+      modalConfirmDelete.style.display = 'none';
+      await deleteArea(areaToDelete.id);
+      areaToDelete = null;
+    }
+  });
+
+  modalConfirmDelete?.addEventListener('click', (e) => {
+    if (e.target === modalConfirmDelete || (e.target as HTMLElement).classList.contains('modal-overlay')) {
+      modalConfirmDelete.style.display = 'none';
+      areaToDelete = null;
+    }
+  });
+
   // Form submission
   const form = document.getElementById('formNewArea') as HTMLFormElement;
   form?.addEventListener('submit', async (e) => {
@@ -745,11 +862,11 @@ export function initAreas(): void {
       if (isEditing && areaId) {
         // Actualizar área existente
         await api.updateArea(parseInt(areaId), areaData);
-        alert(`Área "${areaName}" actualizada exitosamente`);
+        showSuccessModal('¡Área Actualizada!', `El área "${areaName}" se ha actualizado exitosamente`);
       } else {
         // Crear nueva área
         await api.createArea(areaData);
-        alert(`Área "${areaName}" creada exitosamente`);
+        showSuccessModal('¡Área Creada!', `El área "${areaName}" se ha creado exitosamente`);
       }
 
       closeModal();

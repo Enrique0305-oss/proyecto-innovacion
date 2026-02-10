@@ -590,6 +590,27 @@ export function TasksPage(): string {
         </div>
       </div>
     </div>
+
+    <!-- Modal: Éxito -->
+    <div class="modal" id="modalSuccess" style="z-index: 10000;">
+      <div class="modal-overlay" id="modalSuccessOverlay" style="background: rgba(0, 0, 0, 0.7);"></div>
+      <div class="modal-content" style="max-width: 450px; text-align: center;">
+        <div class="modal-body" style="padding: 40px 30px;">
+          <div style="width: 70px; height: 70px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h3 id="modalSuccessTitle" style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 1.5rem;">¡Éxito!</h3>
+          <p id="modalSuccessMessage" style="margin: 0 0 30px 0; color: #666; line-height: 1.6;">Operación completada correctamente</p>
+          <div style="display: flex; justify-content: center;">
+            <button id="btnAcceptSuccess" class="btn-primary" style="min-width: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s;">
+              Aceptar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -614,6 +635,33 @@ function getUserRole(): string {
 function canEditFullTask(): boolean {
   const role = getUserRole();
   return role === 'super_admin' || role === 'gerente' || role === 'supervisor';
+}
+
+// Función para mostrar modal de éxito
+function showSuccessModal(title: string, message: string) {
+  const modal = document.getElementById('modalSuccess');
+  const titleEl = document.getElementById('modalSuccessTitle');
+  const messageEl = document.getElementById('modalSuccessMessage');
+  
+  if (titleEl) titleEl.textContent = title;
+  if (messageEl) messageEl.textContent = message;
+  
+  if (modal) {
+    modal.classList.add('active');
+    const dashboardLayout = document.querySelector('.dashboard-layout');
+    dashboardLayout?.classList.add('blur-background');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeSuccessModal() {
+  const modal = document.getElementById('modalSuccess');
+  if (modal) {
+    modal.classList.remove('active');
+    const dashboardLayout = document.querySelector('.dashboard-layout');
+    dashboardLayout?.classList.remove('blur-background');
+    document.body.style.overflow = '';
+  }
 }
 
 // Función para cargar proyectos desde el API
@@ -1283,8 +1331,10 @@ function renderTasks(tasks: any[]) {
         if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
           try {
             await api.deleteTask(parseInt(taskId || '0'));
-            alert('Tarea eliminada exitosamente');
-            loadTasks();
+            showSuccessModal('¡Tarea Eliminada!', 'La tarea se ha eliminado exitosamente');
+            setTimeout(() => {
+              loadTasks();
+            }, 1500);
           } catch (error) {
             console.error('Error al eliminar tarea:', error);
             alert('Error al eliminar la tarea');
@@ -1703,6 +1753,9 @@ function displayAIRecommendations(recommendations: any[]) {
   // Agregar event listeners a los botones de selección
   aiPanel.querySelectorAll('.btn-select-recommendation').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
       const button = e.currentTarget as HTMLElement;
       const personEmail = button.dataset.personEmail;
       const personName = button.dataset.personName;
@@ -1948,14 +2001,19 @@ async function createProject() {
     const data = await response.json();
     console.log(`Proyecto ${isEditing ? 'actualizado' : 'creado'}:`, data);
     
-    alert(`¡Proyecto ${isEditing ? 'actualizado' : 'creado'} exitosamente!`);
+    showSuccessModal(
+      isEditing ? '¡Proyecto Actualizado!' : '¡Proyecto Creado!', 
+      `El proyecto se ha ${isEditing ? 'actualizado' : 'creado'} exitosamente`
+    );
     
     // Cerrar modal
     const modal = document.getElementById('newProjectModal');
     modal?.classList.remove('active');
     
     // Recargar lista de proyectos
-    loadProjects();
+    setTimeout(() => {
+      loadProjects();
+    }, 1500);
     
   } catch (error: any) {
     console.error('Error al procesar proyecto:', error);
@@ -2110,7 +2168,7 @@ async function createMeeting() {
     const data = await response.json();
     console.log('Reunión creada:', data);
     
-    alert('¡Reunión programada exitosamente!');
+    showSuccessModal('¡Reunión Programada!', 'La reunión se ha programado exitosamente');
     
     // Cerrar modal
     const modal = document.getElementById('newMeetingModal');
@@ -2118,7 +2176,9 @@ async function createMeeting() {
     
     // Si estamos en vista de reuniones, recargarlas
     if (currentProjectId && document.getElementById('meetingsView')?.style.display !== 'none') {
-      showProjectMeetings(currentProjectId);
+      setTimeout(() => {
+        showProjectMeetings(currentProjectId);
+      }, 1500);
     }
     
   } catch (error: any) {

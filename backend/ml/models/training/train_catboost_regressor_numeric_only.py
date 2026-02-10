@@ -3,7 +3,7 @@ Entrenamiento de Modelo CatBoost para Regresión de Duración - SOLO FEATURES NU
 =======================================================================================
 Predicción de duration_real (tiempo real que toma completar una tarea).
 
-🎯 VERSIÓN SIMPLIFICADA - Compatible con cualquier dominio
+ VERSIÓN SIMPLIFICADA - Compatible con cualquier dominio
 ============================================================
 
 Características principales:
@@ -15,14 +15,14 @@ Características principales:
 - Métricas en escala original para interpretabilidad
 - Análisis detallado de residuos y errores
 
-⚡ VENTAJAS DE ESTA VERSIÓN:
-- ✅ Funciona con cualquier dominio (IT, rural, construcción, etc.)
-- ✅ No requiere mapeo de categorías
-- ✅ Features universales (duración estimada, experiencia, carga, performance)
-- ✅ Menos overfitting a categorías específicas
-- ✅ Más generalizable
+ VENTAJAS DE ESTA VERSIÓN:
+-  Funciona con cualquier dominio (IT, rural, construcción, etc.)
+-  No requiere mapeo de categorías
+-  Features universales (duración estimada, experiencia, carga, performance)
+-  Menos overfitting a categorías específicas
+-  Más generalizable
 
-⚠️ TRADE-OFF:
+ TRADE-OFF:
 - R² esperado: ~0.70-0.75 (vs ~0.85 con categóricas)
 - Aún suficiente para producción (duration_est tiene correlación ~0.9 con target)
 
@@ -104,7 +104,7 @@ def save_json(data, filepath):
     """Guarda datos en formato JSON."""
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"   💾 Guardado: {filepath}")
+    print(f"    Guardado: {filepath}")
 
 def calculate_regression_metrics(y_true, y_pred, name="", y_pred_samples=None):
     """Calcula métricas completas de regresión con intervalos de confianza."""
@@ -156,7 +156,7 @@ def calculate_regression_metrics(y_true, y_pred, name="", y_pred_samples=None):
     }
     
     if name:
-        print(f"\n   📈 Métricas {name}:")
+        print(f"\n    Métricas {name}:")
         if mae_ci:
             print(f"      • MAE:  {mae:.3f} días [IC 95%: {mae_ci[0]:.3f} - {mae_ci[1]:.3f}]")
         else:
@@ -202,7 +202,7 @@ def plot_predictions_vs_actual(y_true, y_pred, title, filename):
     plt.tight_layout()
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"   📊 Gráfico guardado: {filename}")
+    print(f"    Gráfico guardado: {filename}")
 
 def plot_residuals(y_true, y_pred, title, filename):
     """Gráfico de análisis de residuos."""
@@ -253,7 +253,7 @@ def plot_residuals(y_true, y_pred, title, filename):
     plt.tight_layout()
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"   📊 Gráfico guardado: {filename}")
+    print(f"    Gráfico guardado: {filename}")
 
 def plot_feature_importance_regression(model, feature_names, model_name, filename, top_n=20):
     """Visualiza feature importance para regresión."""
@@ -272,13 +272,13 @@ def plot_feature_importance_regression(model, feature_names, model_name, filenam
     plt.tight_layout()
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"   📊 Gráfico guardado: {filename}")
+    print(f"    Gráfico guardado: {filename}")
 
 # ============================================================================
 # CARGA Y PREPARACIÓN DE DATOS
 # ============================================================================
 
-print_section("🚀 ENTRENAMIENTO CATBOOST REGRESSOR - SOLO FEATURES NUMÉRICAS")
+print_section(" ENTRENAMIENTO CATBOOST REGRESSOR - SOLO FEATURES NUMÉRICAS")
 
 print("\n[1/8] Conectando a MySQL y cargando datos...")
 
@@ -293,16 +293,16 @@ try:
         query={"charset": "utf8mb4"}
     )
     engine = create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 10})
-    print(f"   ✅ Conectado a MySQL en {HOST}:{PORT}/{DB}")
+    print(f"    Conectado a MySQL en {HOST}:{PORT}/{DB}")
 except Exception as e:
     raise RuntimeError(f"❌ Error creando conexión a MySQL: {type(e).__name__}: {e}")
 
 try:
     query = text("SELECT * FROM v_training_dataset_clean")
     df = pd.read_sql(query, engine)
-    print(f"   📊 Total filas cargadas: {len(df):,}")
+    print(f"    Total filas cargadas: {len(df):,}")
 except Exception as e:
-    raise RuntimeError(f"❌ Error ejecutando consulta SQL: {type(e).__name__}: {e}")
+    raise RuntimeError(f" Error ejecutando consulta SQL: {type(e).__name__}: {e}")
 finally:
     engine.dispose()
 
@@ -314,26 +314,26 @@ print("\n[2/8] Preparando variable objetivo (duration_real)...")
 
 target_col = "duration_real"
 if target_col not in df.columns:
-    raise RuntimeError(f"❌ No se encontró la columna objetivo '{target_col}'")
+    raise RuntimeError(f" No se encontró la columna objetivo '{target_col}'")
 
 df = df[~df[target_col].isna()].copy()
 df = df[df[target_col] > 0].copy()
 
 # Convertir de minutos a días
-print(f"\n   🔧 Conversión de unidades:")
+print(f"\n    Conversión de unidades:")
 print(f"      Promedio antes: {df[target_col].mean():,.2f} minutos")
 
 df[target_col] = df[target_col] / (60 * 24)
 df['duration_est_imputed'] = df['duration_est_imputed'] / (60 * 24)
 
 print(f"      Promedio después: {df[target_col].mean():.2f} días")
-print(f"      ✅ Conversión aplicada: minutos → días")
+print(f"       Conversión aplicada: minutos → días")
 
 n_total = len(df)
 duration_stats = df[target_col].describe()
 
-print(f"   📊 Filas con target válido: {n_total:,}")
-print(f"\n   📊 Estadísticas de duration_real:")
+print(f"    Filas con target válido: {n_total:,}")
+print(f"\n    Estadísticas de duration_real:")
 print(f"      Media:    {duration_stats['mean']:.2f} días")
 print(f"      Mediana:  {duration_stats['50%']:.2f} días")
 print(f"      Mín:      {duration_stats['min']:.2f} días")
@@ -347,7 +347,7 @@ print(f"      Asimetría: {skewness:.2f} {'(sesgada a la derecha)' if skewness >
 # SELECCIÓN DE FEATURES - SOLO NUMÉRICAS
 # ============================================================================
 
-print_section("🎯 SELECCIÓN DE FEATURES - SOLO NUMÉRICAS (UNIVERSALES)", char="-")
+print_section(" SELECCIÓN DE FEATURES - SOLO NUMÉRICAS (UNIVERSALES)", char="-")
 
 print("\n[3/8] Seleccionando features numéricas sin dependencias de dominio...")
 
@@ -359,10 +359,10 @@ LEAKAGE_FEATURES = {
     "completed_on_time_alt",
 }
 
-# ⭐ FEATURES NUMÉRICAS UNIVERSALES (funcionan en cualquier dominio)
+#  FEATURES NUMÉRICAS UNIVERSALES (funcionan en cualquier dominio)
 NUMERIC_FEATURES = {
     # Características de la tarea
-    "duration_est_imputed",  # ⭐⭐⭐ MUY IMPORTANTE (correlación ~0.9)
+    "duration_est_imputed",  #  MUY IMPORTANTE (correlación ~0.9)
     
     # Características de la persona
     "experience_years_imputed",       # Años de experiencia
@@ -397,22 +397,22 @@ if 'complexity_level' in df.columns:
         df['complexity_numeric'] = 1 + 2 * (df['complexity_numeric'] - min_val) / (max_val - min_val)
     
     NUMERIC_FEATURES.add('complexity_numeric')
-    print(f"   ✅ complexity_level convertido a complexity_numeric (escala 1-3)")
+    print(f"    complexity_level convertido a complexity_numeric (escala 1-3)")
 
 # Filtrar features que existen en el DataFrame
 feature_cols = [c for c in df.columns if c in NUMERIC_FEATURES]
 
-print(f"\n   ✅ Features numéricas seleccionadas: {len(feature_cols)}")
+print(f"\n    Features numéricas seleccionadas: {len(feature_cols)}")
 for col in sorted(feature_cols):
     print(f"      • {col}")
 
-print(f"\n   ❌ Features categóricas ELIMINADAS (evitar dependencia de dominio):")
+print(f"\n    Features categóricas ELIMINADAS (evitar dependencia de dominio):")
 categorical_excluded = ['task_area', 'task_type', 'person_area', 'role']
 for col in categorical_excluded:
     print(f"      • {col} (específico del dominio)")
 
 # Verificar correlación con target
-print(f"\n   📊 Correlaciones con duration_real:")
+print(f"\n    Correlaciones con duration_real:")
 correlations = df[[target_col] + feature_cols].corr()[target_col].sort_values(ascending=False)
 for col in feature_cols:
     corr = correlations[col]
@@ -447,7 +447,7 @@ X = df[feature_cols].copy()
 y = df[target_col].copy()
 
 # Imputar valores faltantes en X
-print(f"\n   🔧 Imputación de valores faltantes:")
+print(f"\n    Imputación de valores faltantes:")
 for col in feature_cols:
     if X[col].isna().any() or X[col].isna().all():
         n_missing = X[col].isna().sum()
@@ -470,14 +470,14 @@ for col in feature_cols:
 # Transformación log del target
 y_log = np.log1p(y)
 
-print(f"\n   📊 Shape de X: {X.shape}")
-print(f"   📊 Shape de y: {y.shape}")
-print(f"   📊 Target transformado: log1p(duration_real)")
+print(f"\n    Shape de X: {X.shape}")
+print(f"    Shape de y: {y.shape}")
+print(f"    Target transformado: log1p(duration_real)")
 print(f"      Rango original: [{y.min():.2f}, {y.max():.2f}] días")
 print(f"      Rango log:      [{y_log.min():.2f}, {y_log.max():.2f}]")
 
 # Split estratificado
-print("\n   📊 Creando split estratificado por duración...")
+print("\n    Creando split estratificado por duración...")
 duration_bins = pd.qcut(y, q=5, labels=False, duplicates='drop')
 
 X_train, X_test, y_train_log, y_test_log, y_train, y_test = train_test_split(
@@ -487,16 +487,16 @@ X_train, X_test, y_train_log, y_test_log, y_train, y_test = train_test_split(
     stratify=duration_bins
 )
 
-print(f"   📊 Train: {len(X_train):,} filas")
-print(f"   📊 Test:  {len(X_test):,} filas")
-print(f"   📊 Media duración train: {y_train.mean():.2f} días")
-print(f"   📊 Media duración test:  {y_test.mean():.2f} días")
+print(f"    Train: {len(X_train):,} filas")
+print(f"    Test:  {len(X_test):,} filas")
+print(f"    Media duración train: {y_train.mean():.2f} días")
+print(f"    Media duración test:  {y_test.mean():.2f} días")
 
 # ============================================================================
 # MODELO 1: LINEAR REGRESSION (BASELINE)
 # ============================================================================
 
-print_section("📊 MODELO 1: LINEAR REGRESSION (BASELINE)", char="-")
+print_section(" MODELO 1: LINEAR REGRESSION (BASELINE)", char="-")
 
 print("\n[5/8] Entrenando LinearRegression como baseline...")
 
@@ -515,7 +515,7 @@ y_test_original = y_test.values
 lr_metrics = calculate_regression_metrics(y_test_original, lr_y_pred, "Linear Regression")
 
 joblib.dump({'model': lr_model, 'scaler': scaler}, ARTIFACT_DIR / "model_linear_regression_numeric.pkl")
-print(f"\n   💾 Modelo guardado: {ARTIFACT_DIR / 'model_linear_regression_numeric.pkl'}")
+print(f"\n    Modelo guardado: {ARTIFACT_DIR / 'model_linear_regression_numeric.pkl'}")
 
 plot_predictions_vs_actual(
     y_test_original, lr_y_pred,
@@ -533,7 +533,7 @@ plot_residuals(
 # MODELO 2: CATBOOST RMSE (PRINCIPAL)
 # ============================================================================
 
-print_section("🚀 MODELO 2: CATBOOST RMSE (PRINCIPAL - NUMÉRICAS ONLY)", char="-")
+print_section(" MODELO 2: CATBOOST RMSE (PRINCIPAL - NUMÉRICAS ONLY)", char="-")
 
 print("\n[6/8] Entrenando CatBoost con loss='RMSE' (solo features numéricas)...")
 
@@ -557,11 +557,11 @@ catboost_rmse.fit(
     verbose=100
 )
 
-print("\n   🔄 Validación cruzada con 5 folds...")
+print("\n    Validación cruzada con 5 folds...")
 cv_scores = []
 kfold = KFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
 for fold_num, (train_idx, val_idx) in enumerate(kfold.split(X_train), 1):
-    print(f"   📊 Procesando fold {fold_num}/{CV_FOLDS}...", end=" ")
+    print(f"    Procesando fold {fold_num}/{CV_FOLDS}...", end=" ")
     
     X_fold_train = X_train.iloc[train_idx]
     X_fold_val = X_train.iloc[val_idx]
@@ -584,11 +584,11 @@ for fold_num, (train_idx, val_idx) in enumerate(kfold.split(X_train), 1):
     
     mae_fold = mean_absolute_error(y_val_true, y_val_pred)
     cv_scores.append(mae_fold)
-    print(f"MAE: {mae_fold:.2f} días ✅")
+    print(f"MAE: {mae_fold:.2f} días ")
 
 cv_mean = np.mean(cv_scores)
 cv_std = np.std(cv_scores)
-print(f"   ✅ CV MAE promedio: {cv_mean:.3f} ± {cv_std:.3f} días")
+print(f"    CV MAE promedio: {cv_mean:.3f} ± {cv_std:.3f} días")
 
 # Predicciones
 cb_rmse_y_pred_log = catboost_rmse.predict(X_test)
@@ -599,18 +599,18 @@ cb_rmse_metrics['cv_mae_mean'] = float(cv_mean)
 cb_rmse_metrics['cv_mae_std'] = float(cv_std)
 
 # Mejora vs baseline
-print(f"\n   📊 Mejora vs Linear Regression:")
+print(f"\n    Mejora vs Linear Regression:")
 for metric in ['mae', 'rmse', 'r2']:
     if metric == 'r2':
         improvement = (cb_rmse_metrics[metric] - lr_metrics[metric]) / abs(lr_metrics[metric]) * 100
     else:
         improvement = -(cb_rmse_metrics[metric] - lr_metrics[metric]) / lr_metrics[metric] * 100
-    symbol = "📈" if improvement > 0 else "📉"
+    symbol = "" if improvement > 0 else ""
     print(f"      {symbol} {metric.upper()}: {improvement:+.2f}%")
 
 # Guardar modelo
 joblib.dump(catboost_rmse, ARTIFACT_DIR / "model_catboost_rmse_numeric.pkl")
-print(f"\n   💾 Modelo guardado: {ARTIFACT_DIR / 'model_catboost_rmse_numeric.pkl'}")
+print(f"\n    Modelo guardado: {ARTIFACT_DIR / 'model_catboost_rmse_numeric.pkl'}")
 
 plot_predictions_vs_actual(
     y_test_original, cb_rmse_y_pred,
@@ -633,7 +633,7 @@ plot_feature_importance_regression(
 # MODELO 3: CATBOOST MAE (ROBUSTO)
 # ============================================================================
 
-print_section("📊 MODELO 3: CATBOOST MAE (ROBUSTO A OUTLIERS)", char="-")
+print_section(" MODELO 3: CATBOOST MAE (ROBUSTO A OUTLIERS)", char="-")
 
 print("\n[7/8] Entrenando CatBoost con loss='MAE'...")
 
@@ -661,15 +661,15 @@ cb_mae_y_pred = np.expm1(cb_mae_y_pred_log)
 cb_mae_metrics = calculate_regression_metrics(y_test_original, cb_mae_y_pred, "CatBoost MAE (Numeric)")
 
 joblib.dump(catboost_mae, ARTIFACT_DIR / "model_catboost_mae_numeric.pkl")
-print(f"\n   💾 Modelo guardado: {ARTIFACT_DIR / 'model_catboost_mae_numeric.pkl'}")
+print(f"\n    Modelo guardado: {ARTIFACT_DIR / 'model_catboost_mae_numeric.pkl'}")
 
 # ============================================================================
 # COMPARACIÓN FINAL
 # ============================================================================
 
-print_section("📊 COMPARACIÓN FINAL - MODELOS NUMÉRICOS", char="-")
+print_section(" COMPARACIÓN FINAL - MODELOS NUMÉRICOS", char="-")
 
-print("\n   📊 Tabla Comparativa de Métricas:\n")
+print("\n    Tabla Comparativa de Métricas:\n")
 print("   " + "-" * 100)
 print(f"   {'Modelo':<30} {'MAE':>10} {'RMSE':>10} {'R²':>8} {'±5días':>10} {'±10días':>10}")
 print("   " + "-" * 100)
@@ -689,8 +689,8 @@ print("   " + "-" * 100)
 
 # Determinar mejor modelo
 best_model = max(models_results.items(), key=lambda x: x[1]['r2'])
-print(f"\n   🏆 Mejor modelo (por R²): {best_model[0]}")
-print(f"   🎯 R² = {best_model[1]['r2']:.4f} (explica {best_model[1]['r2']*100:.1f}% de la varianza)")
+print(f"\n    Mejor modelo (por R²): {best_model[0]}")
+print(f"    R² = {best_model[1]['r2']:.4f} (explica {best_model[1]['r2']*100:.1f}% de la varianza)")
 
 # Guardar comparación
 comparison_data = {
@@ -741,19 +741,19 @@ for idx, (metric, title) in enumerate(zip(metrics_to_plot, titles)):
 plt.tight_layout()
 plt.savefig(REPORT_DIR / "models_comparison_numeric.png", dpi=300, bbox_inches='tight')
 plt.close()
-print(f"\n   📊 Gráfico comparativo guardado: models_comparison_numeric.png")
+print(f"\n    Gráfico comparativo guardado: models_comparison_numeric.png")
 
 # ============================================================================
 # REPORTE FINAL
 # ============================================================================
 
-print_section("✅ ENTRENAMIENTO COMPLETADO - MODELO NUMÉRICO", char="=")
+print_section(" ENTRENAMIENTO COMPLETADO - MODELO NUMÉRICO", char="=")
 
 print(f"""
-📁 Archivos generados:
+ Archivos generados:
 
 Modelos entrenados ({ARTIFACT_DIR}):
-   • model_catboost_rmse_numeric.pkl ⭐ RECOMENDADO
+   • model_catboost_rmse_numeric.pkl  RECOMENDADO
    • model_catboost_mae_numeric.pkl
    • model_linear_regression_numeric.pkl
 
@@ -767,7 +767,7 @@ Visualizaciones ({REPORT_DIR}):
    • feature_importance_catboost_numeric.png
    • models_comparison_numeric.png
 
-📊 Resumen de Resultados:
+ Resumen de Resultados:
 
 Mejor modelo: {best_model[0]}
    • R² = {best_model[1]['r2']:.4f} (explica {best_model[1]['r2']*100:.1f}% de la varianza)
@@ -776,19 +776,19 @@ Mejor modelo: {best_model[0]}
    • Dentro de ±5 días:  {best_model[1]['within_5_days_pct']:.1f}%
    • Dentro de ±10 días: {best_model[1]['within_10_days_pct']:.1f}%
 
-🎯 Características del Modelo Numérico:
-   ✅ Compatible con CUALQUIER dominio (IT, rural, construcción, etc.)
-   ✅ No requiere mapeo de categorías específicas de dominio
-   ✅ Features universales: duración estimada, experiencia, carga, performance
-   ✅ Menor overfitting, mejor generalización
-   ✅ Validación cruzada: {cb_rmse_metrics.get('cv_mae_mean', 0):.2f} ± {cb_rmse_metrics.get('cv_mae_std', 0):.2f} días
+ Características del Modelo Numérico:
+    Compatible con CUALQUIER dominio (IT, rural, construcción, etc.)
+    No requiere mapeo de categorías específicas de dominio
+    Features universales: duración estimada, experiencia, carga, performance
+    Menor overfitting, mejor generalización
+    Validación cruzada: {cb_rmse_metrics.get('cv_mae_mean', 0):.2f} ± {cb_rmse_metrics.get('cv_mae_std', 0):.2f} días
 
-⚠️ Trade-off vs Modelo con Categóricas:
+ Trade-off vs Modelo con Categóricas:
    • R² esperado: ~{best_model[1]['r2']:.2f} (vs ~0.85 con categóricas)
    • Aún SUFICIENTE para producción
    • duration_est tiene correlación {correlations.get('duration_est_imputed', 0):.3f} con target
 
-🔗 Uso en producción:
+ Uso en producción:
 
    import joblib
    import numpy as np
@@ -815,19 +815,13 @@ Mejor modelo: {best_model[0]}
    
    print(f"Duración estimada: {{y_pred_dias:.1f}} días")
 
-💡 Ventajas de esta versión:
+ Ventajas de esta versión:
    • Funciona desde día 1 con TUS datos de producción
    • No necesitas re-mapear task_area, task_type, person_area, role
    • Compatible con dominio IT/Software (tu caso de uso)
    • Puedes ir mejorando con datos reales después
-
-🎓 Para tu tesis:
-   • Justifica el enfoque "domain-agnostic" para generalización
-   • Documenta el trade-off precisión vs generalización
-   • Compara con modelo con categóricas (datos gubernamentales)
-   • Explica por qué features numéricas son más transferibles
 """)
 
 print("\n" + "=" * 80)
-print("🎉 ¡Modelo numérico entrenado exitosamente!")
+print("¡Modelo numérico entrenado exitosamente!")
 print("=" * 80 + "\n")

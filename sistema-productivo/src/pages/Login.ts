@@ -33,6 +33,7 @@ export function LoginPage(): string {
                     name="email" 
                     placeholder="usuario@processmart.com"
                     required
+                    style="padding-left: 48px !important;"
                   />
                 </div>
               </div>
@@ -50,6 +51,7 @@ export function LoginPage(): string {
                     name="password" 
                     placeholder="••••••••"
                     required
+                    style="padding-left: 48px !important;"
                   />
                 </div>
               </div>

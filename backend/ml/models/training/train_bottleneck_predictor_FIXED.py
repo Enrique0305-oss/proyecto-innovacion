@@ -93,7 +93,7 @@ def print_section(title, char="=", width=80):
 def save_json(data, filepath):
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False, default=str)
-    print(f"   💾 Guardado: {filepath}")
+    print(f"    Guardado: {filepath}")
 
 # ============================================================================
 # 1. CARGA DE DATOS
@@ -114,7 +114,7 @@ try:
         query={"charset": "utf8mb4"}
     )
     engine = create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 10})
-    print(f"   ✅ Conectado a {HOST}:{PORT}/{DB}")
+    print(f"    Conectado a {HOST}:{PORT}/{DB}")
 except Exception as e:
     raise RuntimeError(f"❌ Error de conexión: {e}")
 
@@ -156,17 +156,17 @@ query = text("""
 
 try:
     df = pd.read_sql(query, engine)
-    print(f"   📊 Tareas cargadas: {len(df):,}")
-    print(f"   🗂️ Proyectos únicos: {df['project_id'].nunique():,}")
+    print(f"    Tareas cargadas: {len(df):,}")
+    print(f"    Proyectos únicos: {df['project_id'].nunique():,}")
     
     if len(df) == 0:
-        print("\n⚠️ NO HAY DATOS DISPONIBLES")
+        print("\n NO HAY DATOS DISPONIBLES")
         engine.dispose()
         exit(0)
         
 except Exception as e:
     engine.dispose()
-    raise RuntimeError(f"❌ Error: {e}")
+    raise RuntimeError(f" Error: {e}")
 finally:
     engine.dispose()
 
@@ -177,11 +177,11 @@ df['end_date_real'] = pd.to_datetime(df['end_date_real'])
 # 2. CORRECCIÓN 1: NORMALIZAR DELAY_RATIO
 # ============================================================================
 
-print_section("✅ CORRECCIÓN 1: NORMALIZAR ESCALAS DE DELAY_RATIO", char="-")
+print_section(" CORRECCIÓN 1: NORMALIZAR ESCALAS DE DELAY_RATIO", char="-")
 
 print("\n[3/14] Analizando escalas de duration...")
 
-print(f"\n   📊 ANTES DE CORRECCIÓN:")
+print(f"\n    ANTES DE CORRECCIÓN:")
 print(f"      duration_est  - Media: {df['duration_est'].mean():.2f}")
 print(f"      duration_real - Media: {df['duration_real'].mean():.2f}")
 
@@ -189,13 +189,13 @@ print(f"      duration_real - Media: {df['duration_real'].mean():.2f}")
 df['duration_real_days'] = (df['end_date_real'] - df['start_date_real']).dt.days
 
 # Convertir duration_est de minutos a días
-print(f"\n   🔧 CORRECCIÓN:")
+print(f"\n    CORRECCIÓN:")
 print(f"      duration_est: Detectado en MINUTOS, convirtiendo a DÍAS")
 print(f"      duration_real: Calculando con DATEDIFF(end_date - start_date)")
 
 df['duration_est_days'] = df['duration_est'] / (60 * 24)
 
-print(f"\n   ✅ DESPUÉS DE CORRECCIÓN:")
+print(f"\n    DESPUÉS DE CORRECCIÓN:")
 print(f"      duration_est_days  - Media: {df['duration_est_days'].mean():.2f} días")
 print(f"      duration_real_days - Media: {df['duration_real_days'].mean():.2f} días")
 
@@ -212,7 +212,7 @@ print(f"      P90:     {df['delay_ratio'].quantile(0.90):.3f}")
 # Contar tareas con retraso REAL
 delayed = (df['delay_ratio'] > 1.0).sum()
 delayed_pct = (delayed / len(df)) * 100
-print(f"\n   📊 Tareas con retraso real (delay_ratio > 1.0):")
+print(f"\n    Tareas con retraso real (delay_ratio > 1.0):")
 print(f"      Total: {delayed:,} ({delayed_pct:.1f}%)")
 print(f"      Delay > 1.2: {(df['delay_ratio'] > 1.2).sum():,} ({(df['delay_ratio'] > 1.2).sum() / len(df) * 100:.1f}%)")
 print(f"      Delay > 1.3: {(df['delay_ratio'] > 1.3).sum():,} ({(df['delay_ratio'] > 1.3).sum() / len(df) * 100:.1f}%)")
@@ -222,7 +222,7 @@ print(f"      Delay > 1.5: {(df['delay_ratio'] > 1.5).sum():,} ({(df['delay_rati
 # 3. CORRECCIÓN 2: VALIDACIÓN TEMPORAL (TIME SERIES SPLIT)
 # ============================================================================
 
-print_section("✅ CORRECCIÓN 2: SPLIT ALEATORIO ESTRATIFICADO (NO TEMPORAL)", char="-")
+print_section(" CORRECCIÓN 2: SPLIT ALEATORIO ESTRATIFICADO (NO TEMPORAL)", char="-")
 
 print("\n[4/14] Los datos recientes son sintéticos (duration_real = 365 días constante)")
 print("        Usando split aleatorio en lugar de temporal...")
@@ -243,7 +243,7 @@ df_train, df_test = train_test_split(
 df_train = df_train.reset_index(drop=True)
 df_test = df_test.reset_index(drop=True)
 
-print(f"\n   📊 SPLIT ALEATORIO ESTRATIFICADO:")
+print(f"\n    SPLIT ALEATORIO ESTRATIFICADO:")
 print(f"      Train: {len(df_train):,} tareas (70% aleatorio)")
 print(f"      Test:  {len(df_test):,} tareas (30% aleatorio)")
 print(f"      Bottlenecks en train: {df_train['target_temp'].sum():,} ({df_train['target_temp'].mean()*100:.1f}%)")
@@ -253,7 +253,7 @@ print(f"      Bottlenecks en test:  {df_test['target_temp'].sum():,} ({df_test['
 # 4. FEATURE ENGINEERING
 # ============================================================================
 
-print_section("🔧 FEATURE ENGINEERING MEJORADO", char="-")
+print_section(" FEATURE ENGINEERING MEJORADO", char="-")
 
 print("\n[5/14] Creando features temporales y contextuales...")
 
@@ -292,13 +292,13 @@ def engineer_features(df_input):
 df_train = engineer_features(df_train)
 df_test = engineer_features(df_test)
 
-print(f"   ✅ Features creadas para train y test")
+print(f"    Features creadas para train y test")
 
 # ============================================================================
 # 5. ANÁLISIS DE GRAFO DE DEPENDENCIAS
 # ============================================================================
 
-print_section("🔗 ANÁLISIS DE GRAFO (SOLO EN TRAIN)", char="-")
+print_section(" ANÁLISIS DE GRAFO (SOLO EN TRAIN)", char="-")
 
 print("\n[6/14] Construyendo grafo de dependencias...")
 
@@ -361,7 +361,7 @@ centrality_train = build_graph_and_centrality(df_train)
 df_train = df_train.merge(centrality_train, on='task_id', how='left')
 
 # Para test, usar promedios de train (no construir grafo con test)
-print(f"\n   ℹ️ Para test: usando estadísticas de train (evitar leakage)")
+print(f"\n    Para test: usando estadísticas de train (evitar leakage)")
 avg_betweenness = df_train['betweenness'].mean()
 avg_impact = df_train['impact_count'].mean()
 
@@ -377,7 +377,7 @@ print(f"      Test: betweenness={avg_betweenness:.4f}, impact={avg_impact:.1f}")
 # 6. CORRECCIÓN 3: DEFINIR TARGET CON CRITERIOS ROBUSTOS
 # ============================================================================
 
-print_section("✅ CORRECCIÓN 3: TARGET CON CRITERIOS ROBUSTOS", char="-")
+print_section(" CORRECCIÓN 3: TARGET CON CRITERIOS ROBUSTOS", char="-")
 
 print("\n[7/14] Definiendo is_bottleneck con criterios no circulares...")
 
@@ -403,7 +403,7 @@ def define_bottleneck_target(df_input, delay_threshold=1.2):
 # Aplicar a train
 df_train, n_train, pct_train, threshold_used = define_bottleneck_target(df_train, delay_threshold=1.2)
 
-print(f"\n   📊 TARGET EN TRAIN:")
+print(f"\n    TARGET EN TRAIN:")
 print(f"      Criterio: delay_ratio > {threshold_used} (retraso > 20%)")
 print(f"      Cuellos de botella: {n_train:,} ({pct_train:.2f}%)")
 print(f"      Normal: {len(df_train) - n_train:,} ({100 - pct_train:.2f}%)")
@@ -411,24 +411,24 @@ print(f"      Normal: {len(df_train) - n_train:,} ({100 - pct_train:.2f}%)")
 # Aplicar mismo criterio a test
 df_test, n_test, pct_test, _ = define_bottleneck_target(df_test, threshold_used)
 
-print(f"\n   📊 TARGET EN TEST:")
+print(f"\n    TARGET EN TEST:")
 print(f"      Cuellos de botella: {n_test:,} ({pct_test:.2f}%)")
 print(f"      Normal: {len(df_test) - n_test:,} ({100 - pct_test:.2f}%)")
 
 # Verificar que hay ambas clases en train y test
 if n_train == 0 or n_train == len(df_train):
-    print("\n   ❌ ERROR: Solo 1 clase en train")
+    print("\n    ERROR: Solo 1 clase en train")
     exit(1)
 
 if n_test == 0 or n_test == len(df_test):
-    print("\n   ❌ ERROR: Solo 1 clase en test")
+    print("\n    ERROR: Solo 1 clase en test")
     exit(1)
 
 # ============================================================================
 # 7. PREPARAR FEATURES
 # ============================================================================
 
-print_section("🤖 PREPARACIÓN DE FEATURES", char="-")
+print_section(" PREPARACIÓN DE FEATURES", char="-")
 
 print("\n[8/14] Seleccionando features...")
 
@@ -445,7 +445,7 @@ numerical_features = [
     'project_progress', 'load_ratio', 'is_overloaded',
     'week_of_year', 'month', 'project_size', 'complexity_numeric'
 ]
-# ❌ REMOVIDO: duration_est (tiene relación matemática con target)
+#  REMOVIDO: duration_est (tiene relación matemática con target)
 
 all_features = categorical_features + numerical_features
 
@@ -469,15 +469,15 @@ for col in numerical_features:
     X_train[col] = X_train[col].fillna(median_val)
     X_test[col] = X_test[col].fillna(median_val)
 
-print(f"   📊 Features: {len(all_features)} ({len(categorical_features)} cat + {len(numerical_features)} num)")
-print(f"   📊 Train: {len(X_train):,} ({y_train.sum():,} bottlenecks)")
-print(f"   📊 Test:  {len(X_test):,} ({y_test.sum():,} bottlenecks)")
+print(f"    Features: {len(all_features)} ({len(categorical_features)} cat + {len(numerical_features)} num)")
+print(f"    Train: {len(X_train):,} ({y_train.sum():,} bottlenecks)")
+print(f"    Test:  {len(X_test):,} ({y_test.sum():,} bottlenecks)")
 
 # ============================================================================
 # 8. ENTRENAR MODELO CATBOOST
 # ============================================================================
 
-print_section("🤖 ENTRENAMIENTO CATBOOST CON VALIDACIÓN CRUZADA", char="-")
+print_section(" ENTRENAMIENTO CATBOOST CON VALIDACIÓN CRUZADA", char="-")
 
 print("\n[9/14] Entrenando CatBoost Classifier...")
 
@@ -512,13 +512,13 @@ model.fit(
     plot=False
 )
 
-print("\n   ✅ Modelo entrenado")
+print("\n    Modelo entrenado")
 
 # ============================================================================
 # 9. CORRECCIÓN 4: VALIDACIÓN CRUZADA TEMPORAL
 # ============================================================================
 
-print_section("✅ CORRECCIÓN 4: VALIDACIÓN CRUZADA ESTRATIFICADA", char="-")
+print_section(" CORRECCIÓN 4: VALIDACIÓN CRUZADA ESTRATIFICADA", char="-")
 
 print("\n[10/14] Ejecutando StratifiedKFold (5 folds)...")
 
@@ -554,13 +554,13 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X_train, y_train), 1):
 
 cv_mean = np.mean(cv_scores)
 cv_std = np.std(cv_scores)
-print(f"\n   📊 CV Accuracy: {cv_mean:.4f} ± {cv_std:.4f}")
+print(f"\n    CV Accuracy: {cv_mean:.4f} ± {cv_std:.4f}")
 
 # ============================================================================
 # 10. EVALUACIÓN
 # ============================================================================
 
-print_section("📊 EVALUACIÓN DEL MODELO CORREGIDO", char="-")
+print_section(" EVALUACIÓN DEL MODELO CORREGIDO", char="-")
 
 print("\n[11/14] Calculando métricas...")
 
@@ -577,18 +577,18 @@ try:
 except:
     roc_auc = 0.5
 
-print(f"\n   📊 MÉTRICAS EN TEST SET:")
+print(f"\n    MÉTRICAS EN TEST SET:")
 print(f"      • Accuracy:  {accuracy:.4f} ({accuracy*100:.2f}%)")
 print(f"      • Precision: {precision:.4f} ({precision*100:.1f}%)")
 print(f"      • Recall:    {recall:.4f} ({recall*100:.1f}%)")
 print(f"      • F1-Score:  {f1:.4f}")
 print(f"      • ROC-AUC:   {roc_auc:.4f}")
 
-print(f"\n   📋 CLASSIFICATION REPORT:")
+print(f"\n    CLASSIFICATION REPORT:")
 print(classification_report(y_test, y_pred, target_names=['Normal', 'Bottleneck']))
 
 cm = confusion_matrix(y_test, y_pred)
-print(f"\n   📊 MATRIZ DE CONFUSIÓN:")
+print(f"\n    MATRIZ DE CONFUSIÓN:")
 print(f"      {'':>20} Pred: Normal  Pred: Bottleneck")
 print(f"      {'Real: Normal':>20}  {cm[0, 0]:>11}  {cm[0, 1]:>16}")
 print(f"      {'Real: Bottleneck':>20}  {cm[1, 0]:>11}  {cm[1, 1]:>16}")
@@ -596,7 +596,7 @@ print(f"      {'Real: Bottleneck':>20}  {cm[1, 0]:>11}  {cm[1, 1]:>16}")
 # Guardar modelo
 model_path = ARTIFACT_DIR / 'model_bottleneck_corregido.pkl'
 joblib.dump(model, model_path)
-print(f"\n   💾 Modelo guardado: {model_path}")
+print(f"\n    Modelo guardado: {model_path}")
 
 # Guardar métricas
 metrics = {
@@ -642,7 +642,7 @@ save_json(metrics, ARTIFACT_DIR / 'metrics_corregido.json')
 # 11. VISUALIZACIONES
 # ============================================================================
 
-print_section("📈 GENERACIÓN DE VISUALIZACIONES", char="-")
+print_section(" GENERACIÓN DE VISUALIZACIONES", char="-")
 
 print("\n[12/14] Creando gráficos...")
 
@@ -698,7 +698,7 @@ ax4.grid(axis='x', alpha=0.3)
 
 plt.tight_layout()
 plt.savefig(REPORT_DIR / 'evaluation_metrics.png', dpi=150, bbox_inches='tight')
-print(f"   💾 evaluation_metrics.png")
+print(f"    evaluation_metrics.png")
 plt.close()
 
 # Feature importance completo
@@ -707,7 +707,7 @@ importance_full = pd.DataFrame({
     'importance': importance
 }).sort_values('importance', ascending=False)
 
-print(f"\n   🔝 Top 10 Features Más Importantes:")
+print(f"\n    Top 10 Features Más Importantes:")
 for idx, row in importance_full.head(10).iterrows():
     print(f"      {row['importance']:>6.2f}%  {row['feature']}")
 
@@ -715,20 +715,20 @@ for idx, row in importance_full.head(10).iterrows():
 # 12. ANÁLISIS DE DELAY_RATIO REAL
 # ============================================================================
 
-print_section("📊 ANÁLISIS DE DELAY_RATIO REAL", char="-")
+print_section(" ANÁLISIS DE DELAY_RATIO REAL", char="-")
 
 print("\n[13/14] Analizando retrasos reales en test set...")
 
 test_delayed = df_test[df_test['delay_ratio'] > 1.0]
 test_on_time = df_test[df_test['delay_ratio'] <= 1.0]
 
-print(f"\n   📊 DISTRIBUCIÓN DE RETRASOS EN TEST:")
+print(f"\n    DISTRIBUCIÓN DE RETRASOS EN TEST:")
 print(f"      A tiempo o adelantadas: {len(test_on_time):,} ({len(test_on_time)/len(df_test)*100:.1f}%)")
 print(f"      Con retraso (>1.0):     {len(test_delayed):,} ({len(test_delayed)/len(df_test)*100:.1f}%)")
 print(f"      Delay medio (retrasadas): {test_delayed['delay_ratio'].mean():.3f}x")
 
 bottlenecks_test = df_test[df_test['is_bottleneck'] == 1]
-print(f"\n   🚧 CUELLOS DE BOTELLA EN TEST:")
+print(f"\n    CUELLOS DE BOTELLA EN TEST:")
 print(f"      Total: {len(bottlenecks_test):,}")
 print(f"      Delay_ratio promedio: {bottlenecks_test['delay_ratio'].mean():.3f}x")
 print(f"      Delay_ratio mediano:  {bottlenecks_test['delay_ratio'].median():.3f}x")
@@ -737,7 +737,7 @@ print(f"      Delay_ratio mediano:  {bottlenecks_test['delay_ratio'].median():.3
 # 13. RECOMENDACIONES
 # ============================================================================
 
-print_section("💡 SISTEMA DE RECOMENDACIONES", char="-")
+print_section(" SISTEMA DE RECOMENDACIONES", char="-")
 
 print("\n[14/14] Generando recomendaciones...")
 
@@ -774,7 +774,7 @@ for complexity, row in complexity_bottlenecks.iterrows():
             'action': f"Revisar complejidad '{complexity}': {int(row['task_id'])} bottlenecks"
         })
 
-print(f"\n   💡 Total recomendaciones: {len(recommendations)}")
+print(f"\n    Total recomendaciones: {len(recommendations)}")
 for rec in recommendations[:5]:
     print(f"      [{rec['priority']}] {rec['action']}")
 
@@ -784,21 +784,21 @@ save_json({'recommendations': recommendations}, ARTIFACT_DIR / 'recommendations_
 # REPORTE FINAL
 # ============================================================================
 
-print_section("✅ MODELO 5 CORREGIDO COMPLETADO", char="=")
+print_section(" MODELO 5 CORREGIDO COMPLETADO", char="=")
 
 print(f"""
 ╔════════════════════════════════════════════════════════════════════════════╗
 ║              MODELO 5 CORREGIDO - RESUMEN DE MEJORAS                      ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-🔧 CORRECCIONES APLICADAS:
-   1. ✅ Delay_ratio normalizado (ambos en días)
-   2. ✅ Validación temporal (70/30 cronológico)
-   3. ✅ Target con criterios robustos (delay > {threshold_used})
-   4. ✅ Validación cruzada temporal (5 folds)
-   5. ✅ Features diversificadas
+ CORRECCIONES APLICADAS:
+   1.  Delay_ratio normalizado (ambos en días)
+   2.  Validación temporal (70/30 cronológico)
+   3.  Target con criterios robustos (delay > {threshold_used})
+   4.  Validación cruzada temporal (5 folds)
+   5.  Features diversificadas
 
-📊 MÉTRICAS REALISTAS (vs 100% perfecto anterior):
+ MÉTRICAS REALISTAS (vs 100% perfecto anterior):
    • Accuracy:  {accuracy:.4f} ({accuracy*100:.1f}%) ✅ Razonable
    • Precision: {precision:.4f} ({precision*100:.1f}%)
    • Recall:    {recall:.4f} ({recall*100:.1f}%)
@@ -806,36 +806,36 @@ print(f"""
    • ROC-AUC:   {roc_auc:.4f}
    • CV Accuracy: {cv_mean:.4f} ± {cv_std:.4f}
 
-📊 DATASET:
+ DATASET:
    • Train: {len(X_train):,} ({y_train.sum():,} bottlenecks)
    • Test:  {len(X_test):,} ({y_test.sum():,} bottlenecks)
 
-📊 MATRIZ DE CONFUSIÓN:
+ MATRIZ DE CONFUSIÓN:
    • TN: {cm[0,0]:,} | FP: {cm[0,1]:,}
    • FN: {cm[1,0]:,} | TP: {cm[1,1]:,}
    • Tasa de error: {(cm[0,1] + cm[1,0]) / cm.sum() * 100:.2f}% ✅
 
-🎯 FEATURE IMPORTANCE:
+ FEATURE IMPORTANCE:
    • Top feature: {importance_full.iloc[0]['feature']} ({importance_full.iloc[0]['importance']:.1f}%)
-   ✅ NO domina con >90% (distribución más balanceada)
+    NO domina con >90% (distribución más balanceada)
 
-📁 ARCHIVOS GENERADOS:
+ ARCHIVOS GENERADOS:
    • {model_path}
    • {ARTIFACT_DIR / 'metrics_corregido.json'}
    • {ARTIFACT_DIR / 'recommendations_corregido.json'}
    • {REPORT_DIR / 'evaluation_metrics.png'}
 
-✅ VALIDACIONES PASADAS:
+ VALIDACIONES PASADAS:
    • Delay_ratio > 1.0 indica retraso REAL
    • Bottlenecks tienen delay promedio {bottlenecks_test['delay_ratio'].mean():.2f}x
    • Split temporal evita leakage temporal
    • Target NO usa percentiles del mismo dataset
    • CV con TimeSeriesSplit valida generalización
 
-💡 MODELO LISTO PARA PRODUCCIÓN
+ MODELO LISTO PARA PRODUCCIÓN
 ═══════════════════════════════════════════════════════════════════════════════
 """)
 
 print("\n" + "="*80)
-print("✅ MODELO 5 CORREGIDO - ENTRENAMIENTO EXITOSO".center(80))
+print(" MODELO 5 CORREGIDO - ENTRENAMIENTO EXITOSO".center(80))
 print("="*80 + "\n")
