@@ -108,7 +108,6 @@ export const MODULE_PERMISSIONS = {
   'asignacion': 'access_ml_models',
   'desempeno': 'access_ml_models',
   'flujo': 'access_ml_models',
-  'visualizacion': 'access_ml_models',
   'usuarios': 'manage_users',
   'areas': 'view_all_areas',
   'configuracion': 'system_config'

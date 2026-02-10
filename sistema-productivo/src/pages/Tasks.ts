@@ -591,6 +591,29 @@ export function TasksPage(): string {
       </div>
     </div>
 
+    <!-- Modal: Confirmación de Eliminación -->
+    <div class="modal" id="modalConfirmDelete" style="display: none; z-index: 10000;">
+      <div class="modal-overlay"></div>
+      <div class="modal-content modal-small" style="max-width: 450px;">
+        <div class="modal-body" style="padding: 30px;">
+          <div style="width: 70px; height: 70px; margin: 0 auto 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 22px; margin-bottom: 12px; color: #1a202c; text-align: center;">¿Estás seguro?</h3>
+          <p style="color: #718096; margin-bottom: 8px; text-align: center;" id="confirmDeleteMessage">¿Deseas eliminar esta tarea?</p>
+          <p style="color: #e53e3e; font-size: 14px; margin-bottom: 24px; text-align: center;">Esta acción no se puede deshacer.</p>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn-secondary" id="btnCancelDeleteTask" style="flex: 1; padding: 12px;">Cancelar</button>
+            <button class="btn-danger" id="btnConfirmDeleteTask" style="flex: 1; padding: 12px; background: #e53e3e;">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: Éxito -->
     <div class="modal" id="modalSuccess" style="z-index: 10000;">
       <div class="modal-overlay" id="modalSuccessOverlay" style="background: rgba(0, 0, 0, 0.7);"></div>
@@ -617,6 +640,7 @@ export function TasksPage(): string {
 // Estado global
 let currentProjectId: string | null = null;
 let allTasks: any[] = [];
+let taskToDelete: { id: number, title: string } | null = null;
 
 // Función para obtener el rol del usuario actual
 function getUserRole(): string {
@@ -661,6 +685,18 @@ function closeSuccessModal() {
     const dashboardLayout = document.querySelector('.dashboard-layout');
     dashboardLayout?.classList.remove('blur-background');
     document.body.style.overflow = '';
+  }
+}
+
+// Función para mostrar modal de confirmación de eliminación
+function showConfirmDeleteModal(id: number, title: string) {
+  taskToDelete = { id, title };
+  const modal = document.getElementById('modalConfirmDelete');
+  const messageEl = document.getElementById('confirmDeleteMessage');
+  
+  if (modal && messageEl) {
+    messageEl.textContent = `¿Deseas eliminar la tarea "${title}"?`;
+    modal.style.display = 'flex';
   }
 }
 
@@ -1296,7 +1332,7 @@ function renderTasks(tasks: any[]) {
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
             </button>
-            <button class="btn-icon btn-delete" data-task-id="${task.id}" title="Eliminar">
+            <button class="btn-icon btn-delete" data-task-id="${task.id}" data-task-title="${task.title}" title="Eliminar">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
               </svg>
@@ -1326,20 +1362,10 @@ function renderTasks(tasks: any[]) {
     });
     
     document.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', (e) => {
         const taskId = (e.currentTarget as HTMLElement).dataset.taskId;
-        if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
-          try {
-            await api.deleteTask(parseInt(taskId || '0'));
-            showSuccessModal('¡Tarea Eliminada!', 'La tarea se ha eliminado exitosamente');
-            setTimeout(() => {
-              loadTasks();
-            }, 1500);
-          } catch (error) {
-            console.error('Error al eliminar tarea:', error);
-            alert('Error al eliminar la tarea');
-          }
-        }
+        const taskTitle = (e.currentTarget as HTMLElement).dataset.taskTitle || 'esta tarea';
+        showConfirmDeleteModal(parseInt(taskId || '0'), taskTitle);
       });
     });
   }
@@ -2225,6 +2251,55 @@ export function initTasks() {
     }
   });
 
+  // Event listeners para el modal de éxito
+  const btnAcceptSuccess = document.getElementById('btnAcceptSuccess');
+  const modalSuccess = document.getElementById('modalSuccess');
+  const modalSuccessOverlay = document.getElementById('modalSuccessOverlay');
+  
+  btnAcceptSuccess?.addEventListener('click', () => {
+    closeSuccessModal();
+  });
+
+  modalSuccessOverlay?.addEventListener('click', () => {
+    closeSuccessModal();
+  });
+
+  // Event listeners para el modal de confirmación de eliminación
+  const btnCancelDeleteTask = document.getElementById('btnCancelDeleteTask');
+  const btnConfirmDeleteTask = document.getElementById('btnConfirmDeleteTask');
+  const modalConfirmDelete = document.getElementById('modalConfirmDelete');
+  
+  btnCancelDeleteTask?.addEventListener('click', () => {
+    if (modalConfirmDelete) {
+      modalConfirmDelete.style.display = 'none';
+      taskToDelete = null;
+    }
+  });
+
+  btnConfirmDeleteTask?.addEventListener('click', async () => {
+    if (taskToDelete && modalConfirmDelete) {
+      modalConfirmDelete.style.display = 'none';
+      try {
+        await api.deleteTask(taskToDelete.id);
+        showSuccessModal('¡Tarea Eliminada!', 'La tarea se ha eliminado exitosamente');
+        setTimeout(() => {
+          loadTasks();
+        }, 1500);
+      } catch (error) {
+        console.error('Error al eliminar tarea:', error);
+        alert('Error al eliminar la tarea');
+      }
+      taskToDelete = null;
+    }
+  });
+
+  modalConfirmDelete?.addEventListener('click', (e) => {
+    if (e.target === modalConfirmDelete || (e.target as HTMLElement).classList.contains('modal-overlay')) {
+      modalConfirmDelete.style.display = 'none';
+      taskToDelete = null;
+    }
+  });
+
   // Botón de recomendación IA
   const getAIRecommendationBtn = document.getElementById('getAIRecommendationBtn');
   if (getAIRecommendationBtn) {
@@ -2293,7 +2368,7 @@ export function initTasks() {
       if (isEditing && taskId) {
         // Actualizar tarea existente
         await api.updateTask(parseInt(taskId), taskData);
-        alert('¡Tarea actualizada exitosamente!');
+        showSuccessModal('¡Tarea Actualizada!', 'La tarea se ha actualizado exitosamente');
       } else {
         // Crear nueva tarea
         if (!currentProjectId) {
@@ -2301,7 +2376,7 @@ export function initTasks() {
           return;
         }
         await api.createTask(taskData);
-        alert('¡Tarea creada exitosamente!');
+        showSuccessModal('¡Tarea Creada!', 'La tarea se ha creado exitosamente');
       }
 
       // Limpiar formulario

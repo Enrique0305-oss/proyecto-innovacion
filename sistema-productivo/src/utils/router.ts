@@ -7,7 +7,6 @@ import { PersonTaskRecommendationPage, initPersonTaskRecommendation } from '../p
 import { AsignacionInteligentePage, initAsignacionInteligente } from '../pages/AsignacionInteligente';
 import { PerformancePage, initPerformance } from '../pages/Performance';
 import { ProcessSimulationPage, initProcessSimulation } from '../pages/ProcessSimulation';
-import { IntelligentVisualizationPage, initIntelligentVisualization } from '../pages/IntelligentVisualization';
 import { UsersPage, initUsers } from '../pages/Users';
 import { AreasPage, initAreas } from '../pages/Areas';
 import { IAConfigurationPage, initIAConfiguration } from '../pages/IAConfiguration';
@@ -73,12 +72,6 @@ const routes: Route[] = [
     path: 'flujo',
     render: ProcessSimulationPage,
     init: initProcessSimulation,
-    requiresAuth: true
-  },
-  {
-    path: 'visualizacion',
-    render: IntelligentVisualizationPage,
-    init: initIntelligentVisualization,
     requiresAuth: true
   },
   {

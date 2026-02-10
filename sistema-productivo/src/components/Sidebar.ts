@@ -89,14 +89,6 @@ export function Sidebar(activePage: string = 'dashboard'): string {
               <path d="M7 10h6" stroke="currentColor" stroke-width="1.5"/>
             </svg>
           `, isActive('flujo'))}
-          ${navItem('visualizacion', '#visualizacion', 'Visualización Inteligente', `
-            <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
-              <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
-              <rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
-              <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-          `, isActive('visualizacion'))}
         </div>
 
         <div class="nav-section">
