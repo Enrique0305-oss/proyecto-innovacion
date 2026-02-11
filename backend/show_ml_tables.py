@@ -24,7 +24,7 @@ with app.app_context():
     print("="*100)
     
     for table in tables:
-        print(f"\n📋 Tabla: {table}")
+        print(f"\n Tabla: {table}")
         print("-"*100)
         
         # Ver columnas

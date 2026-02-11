@@ -104,7 +104,7 @@ class ChatAssistant:
                 'alto_riesgo': '⚠️'
             }
             
-            emoji = risk_emoji.get(result['risk_level'].lower(), '📊')
+            emoji = risk_emoji.get(result['risk_level'].lower(), '')
             
             response = f"{emoji} **Predicción de Riesgo**\n\n"
             response += f"Nivel de riesgo: **{result['risk_level'].upper()}**\n"
@@ -121,7 +121,7 @@ class ChatAssistant:
             return response
             
         except Exception as e:
-            return f"❌ Error al predecir riesgo: {str(e)}"
+            return f" Error al predecir riesgo: {str(e)}"
     
     def handle_duration_prediction(self, message: str) -> str:
         """Maneja predicción de duración"""
@@ -138,19 +138,19 @@ class ChatAssistant:
             predicted = result.get('duration_days', result.get('duration', days))
             diff = predicted - days
             
-            response = f"⏱️ **Predicción de Duración**\n\n"
+            response = f" **Predicción de Duración**\n\n"
             response += f"Estimación inicial: {days} días\n"
             response += f"Predicción IA: **{predicted:.1f} días**\n"
             response += f"Diferencia: {'+' if diff > 0 else ''}{diff:.1f} días ({(diff/days*100):.1f}%)\n\n"
             
             if result.get('confidence_interval'):
                 ci = result['confidence_interval']
-                response += f"📊 Rango esperado: {ci.get('min', predicted*0.8):.1f} - {ci.get('max', predicted*1.2):.1f} días"
+                response += f" Rango esperado: {ci.get('min', predicted*0.8):.1f} - {ci.get('max', predicted*1.2):.1f} días"
             
             return response
             
         except Exception as e:
-            return f"❌ Error al predecir duración: {str(e)}"
+            return f" Error al predecir duración: {str(e)}"
     
     def handle_recommendation(self, message: str) -> str:
         """Maneja recomendación de persona"""
@@ -166,26 +166,26 @@ class ChatAssistant:
             result = recommend_person(task_data)
             
             if not result.get('recommendations'):
-                return "📋 No encontré personas disponibles para esta tarea."
+                return " No encontré personas disponibles para esta tarea."
             
             top_person = result['recommendations'][0]
             
-            response = f"👤 **Recomendación de Asignación**\n\n"
+            response = f" **Recomendación de Asignación**\n\n"
             response += f"**Mejor opción:** {top_person['name']}\n"
             response += f"Score: {top_person['score']*100:.1f}%\n"
             response += f"Experiencia: {top_person.get('experience_years', 'N/A')} años\n"
             response += f"Performance: {top_person.get('performance_index', 'N/A')}%\n\n"
             
             if top_person.get('reason'):
-                response += f"💡 **¿Por qué?** {top_person['reason']}"
+                response += f" **¿Por qué?** {top_person['reason']}"
             
             if len(result['recommendations']) > 1:
-                response += f"\n\n📌 Otras opciones: {', '.join([p['name'] for p in result['recommendations'][1:3]])}"
+                response += f"\n\n Otras opciones: {', '.join([p['name'] for p in result['recommendations'][1:3]])}"
             
             return response
             
         except Exception as e:
-            return f"❌ Error al recomendar: {str(e)}"
+            return f" Error al recomendar: {str(e)}"
     
     def handle_performance_analysis(self, message: str) -> str:
         """Maneja análisis de desempeño"""
@@ -205,13 +205,13 @@ class ChatAssistant:
                     person = users[0]
                     message_prefix = f"(No especificaste un nombre, mostrando ejemplo con {person.full_name})\n\n"
                 else:
-                    return "❌ No hay usuarios activos en el sistema."
+                    return " No hay usuarios activos en el sistema."
             else:
                 message_prefix = ""
             
             result = predict_attrition({'person_id': person.person_id})
             
-            response = message_prefix + f"📊 **Análisis de Desempeño: {person.full_name}**\n\n"
+            response = message_prefix + f" **Análisis de Desempeño: {person.full_name}**\n\n"
             response += f"Performance: {person.performance_index:.1f}%\n"
             response += f"Experiencia: {person.experience_years} años\n"
             response += f"Tareas completadas: {person.tasks_completed}\n"
@@ -223,18 +223,18 @@ class ChatAssistant:
                 response += f"Riesgo de renuncia: **{risk_level.upper()}** ({probability*100:.1f}%)\n\n"
                 
                 if result.get('recommendations'):
-                    response += f"💡 **Recomendación:** {result['recommendations'][0]}"
+                    response += f" **Recomendación:** {result['recommendations'][0]}"
                 elif result.get('factors'):
                     factors = result['factors']
                     if factors:
-                        response += f"💡 **Factor principal:** {factors[0].get('factor', 'N/A')}"
+                        response += f" **Factor principal:** {factors[0].get('factor', 'N/A')}"
             else:
                 response += f"Riesgo de renuncia: N/A\n"
             
             return response
             
         except Exception as e:
-            return f"❌ Error al analizar desempeño: {str(e)}"
+            return f" Error al analizar desempeño: {str(e)}"
     
     def handle_statistics(self) -> str:
         """Retorna estadísticas generales del sistema"""
@@ -246,36 +246,36 @@ class ChatAssistant:
             
             completion_rate = (completed / total_tasks * 100) if total_tasks > 0 else 0
             
-            response = f"📊 **Estadísticas del Sistema**\n\n"
-            response += f"📋 Total de tareas: {total_tasks}\n"
-            response += f"✅ Completadas: {completed} ({completion_rate:.1f}%)\n"
-            response += f"🔄 En progreso: {in_progress}\n"
-            response += f"👥 Usuarios activos: {total_users}\n"
+            response = f" **Estadísticas del Sistema**\n\n"
+            response += f" Total de tareas: {total_tasks}\n"
+            response += f" Completadas: {completed} ({completion_rate:.1f}%)\n"
+            response += f" En progreso: {in_progress}\n"
+            response += f" Usuarios activos: {total_users}\n"
             
             return response
             
         except Exception as e:
-            return f"❌ Error al obtener estadísticas: {str(e)}"
+            return f" Error al obtener estadísticas: {str(e)}"
     
     def handle_help(self) -> str:
         """Retorna ayuda sobre qué puede hacer el asistente"""
-        return """🤖 **Asistente IA - Comandos Disponibles**
+        return """ **Asistente IA - Comandos Disponibles**
 
 Puedo ayudarte con:
 
-📊 **Predicción de Riesgo**
+ **Predicción de Riesgo**
 "Predice el riesgo de una tarea de alta complejidad en TI"
 
-⏱️ **Duración de Tareas**
+ **Duración de Tareas**
 "¿Cuánto tiempo tomará una tarea media de 10 días?"
 
-👤 **Recomendación de Personas**
+ **Recomendación de Personas**
 "¿Quién es mejor para una tarea de desarrollo?"
 
-📈 **Análisis de Desempeño**
+ **Análisis de Desempeño**
 "Analiza el desempeño de [nombre]"
 
-📊 **Estadísticas**
+ **Estadísticas**
 "Muestra las estadísticas del sistema"
 
 Escribe tu pregunta naturalmente y yo la procesaré. 😊"""

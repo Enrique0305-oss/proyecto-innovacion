@@ -69,12 +69,12 @@ class ModelTrainer:
             import optuna
             
             print("\n" + "="*70)
-            print("🚀 ENTRENAMIENTO DE MODELO DE RIESGO - CATBOOST MULTICLASS")
+            print(" ENTRENAMIENTO DE MODELO DE RIESGO - CATBOOST MULTICLASS")
             print("="*70)
             
             # 1. Cargar datos
             if data is None:
-                print("\n📊 Extrayendo datos de la base de datos...")
+                print("\n Extrayendo datos de la base de datos...")
                 data = self.get_training_data_from_db('task')
             
             # 2. Preparar features y target
@@ -92,12 +92,12 @@ class ModelTrainer:
             # 4. Optimización con Optuna (opcional)
             best_params = {}
             if use_optuna:
-                print(f"\n🔍 Optimizando hiperparámetros con Optuna ({n_trials} trials)...")
+                print(f"\n Optimizando hiperparámetros con Optuna ({n_trials} trials)...")
                 best_params = self._optimize_catboost(X_train, y_train, n_trials)
                 print(f"   Mejores parámetros encontrados: {best_params}")
             
             # 5. Entrenar modelo final
-            print("\n🎯 Entrenando modelo final...")
+            print("\n Entrenando modelo final...")
             model = CatBoostClassifier(
                 **best_params,
                 random_state=42,
@@ -107,7 +107,7 @@ class ModelTrainer:
             model.fit(X_train, y_train, eval_set=(X_test, y_test), verbose=100)
             
             # 6. Evaluar modelo
-            print("\n📈 Evaluando modelo...")
+            print("\n Evaluando modelo...")
             y_pred = model.predict(X_test)
             
             accuracy = accuracy_score(y_test, y_pred)
@@ -117,7 +117,7 @@ class ModelTrainer:
             print(f"   Accuracy: {accuracy:.4f}")
             
             # 7. Guardar modelo y artefactos
-            print("\n💾 Guardando modelo y artefactos...")
+            print("\n Guardando modelo y artefactos...")
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
             # Crear carpeta si no existe
@@ -182,7 +182,7 @@ class ModelTrainer:
                 print(f"   ✓ Estudio Optuna guardado: {study_file}")
             
             print("\n" + "="*70)
-            print("✅ ENTRENAMIENTO COMPLETADO EXITOSAMENTE")
+            print(" ENTRENAMIENTO COMPLETADO EXITOSAMENTE")
             print("="*70 + "\n")
             
             return {

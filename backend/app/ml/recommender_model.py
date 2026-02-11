@@ -111,7 +111,7 @@ def recommend_person(task_data):
                 'message': 'No se encontraron candidatos disponibles'
             }
         
-        print(f"\n🔍 Evaluando {len(candidates)} candidatos...")
+        print(f"\n Evaluando {len(candidates)} candidatos...")
         
         # Calcular scores usando el modelo ML
         scored_candidates = []
@@ -182,7 +182,7 @@ def prepare_features(person, task_data):
     """
     global _config
     
-    print(f"\n🔧 Preparando features para: {person.full_name}")
+    print(f"\n Preparando features para: {person.full_name}")
     
     # Features de la tarea (categóricas)
     task_area = str(task_data.get('area', 'TI'))
@@ -192,7 +192,7 @@ def prepare_features(person, task_data):
     
     # Features de la persona (categóricas)
     person_area = str(person.area or 'IT')
-    role = 'Colaborador'  # Todos los web_users con role_id=7 son colaboradores
+    role = 'Colaborador'  
     
     # Features numéricas de la persona (ahora con campos reales)
     experience_years_imputed = float(person.experience_years or 2)
@@ -385,11 +385,11 @@ def generate_recommendation_reasons(person, task_data, score):
     # Habilidades
     skill_match = calculate_skill_match(person, task_data)
     if skill_match >= 0.8:
-        reasons.append(f'✅ Habilidades altamente compatibles ({skill_match*100:.0f}%)')
+        reasons.append(f' Habilidades altamente compatibles ({skill_match*100:.0f}%)')
     elif skill_match >= 0.5:
         reasons.append(f'Habilidades compatibles ({skill_match*100:.0f}%)')
     elif skill_match < 0.3 and task_data.get('skills_required'):
-        reasons.append(f'⚠️ Habilidades parciales ({skill_match*100:.0f}%)')
+        reasons.append(f' Habilidades parciales ({skill_match*100:.0f}%)')
     
     # Área
     if person.area == task_data.get('area'):
@@ -414,7 +414,7 @@ def generate_recommendation_reasons(person, task_data, score):
     elif workload <= 2:
         reasons.append('Buena disponibilidad')
     elif workload >= 6:
-        reasons.append(f'⚠️ Alta carga ({workload} tareas activas)')
+        reasons.append(f' Alta carga ({workload} tareas activas)')
     
     return reasons if reasons else ['Perfil compatible con la tarea']
 

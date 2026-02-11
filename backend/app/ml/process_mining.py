@@ -368,7 +368,7 @@ def generate_insights(tasks, flow, bottlenecks, avg_duration):
         high_severity = [b for b in bottlenecks if b.get('severity') == 'high']
         if high_severity:
             insights.append(
-                f'⚠️ Se detectaron {len(high_severity)} cuellos de botella de alta severidad'
+                f' Se detectaron {len(high_severity)} cuellos de botella de alta severidad'
             )
     else:
         insights.append('✓ No se detectaron cuellos de botella significativos')

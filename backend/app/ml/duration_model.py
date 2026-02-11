@@ -108,10 +108,10 @@ def predict_duration(task_data):
         # - Si predicción calibrada 5-50 días → usar calibrada (rango confiable)
         
         if predicted_days_calibrated < 5.0:
-            print(f"   ℹ️  CatBoost calibrado: {predicted_days_calibrated:.1f}d (< 5d) → usando heurística")
+            print(f"     CatBoost calibrado: {predicted_days_calibrated:.1f}d (< 5d) → usando heurística")
             return predict_duration_heuristic(task_data)
         elif predicted_days_calibrated > 50.0:
-            print(f"   ℹ️  CatBoost calibrado: {predicted_days_calibrated:.1f}d (> 50d) → usando heurística")
+            print(f"     CatBoost calibrado: {predicted_days_calibrated:.1f}d (> 50d) → usando heurística")
             return predict_duration_heuristic(task_data)
         
         # Usar predicción calibrada (rango confiable 5-50 días)
@@ -211,7 +211,7 @@ def prepare_features(task_data, person_id=None):
     Preparar features para el modelo NUMERIC_ONLY según columns_regression_numeric.json
     
     Features del modelo (SOLO NUMÉRICAS):
-    1. duration_est_imputed         (días) - ⭐ MÁS IMPORTANTE (correlación ~0.9)
+    1. duration_est_imputed         (días) -  MÁS IMPORTANTE (correlación ~0.9)
     2. experience_years_imputed     (años)
     3. availability_hours_week_imputed (horas/semana)
     4. current_load_imputed         (número de tareas)

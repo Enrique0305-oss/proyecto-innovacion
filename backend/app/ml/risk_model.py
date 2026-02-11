@@ -37,9 +37,9 @@ def load_model():
         if os.path.exists(model_file):
             _model = CatBoostClassifier()
             _model.load_model(model_file)
-            print(f"✓ Modelo CatBoost binario cargado: {model_file}")
+            print(f" Modelo CatBoost binario cargado: {model_file}")
         else:
-            print(f"⚠ Modelo no encontrado: {model_file}")
+            print(f" Modelo no encontrado: {model_file}")
             return None
         
         # Cargar configuración de columnas
@@ -86,7 +86,7 @@ def prepare_features(task_data):
     """
     global _config
     
-    print(f"\n🔧 Preparando features desde: {task_data}")
+    print(f"\n Preparando features desde: {task_data}")
     
     # Features base del formulario
     area = str(task_data.get('area', 'TI'))
@@ -242,7 +242,7 @@ def predict_risk(task_data):
             'ALTO_RIESGO': float(probabilities[1])
         }
         
-        print(f"📊 Predicción del modelo: {model_prediction} (prob: {model_prob_alto:.2%})")
+        print(f" Predicción del modelo: {model_prediction} (prob: {model_prob_alto:.2%})")
         
         # Aplicar reglas de negocio para ajustar si es necesario
         business_result = apply_business_rules(
@@ -322,7 +322,7 @@ def generate_recommendations(task_data, risk_level, probability):
     
     if risk_level == 'ALTO_RIESGO':
         if probability > 0.8:
-            recommendations.append('🚨 CRÍTICO: Revisar factibilidad antes de iniciar')
+            recommendations.append(' CRÍTICO: Revisar factibilidad antes de iniciar')
         
         # Frecuencia de seguimiento basada en duración
         if duration <= 7:

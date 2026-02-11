@@ -71,7 +71,7 @@ class TrainingManager:
         Returns:
             pandas.DataFrame con el dataset
         """
-        print(f"📊 Extrayendo dataset para modelo '{model_type}'...")
+        print(f" Extrayendo dataset para modelo '{model_type}'...")
         
         if model_type == 'risk':
             return self._extract_risk_dataset(date_from, date_to)
@@ -120,7 +120,7 @@ class TrainingManager:
             query = text(str(query) + f" AND wt.created_at <= '{date_to}'")
         
         df = pd.read_sql(query, db.session.bind)
-        print(f"   ✅ {len(df)} registros extraídos para Risk Model")
+        print(f"    {len(df)} registros extraídos para Risk Model")
         return df
     
     
@@ -153,7 +153,7 @@ class TrainingManager:
             query = text(str(query) + f" AND wt.created_at <= '{date_to}'")
         
         df = pd.read_sql(query, db.session.bind)
-        print(f"   ✅ {len(df)} registros extraídos para Duration Model")
+        print(f"    {len(df)} registros extraídos para Duration Model")
         return df
     
     
@@ -188,7 +188,7 @@ class TrainingManager:
             query = text(str(query) + f" AND wt.created_at <= '{date_to}'")
         
         df = pd.read_sql(query, db.session.bind)
-        print(f"   ✅ {len(df)} registros extraídos para Recommendation Model")
+        print(f"    {len(df)} registros extraídos para Recommendation Model")
         return df
     
     
@@ -228,7 +228,7 @@ class TrainingManager:
             query = text(str(query) + f" AND wt.created_at <= '{date_to}'")
         
         df = pd.read_sql(query, db.session.bind)
-        print(f"   ✅ {len(df)} registros extraídos para Simulation/Bottleneck Model")
+        print(f"    {len(df)} registros extraídos para Simulation/Bottleneck Model")
         return df
     
     
@@ -266,7 +266,7 @@ class TrainingManager:
         db.session.add(dataset)
         db.session.commit()
         
-        print(f"💾 Dataset guardado: {filename} ({file_size} bytes)")
+        print(f" Dataset guardado: {filename} ({file_size} bytes)")
         return dataset
     
     
@@ -342,7 +342,7 @@ class TrainingManager:
                 backup_name = old_path.stem + '_backup_' + datetime.now().strftime('%Y%m%d_%H%M%S') + old_path.suffix
                 backup_path = old_path.parent / backup_name
                 old_path.rename(backup_path)
-                print(f"📦 Backup creado: {backup_path}")
+                print(f" Backup creado: {backup_path}")
         
         # Activar nuevo modelo
         model.model_path = job.output_model_path
@@ -369,7 +369,7 @@ class TrainingManager:
                 model.version = 'v2.0'
         
         db.session.commit()
-        print(f"✅ Modelo activado: {model.name} {model.version}")
+        print(f" Modelo activado: {model.name} {model.version}")
         
         return model
 
