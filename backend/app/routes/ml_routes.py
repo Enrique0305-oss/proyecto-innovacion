@@ -74,7 +74,7 @@ def prediction_risk():
         # Llamar al modelo de predicción
         result = predict_risk(data)
         
-        print(f"📊 Resultado del modelo:")
+        print(f" Resultado del modelo:")
         print(f"   risk_level: {result.get('risk_level')}")
         print(f"   probability: {result.get('probability')}")
         print(f"   probabilities: {result.get('probabilities')}")
@@ -251,7 +251,7 @@ def intelligent_assignment():
             try:
                 risk_result = predict_risk(data)
             except Exception as e:
-                print(f"⚠️ Error en clasificación de riesgo: {e}")
+                print(f" Error en clasificación de riesgo: {e}")
         
         # 2. RECOMENDACIÓN DE PERSONAS
         recommendations = []
@@ -268,7 +268,7 @@ def intelligent_assignment():
                 
                 # FALLBACK: Si no hay recomendaciones, obtener usuarios de la BD
                 if not recommended_persons:
-                    print("⚠️ No hay recomendaciones del modelo, obteniendo usuarios de BD...")
+                    print(" No hay recomendaciones del modelo, obteniendo usuarios de BD...")
                     from app.models.web_user import WebUser
                     from app import db
                     
@@ -309,16 +309,16 @@ def intelligent_assignment():
                             duration_result = predict_duration(duration_data)
                             duration_days = duration_result.get('duration_days')
                         except Exception as e:
-                            print(f"⚠️ Error en predicción de duración para {person_id}: {e}")
+                            print(f" Error en predicción de duración para {person_id}: {e}")
                     
                     # Generar observaciones
                     observations = []
                     if person.get('score', 0) >= 90:
-                        observations.append('✅ Candidato ideal')
+                        observations.append(' Candidato ideal')
                     if person.get('current_load', 0) > 5:
-                        observations.append('⚠️ Carga alta')
+                        observations.append(' Carga alta')
                     if person.get('experience_years', 0) < 2:
-                        observations.append('⚠️ Experiencia baja')
+                        observations.append(' Experiencia baja')
                     
                     recommendations.append({
                         'person_id': person.get('person_id'),
